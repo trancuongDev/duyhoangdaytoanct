@@ -1251,7 +1251,7 @@ document.getElementById('naCopyBtn').addEventListener('click', () => {
     if (c >= '0' && c <= '9') return `số ${c}`;
     return c;
   }).join(' - ');
-  const text  = `Họ tên: ${name}\nMã HV: ${code}\nGmail: ${user}\nMật khẩu: ${pw}\n📖 Đọc: ${spelled}\nLớp: ${cls}\nNgày khai giảng: ${start}\nNgày kết thúc: ${end}\nSĐT: ${phone}\n\n👉 Bạn sao chép mật khẩu trên rồi dán vào chỗ mật khẩu trong web nha.\n🌐 Link học: https://trcuongdve.github.io/duyhoangdaytoanct/\nNếu gặp vấn đề kỹ thuật hay gì cứ liên hệ mình nha.`;
+  const text  = `Họ tên: ${name}\nMã HV: ${code}\nGmail: ${user}\nMật khẩu: ${pw}\n📖 Đọc: ${spelled}\nLớp: ${cls}\nNgày khai giảng: ${start}\nNgày kết thúc: ${end}\nSĐT: ${phone}\n\n👉 Bạn sao chép mật khẩu trên rồi dán vào chỗ mật khẩu trong web nha.\n🌐 Link học: https://trancuongdev.github.io/duyhoangdaytoanct/\nNếu gặp vấn đề kỹ thuật hay gì cứ liên hệ mình nha.`;
   navigator.clipboard?.writeText(text).then(() => {
     const btn = document.getElementById('naCopyBtn');
     btn.textContent = '✅ Đã sao chép!';
@@ -1392,7 +1392,7 @@ function renderStudentRow(s, today, expiredClasses) {
     });
   }
   tr.querySelector('[data-action="copy"]').addEventListener('click', () => {
-    const text = `Họ tên: ${s.full_name}\nMã HV: ${s.student_code||''}\nGmail: ${s.username}\nMật khẩu: ${s.student_code||''}\nLớp: ${s.class_name||''}`;
+    const text = `Họ tên: ${s.full_name}\nMã HV: ${s.student_code||''}\nGmail: ${s.username}\nMật khẩu: ${s.student_code||''}\nLớp: ${s.class_name||''}\n\n🌐 Link học: https://trancuongdev.github.io/duyhoangdaytoanct/`;
     navigator.clipboard?.writeText(text).then(() => {
       const btn = tr.querySelector('[data-action="copy"]');
       btn.textContent = '✅ Đã copy!';
