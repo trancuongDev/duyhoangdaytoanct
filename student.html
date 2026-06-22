@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Học Sinh - DHDTCT LMS v1.3.0</title>
+  <meta http-equiv="X-Frame-Options" content="DENY"/>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#4f46e5"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Duy Ho�ng DTCT"/>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body class="dashboard-page">
+
+  <!-- Chấm đỏ giám sát -->
+  <div id="monitorDot" style="position:fixed;bottom:14px;right:14px;z-index:9999;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.55);padding:5px 10px 5px 8px;border-radius:20px;pointer-events:none">
+    <span style="width:9px;height:9px;background:#ff3b3b;border-radius:50%;display:inline-block;animation:monitorBlink 1.2s ease-in-out infinite"></span>
+    <span style="color:#fff;font-size:.7rem;font-weight:600;letter-spacing:.3px">LIVE</span>
+  </div>
+
+  <!-- Toast giám sát -->
+  <div id="monitorToast" style="display:none;position:fixed;bottom:50px;right:14px;z-index:9999;background:rgba(0,0,0,.75);color:#fff;font-size:.78rem;padding:.5rem .9rem;border-radius:10px;max-width:220px;line-height:1.5;pointer-events:none;border-left:3px solid #ff3b3b">
+    🔴 Toàn bộ hoạt động đang được giám sát. Hành vi ghi lại nội dung trái phép sẽ bị xử lý nghiêm.
+  </div>
+
+  <style>
+    @keyframes monitorBlink { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,59,59,.6)} 50%{opacity:.3;box-shadow:0 0 0 5px rgba(255,59,59,0)} }
+  </style>
+  <script>
+    // Hiện toast mỗi 5 phút
+    function showMonitorToast() {
+      const t = document.getElementById('monitorToast');
+      t.style.display = 'block';
+      t.style.opacity = '1';
+      setTimeout(() => {
+        t.style.transition = 'opacity 1s';
+        t.style.opacity = '0';
+        setTimeout(() => { t.style.display = 'none'; t.style.transition = ''; }, 1000);
+      }, 5000);
+    }
+    showMonitorToast(); // Hiện ngay khi vào
+    setInterval(showMonitorToast, 5 * 60 * 1000); // Mỗi 5 phút
+  </script>
+
+  <!-- THÔNG BÁO GIÁM SÁT -->
+  <div id="monitorNotice" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center;padding:2rem">
+    <div style="font-size:3rem">⚠️</div>
+    <div style="color:#ffcc00;font-size:1.2rem;font-weight:700">CẢNH BÁO</div>
+    <div style="color:#fff;font-size:.92rem;max-width:340px;line-height:1.8">
+      Nghiêm cấm mọi hành vi quay màn hình, chụp màn hình hoặc ghi lại nội dung dưới mọi hình thức.<br/>
+      Hệ thống đang giám sát toàn bộ hoạt động và có khả năng phát hiện các hành vi bất thường.<br/>
+      Mọi vi phạm sẽ bị ghi nhận, lưu bằng chứng và xử lý nghiêm khắc.
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:.5rem">
+      <span style="width:10px;height:10px;background:#ff3b3b;border-radius:50%;display:inline-block;animation:monitorBlink2 1s infinite"></span>
+      <span style="color:#ff3b3b;font-size:.85rem;font-weight:600">ĐANG GHI • LIVE</span>
+    </div>
+    <div style="color:#888;font-size:.78rem;margin-top:.5rem">Đang tải nội dung...</div>
+  </div>
+  <style>
+    @keyframes monitorBlink2{0%,100%{opacity:1}50%{opacity:.2}}
+  </style>
+  <script>
+    setTimeout(() => { document.getElementById('monitorNotice').style.display = 'none'; }, 5000);
+  </script>
+
+  <!-- POPUP QUÀ ĐIỂM HẰNG NGÀY -->
+  <div id="dailyRewardOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99997;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)">
+    <div id="dailyRewardBox" style="background:#fff;border-radius:24px;max-width:360px;width:100%;text-align:center;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.4);animation:drPop .4s cubic-bezier(.34,1.56,.64,1) both">
+      <!-- Header gradient -->
+      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:1.75rem 1.5rem 1.25rem;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-20px;left:-20px;width:100px;height:100px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-30px;right:-10px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%"></div>
+        <div style="position:relative;z-index:1">
+          <div id="drCoinAnim" style="font-size:3.5rem;margin-bottom:.4rem;animation:drBounce 1s ease infinite">🎁</div>
+          <div style="color:#fff;font-weight:900;font-size:1.2rem;letter-spacing:-.3px">Quà điểm hằng ngày</div>
+          <div style="color:rgba(255,255,255,.8);font-size:.8rem;margin-top:.2rem">Đăng nhập mỗi ngày để nhận điểm!</div>
+        </div>
+      </div>
+      <!-- Body -->
+      <div style="padding:1.5rem">
+        <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:16px;padding:1.25rem;margin-bottom:1rem">
+          <div style="font-size:.78rem;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Điểm nhận được hôm nay</div>
+          <div id="drPoints" style="font-size:3rem;font-weight:900;color:#d97706;line-height:1">+10</div>
+          <div style="font-size:.78rem;color:#b45309;margin-top:.2rem">điểm thi đua</div>
+        </div>
+        <!-- Streak -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:1rem">
+          <span id="drStreakFire" style="font-size:1.3rem">🔥</span>
+          <div>
+            <span id="drStreakNum" style="font-weight:900;font-size:1.1rem;color:#ef4444">1</span>
+            <span style="font-size:.85rem;color:#64748b;font-weight:600"> ngày liên tiếp</span>
+          </div>
+        </div>
+        <!-- Streak bar -->
+        <div style="background:#f1f5f9;border-radius:20px;height:8px;margin-bottom:1.25rem;overflow:hidden">
+          <div id="drStreakBar" style="height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:20px;transition:width .6s ease;width:0%"></div>
+        </div>
+        <!-- Bonus info -->
+        <div id="drBonusInfo" style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:.65rem .9rem;font-size:.8rem;color:#166534;margin-bottom:1.25rem;display:none">
+          🎉 <b>Bonus streak!</b> Đăng nhập liên tiếp nhiều ngày nhận thêm điểm.
+        </div>
+        <button id="drClaimBtn" style="width:100%;padding:.85rem;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(245,158,11,.4);transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          🎁 Nhận quà ngay!
+        </button>
+        <div style="font-size:.75rem;color:#94a3b8;margin-top:.75rem">Quà reset lúc 00:00 mỗi ngày</div>
+      </div>
+    </div>
+  </div>
+  <style>
+    @keyframes drPop { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
+    @keyframes drBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  </style>
+
+      <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/></div>
+      <span class="sidebar-brand-text">DHDTCT LMS</span>
+      <button id="sidebarClose" class="sidebar-mini-toggle" title="Thu gọn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;transition:all .2s;flex-shrink:0" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="slink active" data-page="home" data-label="Trang chủ">
+        <span class="slink-icon">🏠</span><span class="slink-label">Trang chủ</span>
+      </a>
+      <a href="#" class="slink" data-page="lessons" data-label="Bài học">
+        <span class="slink-icon">📚</span><span class="slink-label">Bài học</span>
+      </a>
+      <a href="#" class="slink" data-page="notifications" data-label="Thông báo">
+        <span class="slink-icon">🔔</span><span class="slink-label">Thông báo</span><span id="sidebarNotiDot" style="display:none;width:8px;height:8px;background:#ef4444;border-radius:50%;margin-left:auto;flex-shrink:0"></span>
+      </a>
+      <a href="#" class="slink" data-page="guide" data-label="Hướng dẫn">
+        <span class="slink-icon">📖</span><span class="slink-label">Hướng dẫn</span>
+      </a>
+      <a href="#" class="slink" data-page="schedule" data-label="Lịch học">
+        <span class="slink-icon">📅</span><span class="slink-label">Lịch học</span>
+      </a>
+      <a href="#" class="slink" data-page="profile" data-label="Hồ sơ">
+        <span class="slink-icon">👤</span><span class="slink-label">Hồ sơ</span>
+      </a>
+      <a href="#" class="slink" data-page="profile" data-label="Huy chương">
+        <span class="slink-icon">🏆</span><span class="slink-label">Huy chương</span>
+      </a>
+    </nav>
+    <a href="index.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất">
+      <span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span>
+    </a>
+    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.3.0</div>
+    <div class="sidebar-mini-reopen">
+      <button id="sidebarMiniReopen" class="sidebar-mini-toggle" title="Mở rộng">▶</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="dash-main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div style="font-weight:700;font-size:.95rem;color:var(--text);display:flex;align-items:center;gap:.5rem">
+        <img src="icons/icon-192.png" style="width:24px;height:24px;border-radius:6px"/>
+        DHDTCT LMS Education System
+      </div>
+      <div class="topbar-right">
+        <button id="studentDarkBtn" title="Chế độ tối" style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s">🌙</button>
+        <button id="notiBtn" data-page="notifications" style="position:relative;background:none;border:none;cursor:pointer;font-size:1.3rem;padding:.25rem .4rem;border-radius:8px;transition:background .15s" title="Thông báo">
+          🔔
+          <span id="notiBadge" style="display:none;position:absolute;top:0;right:0;width:9px;height:9px;background:#ef4444;border-radius:50%;border:2px solid var(--topbar-bg,#fff)"></span>
+        </button>
+        <div class="avatar-info">
+          <div class="avatar" id="topbarAvatar">HS</div>
+          <div>
+            <div class="av-name" id="studentName"></div>
+            <div class="av-role">Học sinh</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- BANNER HẾT HẠN -->
+    <div id="expiryBanner" style="display:none;background:linear-gradient(135deg,#fff3cd,#fef9c3);border-left:4px solid #f59e0b;padding:.75rem 1.25rem;font-size:.88rem;color:#92400e;margin:.75rem 1.25rem;border-radius:10px;"></div>
+
+    <!-- TRANG CHỦ -->
+    <section class="page active" id="pageHome">
+
+      <!-- Greeting banner — chỉ hiện trên tablet/laptop -->
+      <div id="studentGreetingBanner" style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:16px;padding:1.1rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <div id="studentGreetingText" style="font-size:1.05rem;font-weight:900;letter-spacing:-.2px"></div>
+          <div id="studentGreetingDate" style="font-size:.78rem;opacity:.6;margin-top:.15rem"></div>
+        </div>
+        <div id="studentGreetingTime" style="font-size:1.35rem;font-weight:900;font-variant-numeric:tabular-nums;opacity:.85"></div>
+      </div>
+      <style>
+        @media (max-width: 768px) { #studentGreetingBanner { display: none !important; } }
+      </style>
+
+      <!-- Hero banner -->
+      <div id="heroBanner" style="background:linear-gradient(135deg,#0a0820 0%,#1e1b4b 40%,#312e81 75%,#1e3a5f 100%);border-radius:20px;padding:2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;color:#fff">
+        <!-- Canvas sao -->
+        <canvas id="mathUniverseCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:block;background:transparent;border:none;outline:none"></canvas>
+        <!-- Ký hiệu toán học nổi -->
+        <div id="mathSymbols" style="position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden"></div>
+        <div style="position:relative;z-index:2">
+          <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.25rem">
+            <div id="homeAvatar" style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:2px solid rgba(255,255,255,.3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.2)"></div>
+            <div>
+              <h1 class="page-title" id="welcomeTitle" style="color:#fff;margin-bottom:.25rem;font-size:1.45rem;letter-spacing:-.3px">Xin chào!</h1>
+              <div id="homeStudentClass" style="color:rgba(255,255,255,.7);font-size:.85rem;font-weight:500;display:flex;align-items:center;gap:.4rem"></div>
+              <div id="homeStudentCode" style="color:rgba(255,255,255,.45);font-size:.75rem;margin-top:.15rem;font-family:monospace"></div>
+              <div id="homeStudentName" style="display:none"></div>
+            </div>
+          </div>
+          <!-- Quick stats -->
+          <div style="display:flex;gap:1rem;flex-wrap:wrap">
+            <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:.5rem .9rem;font-size:.78rem;display:flex;align-items:center;gap:.4rem;border:1px solid rgba(255,255,255,.1)">
+              <span>🎬</span><span>Video HD</span>
+            </div>
+            <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:.5rem .9rem;font-size:.78rem;display:flex;align-items:center;gap:.4rem;border:1px solid rgba(255,255,255,.1)">
+              <span>📄</span><span>Tài liệu chọn lọc</span>
+            </div>
+            <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:.5rem .9rem;font-size:.78rem;display:flex;align-items:center;gap:.4rem;border:1px solid rgba(255,255,255,.1)">
+              <span>🔒</span><span>Bảo mật cao</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner điện thoại -->
+      <div id="deviceBanner" style="display:none;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border-radius:12px;padding:.8rem 1rem;margin-bottom:1rem;font-size:.82rem;line-height:1.6;align-items:center;gap:.75rem;border:1px solid rgba(255,255,255,.08)">
+        <span style="font-size:1.2rem;flex-shrink:0">💻</span>
+        <span>Để học tốt hơn, hãy dùng <b>máy tính hoặc tablet</b>.</span>
+      </div>
+      <script>if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){document.getElementById("deviceBanner").style.display="flex";}</script>
+
+      <!-- Thông báo từ admin -->
+      <div id="announcementSection" style="display:none;margin-bottom:1.25rem">
+        <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #f59e0b;border-radius:14px;padding:1rem 1.25rem">
+          <div style="font-weight:700;font-size:.88rem;color:#92400e;margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem">📢 Thông báo từ giáo viên</div>
+          <div id="announcementList" style="display:flex;flex-direction:column;gap:.5rem"></div>
+        </div>
+      </div>
+
+      <!-- Bài học mới nhất -->
+      <div class="overview-panel" style="margin-bottom:1.25rem">
+        <div class="panel-header">
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <div style="width:32px;height:32px;background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem">📚</div>
+            <span style="font-weight:800;font-size:.95rem">Bài học mới nhất</span>
+          </div>
+          <a href="#" class="link-blue" data-goto="lessons" style="font-size:.8rem;font-weight:600">Xem tất cả →</a>
+        </div>
+        <div id="homeRecentLessons"></div>
+      </div>
+
+      <!-- Lưu ý + Hướng dẫn nhanh -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+
+        <!-- Lưu ý -->
+        <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:16px;padding:1.25rem;color:#fff">
+          <div style="font-weight:800;font-size:.9rem;margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem">
+            <span style="background:rgba(255,255,255,.15);border-radius:8px;padding:.3rem .5rem">⚠️</span> Lưu ý quan trọng
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.82rem">
+            <div style="display:flex;gap:.6rem;align-items:center;padding:.5rem .65rem;background:rgba(255,255,255,.08);border-radius:9px;border-left:3px solid #ef4444">
+              <span>🔒</span><span style="color:rgba(255,255,255,.85)">Chỉ đăng nhập <b style="color:#fff">01 thiết bị</b> tại một thời điểm.</span>
+            </div>
+            <div style="display:flex;gap:.6rem;align-items:center;padding:.5rem .65rem;background:rgba(255,255,255,.08);border-radius:9px;border-left:3px solid #f59e0b">
+              <span>📵</span><span style="color:rgba(255,255,255,.85)">Nghiêm cấm <b style="color:#fff">chụp/quay màn hình</b>.</span>
+            </div>
+            <div style="display:flex;gap:.6rem;align-items:center;padding:.5rem .65rem;background:rgba(255,255,255,.08);border-radius:9px;border-left:3px solid #8b5cf6">
+              <span>🚫</span><span style="color:rgba(255,255,255,.85)">Không <b style="color:#fff">chia sẻ tài khoản</b> dưới mọi hình thức.</span>
+            </div>
+            <div style="display:flex;gap:.6rem;align-items:center;padding:.5rem .65rem;background:rgba(255,255,255,.08);border-radius:9px;border-left:3px solid #06b6d4">
+              <span>👁</span><span style="color:rgba(255,255,255,.85)">Hệ thống <b style="color:#fff">giám sát 24/7</b> — vi phạm bị ghi nhận.</span>
+            </div>
+            <div style="display:flex;gap:.6rem;align-items:center;padding:.5rem .65rem;background:rgba(255,255,255,.08);border-radius:9px;border-left:3px solid #ef4444">
+              <span>🎥</span><span style="color:rgba(255,255,255,.85)">Hệ thống <b style="color:#fff">quay màn hình liên tục</b> — nếu phát hiện bất thường sẽ <b style="color:#fca5a5">cảnh báo ngay đến giáo viên</b>.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hướng dẫn nhanh -->
+        <div class="overview-panel" style="padding:1.25rem">
+          <div style="font-weight:800;font-size:.9rem;margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem">
+            <div style="width:28px;height:28px;background:linear-gradient(135deg,#0ea5e9,#0284c7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.8rem">📖</div>
+            Hướng dẫn nhanh
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.6rem">
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;background:var(--primary-light);border-radius:10px;cursor:pointer;transition:transform .15s" onclick="showPage('lessons')" onmouseover="this.style.transform='translateX(3px)'" onmouseout="this.style.transform=''">
+              <span style="font-size:1.3rem">📚</span>
+              <div>
+                <div style="font-weight:700;font-size:.85rem">Xem bài học</div>
+                <div style="font-size:.75rem;color:var(--muted)">Chọn nhóm → chọn bài</div>
+              </div>
+              <span style="margin-left:auto;color:var(--primary);font-weight:700">→</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;background:#e0f2fe;border-radius:10px">
+              <span style="font-size:1.3rem">🎬</span>
+              <div>
+                <div style="font-weight:700;font-size:.85rem">Xem video</div>
+                <div style="font-size:.75rem;color:var(--muted)">Nhấn thumbnail để phát</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;background:#d1fae5;border-radius:10px">
+              <span style="font-size:1.3rem">📞</span>
+              <div>
+                <div style="font-weight:700;font-size:.85rem">Cần hỗ trợ?</div>
+                <div style="font-size:.75rem;color:var(--muted)">Liên hệ Trợ Lý Trần Cường hoặc Quốc Toàn — cung cấp tên lớp</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- BÀI HỌC -->
+    <section class="page" id="pageLessons">
+
+      <!-- Danh sách bài học -->
+      <div id="sLessonListView">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#312e81,#4338ca);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+          <div>
+            <h1 style="font-size:1.3rem;font-weight:800;margin:0;letter-spacing:-.3px">📚 Bài học</h1>
+            <p style="font-size:.8rem;opacity:.7;margin-top:.2rem">Chọn nhóm bài học để bắt đầu học</p>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:.5rem .85rem;font-size:.78rem;font-weight:600;white-space:nowrap">🔒 Bảo mật</div>
+        </div>
+
+        <!-- Search -->
+        <div style="margin-bottom:1.25rem;position:relative">
+          <span style="position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem">🔍</span>
+          <input type="text" id="sLessonSearch" placeholder="Tìm kiếm bài học theo tên..." style="width:100%;padding:.75rem 1rem .75rem 2.6rem;border:1.5px solid var(--border);border-radius:12px;outline:none;font-size:.9rem;background:var(--card);transition:border-color .2s,box-shadow .2s" onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.1)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"/>
+        </div>
+
+        <div class="content-list" id="sLessonList"></div>
+        <div class="empty-state" id="sEmptyLessons">Chưa có bài học nào.</div>
+      </div>
+
+      <!-- Chi tiết bài học -->
+      <div id="sLessonDetailView" style="display:none">
+
+        <!-- Header bài học -->
+        <div id="lessonDetailBanner" style="background:linear-gradient(135deg,#0a0820 0%,#1e1b4b 40%,#312e81 75%,#1e3a5f 100%);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;color:#fff;position:relative;overflow:hidden">
+          <canvas id="lessonBannerCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:block;background:transparent"></canvas>
+          <div id="lessonBannerSymbols" style="position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden"></div>
+          <div style="position:relative;z-index:2">
+          <button id="sBackToLessonsBtn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.4rem .9rem;border-radius:8px;font-size:.82rem;cursor:pointer;margin-bottom:.85rem;font-weight:600">← Quay lại</button>
+          <h1 id="sLessonDetailTitle" style="font-size:1.3rem;font-weight:800;margin:0;letter-spacing:-.3px;line-height:1.3"></h1>
+          <p id="sLessonDetailDesc" style="font-size:.85rem;opacity:.75;margin-top:.4rem;line-height:1.5"></p>
+          </div>
+        </div>
+
+        <!-- Video section -->
+        <div style="margin-bottom:1.5rem">
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem">
+            <div style="width:32px;height:32px;background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem">🎬</div>
+            <span style="font-weight:800;font-size:1rem">Video bài giảng</span>
+          </div>
+          <div class="video-grid" id="sLessonVideoGrid"></div>
+          <div class="empty-state" id="sEmptyLessonVideos" style="font-size:.85rem;padding:1.5rem">Chưa có video nào.</div>
+        </div>
+
+        <!-- Tài liệu section -->
+        <div>
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem">
+            <div style="width:32px;height:32px;background:linear-gradient(135deg,#0ea5e9,#0284c7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem">📄</div>
+            <span style="font-weight:800;font-size:1rem">Tài liệu học tập</span>
+          </div>
+          <div id="sLessonDocList" style="display:flex;flex-direction:column;gap:.5rem"></div>
+          <div class="empty-state" id="sEmptyLessonDocs" style="font-size:.85rem;padding:1.5rem">Chưa có tài liệu nào.</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- HƯỚNG DẪN -->
+    <section class="page" id="pageGuide">
+      <h1 class="page-title">📖 Hướng dẫn sử dụng</h1>
+      <div class="form-panel" style="max-width:720px;gap:1rem">
+
+        <!-- Dang nhap -->
+        <div style="background:var(--primary-light);border-radius:12px;padding:1rem 1.25rem">
+          <div style="font-weight:800;font-size:.95rem;color:var(--primary);margin-bottom:.5rem">🔐 Đăng nhập</div>
+          <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Nhắn <b>Trợ Lý - Trần Cường hoặc Quốc Toàn</b> cung cấp tên lớp, Gmail + SĐT để nhận thông tin đăng nhập. Mỗi tài khoản chỉ hoạt động trên <b>01 thiết bị</b> tại một thời điểm. Sau <b>5 lần nhập sai</b> mật khẩu, tài khoản sẽ bị khóa tự động.</p>
+          <div style="background:#fff;border-radius:8px;padding:.6rem .9rem;margin-top:.6rem;border:1px solid var(--primary-light,#e0e7ff);font-size:.82rem;color:var(--primary)">
+            <div style="font-weight:700;margin-bottom:.35rem">📌 Mẫu nhắn tin (4 tin riêng):</div>
+            <div style="display:flex;flex-direction:column;gap:.25rem;font-family:monospace">
+              <span><b>Tin 1:</b> xin cấp tài khoản học tập trên web kèm theo lớp đã đăng ký</span>
+              <span><b>Tin 2:</b> Tên lớp (VD: vsat 6)</span>
+              <span><b>Tin 3:</b> Số điện thoại</span>
+              <span><b>Tin 4:</b> Gmail</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Xem bai hoc -->
+        <div style="background:#e0f2fe;border-radius:12px;padding:1rem 1.25rem">
+          <div style="font-weight:800;font-size:.95rem;color:#0369a1;margin-bottom:.5rem">📚 Xem bài học</div>
+          <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Vào mục <b>Bài học</b> → chọn nhóm bài → nhấn vào bài học để xem video và tài liệu. Hệ thống chỉ hiển thị nội dung đúng lớp bạn đã đăng ký. Dùng ô <b>tìm kiếm</b> để tìm nhanh bài học theo tên.</p>
+        </div>
+
+        <!-- Xem video -->
+        <div style="background:#d1fae5;border-radius:12px;padding:1rem 1.25rem">
+          <div style="font-weight:800;font-size:.95rem;color:#065f46;margin-bottom:.5rem">🎬 Xem video bài giảng</div>
+          <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Nhấn vào thumbnail để phát video. Với điện thoại, nên <b>xoay ngang màn hình</b> để có trải nghiệm tốt nhất. Video được bảo vệ bản quyền và <b>không hỗ trợ tải xuống</b> dưới mọi hình thức.</p>
+        </div>
+
+        <!-- Tai lieu -->
+        <div style="background:#fef3c7;border-radius:12px;padding:1rem 1.25rem">
+          <div style="font-weight:800;font-size:.95rem;color:#92400e;margin-bottom:.5rem">📄 Tài liệu học tập</div>
+          <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Nhấn vào tài liệu để xem trực tiếp trên trình duyệt. Một số tài liệu hỗ trợ tải xuống. Tài liệu chỉ dành cho học viên đã đăng ký và <b>không được phép chia sẻ</b> ra ngoài.</p>
+        </div>
+
+        <!-- Bao mat -->
+        <div style="background:#fee2e2;border-radius:12px;padding:1rem 1.25rem">
+          <div style="font-weight:800;font-size:.95rem;color:#991b1b;margin-bottom:.5rem">🚨 Lưu ý bảo mật quan trọng</div>
+          <ul style="padding-left:1.25rem;line-height:2.1;font-size:.88rem;color:var(--text)">
+            <li>Không chia sẻ tài khoản cho người khác dưới bất kỳ hình thức nào.</li>
+            <li>Nghiêm cấm chụp màn hình, quay video hoặc phát tán nội dung bài giảng.</li>
+            <li>Hệ thống giám sát toàn bộ hoạt động — mọi vi phạm đều được ghi nhận và báo cáo đến giáo viên.</li>
+            <li>Khi chuyển tab hoặc thoát khỏi trang, màn hình sẽ tự động ẩn nội dung.</li>
+            <li>Tài khoản vi phạm sẽ bị <b>khóa vĩnh viễn</b> mà không cần báo trước.</li>
+            <li>Mỗi lần đăng nhập từ thiết bị mới sẽ được ghi lại và thông báo đến giáo viên.</li>
+          </ul>
+        </div>
+
+        <!-- Lien he -->
+        <div style="background:var(--bg);border-radius:12px;padding:1rem 1.25rem;border:1.5px solid var(--border)">
+          <div style="font-weight:800;font-size:.95rem;margin-bottom:.75rem">📞 Liên hệ hỗ trợ</div>
+          <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.88rem">
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:var(--card);border-radius:10px">
+              <span style="font-size:1.2rem">🛠️</span>
+              <div><div style="font-weight:700">Kỹ thuật & Tài khoản</div><div style="color:var(--muted);font-size:.8rem">Liên hệ <b>Trợ Lý - Trần Cường hoặc Quốc Toàn</b> — cung cấp tên lớp, Gmail, SĐT và Mã HV</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:var(--card);border-radius:10px">
+              <span style="font-size:1.2rem">📐</span>
+              <div><div style="font-weight:700">Thắc mắc chuyên môn</div><div style="color:var(--muted);font-size:.8rem">Liên hệ trực tiếp <b>Duy Hoàng Giáo viên</b></div></div>
+            </div>
+          </div>
+        </div>
+
+        <p style="text-align:center;font-style:italic;color:var(--muted);font-size:.85rem;padding:.5rem 0">Chúng tôi luôn đồng hành cùng bạn trên hành trình chinh phục đại học. 💪</p>
+      </div>
+    </section>
+
+    <!-- LỊCH HỌC -->
+    <section class="page" id="pageSchedule">
+      <div class="page-header">
+        <h1 class="page-title">📅 Lịch học</h1>
+      </div>
+      <div id="sScheduleGrid" style="display:flex;flex-direction:column;gap:1rem"></div>
+      <div class="empty-state" id="sEmptySchedule">Chưa có lịch học nào.</div>
+    </section>
+
+    <!-- HỒ SƠ -->
+    <section class="page" id="pageProfile">
+
+      <!-- Header banner -->
+      <div class="profile-hero" style="background:radial-gradient(circle at top left,#4f46e5,#0f172a);border-radius:22px;padding:1.7rem 1.7rem 2.1rem;margin-bottom:0;position:relative;overflow:hidden;color:#fff;box-shadow:0 18px 40px rgba(15,23,42,.7)">
+        <div style="position:absolute;top:-60px;right:-40px;width:220px;height:220px;background:rgba(129,140,248,.18);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-40px;left:-40px;width:180px;height:180px;background:rgba(56,189,248,.14);border-radius:50%"></div>
+        <div style="position:absolute;top:18%;left:52%;width:80px;height:80px;background:rgba(248,250,252,.04);border-radius:50%;backdrop-filter:blur(10px)"></div>
+        <div style="position:relative;z-index:1;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+          <div id="profileAvatar" style="width:76px;height:76px;border-radius:24px;background:linear-gradient(135deg,#6366f1,#06b6d4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.9rem;font-weight:800;flex-shrink:0;box-shadow:0 12px 30px rgba(15,23,42,.8);border:3px solid rgba(248,250,252,.4)">HS</div>
+          <div style="min-width:0">
+            <div id="profileName" style="font-size:1.35rem;font-weight:900;letter-spacing:-.35px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+            <div style="display:flex;align-items:center;gap:.45rem;margin-top:.35rem;flex-wrap:wrap">
+              <span style="background:rgba(15,23,42,.65);color:#e5e7eb;font-size:.76rem;font-weight:650;padding:.2rem .65rem;border-radius:999px;border:1px solid rgba(148,163,184,.6);display:inline-flex;align-items:center;gap:.35rem">
+                <span style="width:6px;height:6px;border-radius:999px;background:#22c55e;display:inline-block"></span>
+                Học sinh
+              </span>
+              <span id="profileClass" style="background:rgba(129,140,248,.3);color:#e0e7ff;font-size:.76rem;font-weight:650;padding:.2rem .65rem;border-radius:999px;border:1px solid rgba(129,140,248,.7);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+            </div>
+            <div id="profileCode" style="font-family:monospace;font-size:.78rem;color:rgba(226,232,240,.75);margin-top:.4rem">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-overview" style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid #334155;border-top:none;border-radius:0 0 16px 16px;padding:1rem 1rem .9rem;margin-bottom:1.25rem;box-shadow:0 8px 24px rgba(15,23,42,.35)">
+        <div class="profile-overview-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.55rem">
+          <div class="po-card po-blue" style="background:rgba(99,102,241,.14);border:1px solid rgba(129,140,248,.35);border-radius:12px;padding:.65rem .75rem">
+            <div class="po-label" style="font-size:.68rem;color:rgba(199,210,254,.95);font-weight:700;letter-spacing:.2px">TỔNG ĐIỂM</div>
+            <div id="profileQuickPoints" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0</div>
+          </div>
+          <div class="po-card po-green" style="background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.35);border-radius:12px;padding:.65rem .75rem">
+            <div class="po-label" style="font-size:.68rem;color:#bbf7d0;font-weight:700;letter-spacing:.2px">GIỜ HỌC</div>
+            <div id="profileQuickHours" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0.0h</div>
+          </div>
+          <div class="po-card po-orange" style="background:rgba(249,115,22,.14);border:1px solid rgba(251,146,60,.4);border-radius:12px;padding:.65rem .75rem">
+            <div class="po-label" style="font-size:.68rem;color:#fed7aa;font-weight:700;letter-spacing:.2px">STREAK (THÁNG)</div>
+            <div id="profileQuickStreak" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0 ngày</div>
+          </div>
+          <div class="po-card po-cyan" style="background:rgba(6,182,212,.12);border:1px solid rgba(103,232,249,.35);border-radius:12px;padding:.65rem .75rem">
+            <div class="po-label" style="font-size:.68rem;color:#a5f3fc;font-weight:700;letter-spacing:.2px">HUY CHƯƠNG</div>
+            <div id="profileQuickBadges" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0/0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thông tin khóa học -->
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:1.25rem;box-shadow:var(--shadow);margin-bottom:1.25rem">
+        <div style="font-weight:800;font-size:.88rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.85rem">📋 Thông tin khóa học</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;font-size:.88rem">
+
+          <div style="padding:.75rem 1rem;background:var(--bg);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:.25rem">GMAIL ĐĂNG NHẬP</div>
+            <div id="profileUsername" style="font-weight:700;color:var(--text);word-break:break-all">—</div>
+          </div>
+
+          <div style="padding:.75rem 1rem;background:var(--bg);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:.25rem">NGÀY ĐĂNG KÝ</div>
+            <div id="profileCreated" style="font-weight:700;color:var(--text)">—</div>
+          </div>
+
+          <div style="padding:.75rem 1rem;background:var(--bg);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:.25rem">NGÀY KHAI GIẢNG</div>
+            <div id="profileStartDate" style="font-weight:700;color:var(--text)">—</div>
+          </div>
+
+          <div style="padding:.75rem 1rem;background:var(--bg);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:.25rem">NGÀY KẾT THÚC</div>
+            <div id="profileEndDate" style="font-weight:700;color:var(--text)">—</div>
+          </div>
+
+          <div style="padding:.75rem 1rem;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:12px;border:1px solid #c7d2fe;grid-column:1/-1">
+            <div style="font-size:.72rem;color:#6366f1;font-weight:700;margin-bottom:.25rem">TRẠNG THÁI</div>
+            <div id="profileStatus" style="font-weight:800;font-size:.95rem">—</div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:1.15rem;box-shadow:var(--shadow);margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.8rem">
+          <div style="font-weight:800;font-size:.95rem;color:var(--text)">🏆 TẤT CẢ HUY CHƯƠNG</div>
+          <div id="profileAchievementSummary" style="font-size:.8rem;color:var(--muted)">Đang tải...</div>
+        </div>
+        <div id="profilePointRules" style="font-size:.78rem;color:var(--muted);background:linear-gradient(135deg,#f8fafc,#eef2ff);border:1.5px solid #c7d2fe;border-radius:12px;padding:.7rem .8rem;margin-bottom:.75rem;box-shadow:0 6px 16px rgba(99,102,241,.08)">Quy định tính điểm: Đang tải...</div>
+        <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1.5px solid #fdba74;border-radius:12px;padding:.75rem .85rem;margin-bottom:.75rem;box-shadow:0 6px 14px rgba(249,115,22,.12)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem">
+            <div style="font-size:.84rem;font-weight:900;color:#9a3412">🔥 Streak lửa</div>
+            <div id="profileStreakValue" style="font-size:.92rem;font-weight:900;color:#c2410c">0 ngày</div>
+          </div>
+          <div id="profileStreakStatus" style="font-size:.74rem;color:#7c2d12;margin-top:.25rem">Bắt đầu lại chuỗi học hôm nay để lên streak!</div>
+          <div style="height:8px;background:rgba(194,65,12,.14);border-radius:999px;overflow:hidden;margin-top:.5rem">
+            <div id="profileStreakBar" style="height:100%;width:0%;background:linear-gradient(90deg,#fb923c,#f97316,#ea580c);border-radius:999px;transition:width .35s"></div>
+          </div>
+        </div>
+        <div id="profileAchievementsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.65rem"></div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:16px;border:1px solid rgba(99,102,241,.35);padding:1.1rem;box-shadow:0 10px 28px rgba(30,27,75,.35);margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.7rem">
+          <div style="font-weight:900;font-size:.95rem;color:#fff">🥇 BẢNG XẾP HẠNG THI ĐUA</div>
+          <div id="profileLeaderboardSummary" style="font-size:.78rem;color:rgba(255,255,255,.75)">Đang tải...</div>
+        </div>
+        <div style="font-size:.76rem;color:rgba(255,255,255,.65);margin-bottom:.65rem">Xếp hạng theo điểm tổng hợp trong lớp (Top 10)</div>
+        <div id="profileLeaderboardList" style="display:flex;flex-direction:column;gap:.5rem"></div>
+      </div>
+
+    </section>
+
+    <!-- THÔNG BÁO -->
+    <section class="page" id="pageNotifications">
+      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h1 style="font-size:1.3rem;font-weight:800;margin:0">🔔 Thông báo</h1>
+          <p style="font-size:.8rem;opacity:.8;margin-top:.2rem">Thông báo từ giáo viên</p>
+        </div>
+      </div>
+      <div id="notiPageList" style="display:flex;flex-direction:column;gap:.75rem"></div>
+      <div id="notiPageEmpty" class="empty-state" style="display:none">Chưa có thông báo nào.</div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer style="text-align:center;padding:1.5rem 1rem;font-size:.76rem;color:#888;background:#0f172a;border-top:1px solid #1e293b;margin-top:auto;line-height:1.9">
+      <p>© Bản quyền thuộc về <b>DHDTCT LMS Education System</b>. Toàn bộ nội dung trên website bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và hệ thống quản lý đều thuộc quyền sở hữu của chúng tôi và được pháp luật bảo hộ.</p>
+      <p>Nghiêm cấm mọi hành vi sao chép, chỉnh sửa, phát tán, chia sẻ hoặc sử dụng dưới bất kỳ hình thức nào khi chưa có sự cho phép bằng văn bản từ chủ sở hữu.</p>
+      <p>Mọi hành vi vi phạm bản quyền sẽ bị xử lý theo quy định của pháp luật hiện hành.</p>
+      <p style="margin-top:.5rem;color:#555;font-size:.72rem">Phiên bản <b style="color:#6366f1">v1.3.0</b></p>
+    </footer>
+  </div>
+
+  <!-- MODAL: Xem video / tài liệu -->
+  <div class="modal-overlay" id="viewerModal">
+    <div class="modal viewer-modal">
+      <button class="modal-close" id="closeViewer">✕</button>
+      <h2 id="viewerTitle"></h2>
+      <div id="viewerBody"></div>
+      <div class="modal-actions" style="margin-top:.3rem;padding:0">
+        <a id="viewerDownload" class="btn-outline" download style="display:none;padding:.3rem .85rem;font-size:.82rem">⬇ Tải xuống</a>
+        <button id="viewerRotateBtn" style="display:none;background:none;border:1.5px solid var(--border);color:var(--text);padding:.3rem .85rem;border-radius:8px;cursor:pointer;font-size:.82rem">🔄 Xoay ngang</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURITY OVERLAY -->
+  <div id="securityOverlay">
+    <div class="sec-box">
+      <div class="sec-icon">🚨</div>
+      <h2>Cảnh báo bảo mật</h2>
+      <p id="secOverlayMsg">Hành vi vi phạm đã bị ghi nhận và báo cáo đến giáo viên.<br/>Nội dung bị ẩn để bảo vệ tài liệu.</p>
+      <p style="font-size:.82rem;color:#ef4444;font-weight:700;margin-top:.5rem">⚠️ Hệ thống phát hiện bạn sử dụng DevTools.<br/>Hệ thống sẽ tự động xóa tài khoản nếu tiếp tục vi phạm.</p>
+      <button id="secDismiss">Tôi hiểu, quay lại học</button>
+    </div>
+  </div>
+
+  <script src="student.js?v=1.3.5"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'SW_UPDATED') window.location.reload();
+      });
+    }
+  </script>
+  <script>
+    const _db = supabase.createClient(
+      'https://gojpmogjretoxplydjvg.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
+    );
+    const overlay = document.getElementById('securityOverlay');
+    let lastLogTime = 0;
+
+    // logAlert và showOverlay được định nghĩa bên dưới
+
+    // showOverlay được định nghĩa bên dưới sau khi có đủ context
+
+    document.getElementById('secDismiss').addEventListener('click', () => {
+      overlay.classList.remove('active');
+      document.body.style.filter = '';
+    });
+
+    // ── Chặn chuột phải ──
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+    // ── Chặn chuột phải ──
+    document.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
+
+    // ── Chặn copy / cut / drag ──
+    document.addEventListener('copy',      e => { e.preventDefault(); e.stopPropagation(); e.clipboardData?.setData('text/plain',''); }, true);
+    document.addEventListener('cut',       e => { e.preventDefault(); e.stopPropagation(); }, true);
+    document.addEventListener('dragstart', e => { e.preventDefault(); e.stopPropagation(); }, true);
+    document.addEventListener('drag',      e => { e.preventDefault(); e.stopPropagation(); }, true);
+    document.addEventListener('paste',     e => { e.preventDefault(); e.stopPropagation(); }, true);
+
+    // ── Chặn TẤT CẢ phím tắt — 1 handler duy nhất ──
+    document.addEventListener('keydown', e => {
+      const k = e.key;
+      const ctrl = e.ctrlKey || e.metaKey;
+      const alt = e.altKey;
+      const inInput = ['INPUT','TEXTAREA'].includes(e.target.tagName);
+
+      // Cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X trong input/textarea
+      if (ctrl && inInput && ['a','A','c','C','v','V','x','X'].includes(k)) return;
+
+      // Chặn tất cả Ctrl+* và Meta+*
+      if (ctrl) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        if (!['Control','Meta','Shift','Alt'].includes(k)) showOverlay('Phím bị chặn: ' + (ctrl?'Ctrl+':'') + k);
+        return;
+      }
+      // Chặn tất cả Alt+* (trừ Alt một mình)
+      if (alt && k !== 'Alt') {
+        e.preventDefault(); e.stopImmediatePropagation();
+        return;
+      }
+      // Chặn tất cả F-keys — ngoại trừ phím F (chữ thường/hoa) khi đang xem video để fullscreen
+      if (/^F\d+$/.test(k)) {
+        // F1–F12 vẫn bị chặn
+        e.preventDefault(); e.stopImmediatePropagation();
+        showOverlay('Phím bị chặn: ' + k);
+        return;
+      }
+      // Phím F (chữ) khi viewer đang mở → cho qua để student.js xử lý fullscreen
+      if ((k === 'f' || k === 'F') && document.getElementById('viewerModal')?.classList.contains('open')) {
+        return; // không chặn — student.js sẽ bắt và fullscreen iframe
+      }
+      // Chặn PrintScreen, Insert, Delete đặc biệt
+      if (['PrintScreen','F13','ScrollLock','Pause'].includes(k)) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        showOverlay('Phím bị chặn: ' + k);
+        return;
+      }
+    }, true);
+
+    document.addEventListener('keyup', e => {
+      if (e.key === 'PrintScreen') {
+        navigator.clipboard?.writeText('').catch(()=>{});
+        showOverlay('PrintScreen — ảnh chụp đã bị xóa');
+      }
+    }, true);
+
+    // ── Ẩn nội dung khi chuyển tab / minimize ──
+    document.addEventListener('visibilitychange', () => {
+      if (_dtPaused) return; // đang xem video/tài liệu — bỏ qua (student.js xử lý riêng)
+      if (document.hidden) {
+        document.body.style.filter = 'brightness(0)';
+      } else {
+        document.body.style.filter = '';
+      }
+    });
+
+    // ── Ẩn khi mất focus (Alt+Tab desktop) — chỉ desktop ──
+    if (!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      window.addEventListener('blur', () => {
+        if (_dtPaused) return;
+        document.body.style.filter = 'brightness(0)';
+      });
+      window.addEventListener('focus', () => {
+        document.body.style.filter = '';
+      });
+    }
+
+    // ── Phát hiện DevTools — window size detection ──
+    let _dtOpen = false;
+    let _dtPaused = false; // tạm tắt khi modal đang mở
+
+    function _onDevToolsOpen() {
+      if (_dtOpen || _dtPaused) return;
+      _dtOpen = true;
+      document.body.style.filter = 'brightness(0)';
+      document.body.style.pointerEvents = 'none';
+      showOverlay('Phát hiện DevTools đang mở');
+    }
+    function _onDevToolsClosed() {
+      _dtOpen = false;
+      if (!_dtPaused) {
+        document.body.style.filter = '';
+        document.body.style.pointerEvents = '';
+      }
+    }
+
+    // Chỉ check trên desktop, bỏ qua mobile
+    if (!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      setInterval(() => {
+        if (_dtPaused) return;
+        const w = window.outerWidth  - window.innerWidth;
+        const h = window.outerHeight - window.innerHeight;
+        if (w > 200 || h > 200) _onDevToolsOpen();
+        else _onDevToolsClosed();
+      }, 1000);
+    }
+
+    // ── Chặn quay màn hình ──
+    if (navigator.mediaDevices?.getDisplayMedia) {
+      const _orig = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getDisplayMedia = async (...args) => {
+        showOverlay('Phát hiện cố gắng quay màn hình');
+        throw new DOMException('Không được phép', 'NotAllowedError');
+      };
+    }
+
+    // ── Chặn in trang ──
+    window.addEventListener('beforeprint', () => {
+      document.body.style.filter = 'brightness(0)';
+      showOverlay('Phát hiện cố gắng in trang');
+    });
+    window.addEventListener('afterprint', () => { document.body.style.filter = ''; });
+
+    // ── Chặn kéo thả nội dung ──
+    document.addEventListener('drop', e => e.preventDefault());
+
+    // ── Chặn iframe embedding (Clickjacking) ──
+    if (window.top !== window.self) {
+      window.top.location = window.self.location;
+    }
+
+    // ── Fingerprint thiết bị khi vi phạm ──
+    function getDeviceFingerprint() {
+      const nav = window.navigator;
+      return [
+        nav.userAgent,
+        nav.language,
+        screen.width + 'x' + screen.height,
+        screen.colorDepth,
+        new Date().getTimezoneOffset(),
+        nav.hardwareConcurrency || '',
+        nav.platform || ''
+      ].join('|');
+    }
+
+    // ── Override logAlert để kèm fingerprint ──
+    async function logAlert(reason) {
+      const now = Date.now();
+      if (now - lastLogTime < 30000) return;
+      lastLogTime = now;
+      const username = sessionStorage.getItem('dh_user') || '—';
+      const studentName = sessionStorage.getItem('dh_name') || '—';
+      const fp = getDeviceFingerprint();
+      try {
+        const { data } = await _db.from('students').select('class_name').eq('username', username).single();
+        await _db.from('alerts').insert({
+          username, student_name: studentName,
+          class_name: data?.class_name || '',
+          reason: reason + ' | FP: ' + fp.slice(0, 200)
+        });
+      } catch(e) {}
+    }
+
+    // ── Auto-lock sau 3 lần vi phạm nghiêm trọng ──
+    let _violationCount = 0;
+    const _SERIOUS = ['watermark', 'DevTools', 'debugger', 'quay màn hình'];
+    function showOverlay(reason) {
+      logAlert(reason);
+      document.body.style.filter = 'brightness(0)';
+      const msgEl = document.getElementById('secOverlayMsg');
+      if (msgEl) {
+        if (reason.includes('DevTools') || reason.includes('debugger')) {
+          msgEl.innerHTML = 'Hệ thống phát hiện bạn đang sử dụng <b>DevTools / Debugger</b>.<br/>Hành vi đã bị ghi nhận và báo cáo đến giáo viên.<br/><span style="color:#ef4444;font-weight:700">Tài khoản sẽ bị xóa nếu tiếp tục vi phạm.</span>';
+        } else {
+          msgEl.innerHTML = 'Hành vi vi phạm đã bị ghi nhận và báo cáo đến giáo viên.<br/>Nội dung bị ẩn để bảo vệ tài liệu.';
+        }
+      }
+      overlay.classList.add('active');
+
+      // Đếm vi phạm nghiêm trọng → auto lock
+      if (_SERIOUS.some(k => reason.includes(k))) {
+        _violationCount++;
+        if (_violationCount >= 3) {
+          _autoLockAccount('Vi phạm bảo mật nhiều lần: ' + reason);
+        }
+      }
+    }
+
+    async function _autoLockAccount(reason) {
+      const username = sessionStorage.getItem('dh_user');
+      if (!username) return;
+      try {
+        await _db.from('students').update({ active: false }).eq('username', username);
+        await _db.from('alerts').insert({
+          username,
+          student_name: sessionStorage.getItem('dh_name') || '—',
+          class_name: '',
+          reason: '[AUTO-LOCK] ' + reason
+        });
+      } catch(e) {}
+      // Xóa session và chuyển về login
+      sessionStorage.clear();
+      setTimeout(() => { location.href = 'index.html'; }, 2000);
+    }
+
+    // ── Chặn console hoàn toàn ──
+    (function() {
+      const noop = () => {};
+      const methods = ['log','warn','error','info','debug','table','dir','dirxml','group','groupEnd','time','timeEnd','assert','profile','profileEnd'];
+      methods.forEach(m => {
+        try { console[m] = noop; } catch(e) {}
+      });
+    })();
+
+    // ── Chặn chọn text toàn trang ──
+    document.addEventListener('selectstart', e => {
+      if (!['INPUT','TEXTAREA'].includes(e.target.tagName)) e.preventDefault();
+    });
+
+    // ── Chặn zoom bằng wheel ──
+    document.addEventListener('wheel', e => {
+      if (e.ctrlKey) e.preventDefault();
+    }, { passive: false });
+
+    // ── Chặn touch zoom (pinch) trên mobile ──
+    document.addEventListener('touchstart', e => {
+      if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    let _lastTouchEnd = 0;
+    document.addEventListener('touchend', e => {
+      const now = Date.now();
+      if (now - _lastTouchEnd < 300) e.preventDefault();
+      _lastTouchEnd = now;
+    }, { passive: false });
+
+    // ── Chặn Save As đã được xử lý trong handler keydown tổng ──
+
+    // ── Phát hiện screen capture API ──
+    if ('onscreenschange' in window) {
+      window.addEventListener('screenschange', () => {
+        showOverlay('Phát hiện thay đổi màn hình — có thể đang quay');
+      });
+    }
+
+    // ── Phát hiện Picture-in-Picture ──
+    document.addEventListener('enterpictureinpicture', () => {
+      showOverlay('Phát hiện Picture-in-Picture');
+    }, true);
+
+    // ── Chặn tất cả link download ──
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[download]');
+      if (a && !a.classList.contains('dl-btn') && !a.id?.includes('Download')) {
+        e.preventDefault();
+      }
+    }, true);
+
+    // ── Bảo vệ Object.defineProperty — chặn override prototype ──
+    (function() {
+      try {
+        const _origDefine = Object.defineProperty;
+        Object.defineProperty = function(obj, prop, desc) {
+          // Chặn override các API bảo mật quan trọng
+          if (obj === HTMLCanvasElement.prototype && prop === 'toDataURL') return obj;
+          if (obj === HTMLCanvasElement.prototype && prop === 'getContext') return obj;
+          return _origDefine.call(this, obj, prop, desc);
+        };
+      } catch(e) {}
+    })();
+
+    // ── Chặn screenshot qua Clipboard API ──
+    if (navigator.clipboard) {
+      try {
+        const _origRead = navigator.clipboard.read?.bind(navigator.clipboard);
+        const _origReadText = navigator.clipboard.readText?.bind(navigator.clipboard);
+        if (_origRead) navigator.clipboard.read = async () => { throw new DOMException('Blocked','NotAllowedError'); };
+        if (_origReadText) navigator.clipboard.readText = async () => '';
+      } catch(e) {}
+    }
+
+    // ── Chặn Web Share API ──
+    if (navigator.share) {
+      navigator.share = async () => { throw new DOMException('Blocked','NotAllowedError'); };
+    }
+
+    // ── Session timeout — tự logout sau 2 giờ không hoạt động ──
+    let _lastActivity = Date.now();
+    const _SESSION_TIMEOUT = 2 * 60 * 60 * 1000; // 2 giờ
+    ['mousemove','keydown','touchstart','click','scroll'].forEach(ev => {
+      document.addEventListener(ev, () => { _lastActivity = Date.now(); }, { passive: true });
+    });
+    setInterval(() => {
+      if (Date.now() - _lastActivity > _SESSION_TIMEOUT) {
+        sessionStorage.clear();
+        location.href = 'index.html';
+      }
+    }, 60000);
+
+    // ════════════════════════════════════════
+    // LỚP BẢO MẬT MỚI
+    // ════════════════════════════════════════
+
+    // LỚP 1: Chặn toàn bộ mouse button phụ (middle click, back/forward)
+    document.addEventListener('mousedown', e => {
+      if (e.button !== 0) e.preventDefault();
+    }, true);
+    document.addEventListener('auxclick', e => { e.preventDefault(); e.stopPropagation(); }, true);
+
+    // LỚP 2: Chặn long-press trên mobile (menu ngữ cảnh)
+    let _longPressTimer;
+    document.addEventListener('touchstart', e => {
+      _longPressTimer = setTimeout(() => { /* block */ }, 500);
+    }, { passive: true });
+    document.addEventListener('touchend', () => clearTimeout(_longPressTimer), { passive: true });
+    document.addEventListener('touchmove', () => clearTimeout(_longPressTimer), { passive: true });
+
+    // LỚP 3: Chặn Pointer Lock (dùng để capture chuột)
+    if (document.documentElement.requestPointerLock) {
+      document.documentElement.requestPointerLock = () => {};
+    }
+
+    // LỚP 4: Chặn Fullscreen API (tránh quay toàn màn hình)
+    const _blockFullscreen = () => false;
+    try {
+      document.documentElement.requestFullscreen = _blockFullscreen;
+      document.documentElement.webkitRequestFullscreen = _blockFullscreen;
+      document.documentElement.mozRequestFullScreen = _blockFullscreen;
+    } catch(e) {}
+
+    // LỚP 6: Chặn Service Worker bên ngoài inject script
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => {
+          // Chỉ giữ SW của chính app (sw.js)
+          if (!r.active?.scriptURL?.includes('sw.js')) r.unregister();
+        });
+      });
+    }
+
+    // LỚP 7: Obfuscate — đổi tên id watermark ngẫu nhiên mỗi lần load
+    // (làm khó tìm element qua console)
+    const _wmRandId = '_s' + Math.random().toString(36).slice(2,10);
+    // id thật vẫn là 'watermark' nhưng thêm data-attr giả
+    // (xử lý sau khi watermark được tạo)
+
+    // LỚP 8: Phát hiện Selenium / WebDriver / Bot
+    (function() {
+      const botSignals = [
+        navigator.webdriver,
+        !!window.callPhantom,
+        !!window._phantom,
+        !!window.__nightmare,
+        !!window.domAutomation,
+        !!window.domAutomationController,
+        document.documentElement.getAttribute('webdriver'),
+      ];
+      if (botSignals.some(Boolean)) {
+        sessionStorage.clear();
+        document.body.innerHTML = '';
+        location.href = 'index.html';
+      }
+    })();
+
+    // ══════════════════════════════════════════════════
+    // WATERMARK BẢO MẬT CẤP CAO NHẤT
+    // ══════════════════════════════════════════════════
+    const wmText = sessionStorage.getItem('dh_user') || '';
+    let _wmEl = null;
+    let _wmDestroyed = false;
+    let _wmTamperCount = 0;
+    let _wmLastAlert = 0;
+
+    // ID ngẫu nhiên mỗi lần load — khó tìm qua console
+    const _WM_ID = '_wm_' + Math.random().toString(36).slice(2, 10);
+    const _WM_ATTR = 'data-' + Math.random().toString(36).slice(2, 8);
+
+    const _WM_STYLE = 'position:fixed!important;top:0!important;left:0!important;' +
+      'width:100vw!important;height:100vh!important;pointer-events:none!important;' +
+      'z-index:2147483647!important;display:block!important;opacity:1!important;' +
+      'visibility:visible!important;transform:none!important;clip:auto!important;' +
+      'clip-path:none!important;filter:none!important;mix-blend-mode:normal!important;';
+
+    function _createWatermark() {
+      const c = document.createElement('canvas');
+      c.id = _WM_ID;
+      c.setAttribute(_WM_ATTR, '1');
+      c.setAttribute('aria-hidden', 'true');
+      c.style.cssText = _WM_STYLE;
+      // Khóa style không cho thay đổi
+      try {
+        Object.defineProperty(c, 'style', { get() { return c._style || (c._style = c.style); }, configurable: false });
+      } catch(e) {}
+      return c;
+    }
+
+    function drawWatermark() {
+      if (!_wmEl) return;
+      _wmEl.width  = window.innerWidth  || screen.width;
+      _wmEl.height = window.innerHeight || screen.height;
+      const ctx = _wmEl.getContext('2d');
+      ctx.clearRect(0, 0, _wmEl.width, _wmEl.height);
+      ctx.save();
+      ctx.translate(_wmEl.width / 2, _wmEl.height / 2);
+      ctx.rotate(-25 * Math.PI / 180);
+      ctx.font = 'bold 15px Arial';
+      ctx.fillStyle = 'rgba(0,0,0,0.10)';
+      ctx.textAlign = 'center';
+      const gapX = 220, gapY = 70;
+      const cols = Math.ceil(_wmEl.width  * 1.5 / gapX) + 2;
+      const rows = Math.ceil(_wmEl.height * 1.5 / gapY) + 2;
+      for (let r = -rows; r <= rows; r++)
+        for (let c = -cols; c <= cols; c++)
+          ctx.fillText(wmText, c * gapX, r * gapY);
+      ctx.restore();
+    }
+
+    function _mountWatermark() {
+      // Xóa bản cũ nếu còn
+      const old = document.getElementById(_WM_ID) || document.querySelector('[' + _WM_ATTR + ']');
+      if (old) old.remove();
+      _wmEl = _createWatermark();
+      document.body.appendChild(_wmEl);
+      drawWatermark();
+      // Freeze style ngay sau khi mount
+      _lockWmStyle();
+    }
+
+    function _lockWmStyle() {
+      if (!_wmEl) return;
+      // Dùng setAttribute để force style
+      _wmEl.setAttribute('style', _WM_STYLE);
+    }
+
+    function _alertTamper(reason) {
+      _wmTamperCount++;
+      const now = Date.now();
+      if (now - _wmLastAlert > 30000) {
+        _wmLastAlert = now;
+        showOverlay(reason);
+      }
+      // Auto-lock nếu bị can thiệp quá 5 lần
+      if (_wmTamperCount >= 5) {
+        _autoLockAccount('Can thiệp watermark ' + _wmTamperCount + ' lần');
+      }
+    }
+
+    _mountWatermark();
+    window.addEventListener('resize', drawWatermark);
+
+    // LỚP 1: setInterval 2000ms — kiểm tra tồn tại + style
+    setInterval(() => {
+      if (_wmDestroyed) return;
+
+      const el = document.getElementById(_WM_ID) || document.querySelector('[' + _WM_ATTR + ']');
+      if (!el) {
+        _mountWatermark();
+        _alertTamper('Phát hiện can thiệp DOM — watermark bị xóa');
+        return;
+      }
+      _wmEl = el;
+
+      // Kiểm tra style bị ẩn
+      const cs = window.getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) {
+        el.setAttribute('style', _WM_STYLE);
+        drawWatermark();
+        _alertTamper('Phát hiện can thiệp DOM — watermark bị ẩn');
+      }
+
+    }, 2000);
+
+    // LỚP 2: MutationObserver — phản ứng tức thì khi DOM thay đổi
+    const _wmObserver = new MutationObserver(mutations => {
+      if (_wmDestroyed) return;
+      for (const m of mutations) {
+        // Phát hiện xóa node
+        for (const node of m.removedNodes) {
+          if (node === _wmEl || node.id === _WM_ID || node.getAttribute?.(_WM_ATTR)) {
+            _mountWatermark();
+            _alertTamper('Phát hiện can thiệp DOM — watermark bị xóa');
+          }
+        }
+        // Phát hiện thay đổi style/attribute của watermark
+        if (m.type === 'attributes' && m.target === _wmEl) {
+          _wmEl.setAttribute('style', _WM_STYLE);
+          drawWatermark();
+        }
+      }
+    });
+    _wmObserver.observe(document.body, { childList: true, subtree: false });
+
+    // ── CSS bảo vệ ──
+    const secStyle = document.createElement('style');
+    secStyle.textContent = `
+      * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+      a, button, input, select, textarea, label,
+      [data-page], [data-goto], .slink, .content-row,
+      .video-card, .stat-card, .clickable,
+      .group-card-header, .group-lesson-item { pointer-events: auto !important; }
+      video { pointer-events: auto !important; }
+      #watermark, [data-wm] { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none !important; z-index:2147483647; }
+      .viewer-modal { max-width:88vw !important; width:88vw !important; height:95vh !important; max-height:95vh !important; position:relative; overflow:hidden; padding:.75rem !important; display:flex !important; flex-direction:column !important; }
+      .viewer-video { width:100%; flex:1; min-height:0; }
+      .viewer-iframe { width:100%; flex:1; min-height:0; height:100% !important; border:none; }
+      video::-webkit-media-controls-overflow-button,
+      video::-webkit-media-controls-download-button { display:none !important; }
+      @media (min-width: 769px) {
+        video::-webkit-media-controls-fullscreen-button { display:none !important; }
+      }
+      @media print { body { display:none !important; } }
+      /* Chặn kéo thả ảnh/video */
+      img, video { -webkit-user-drag: none !important; user-drag: none !important; }
+      /* Overlay chặn chuột phải trên iframe */
+      .iframe-protect { position:absolute; inset:0; z-index:5; pointer-events:none; }
+      /* Tab warning overlay */
+      #_tabWarnOverlay { z-index:2147483646 !important; }
+    `;
+    document.head.appendChild(secStyle);
+  </script>
+
+  <!-- MATH UNIVERSE ANIMATION -->
+  <script>
+    // ── Hàm tạo vũ trụ toán học dùng chung ──
+    function createMathUniverse(bannerId, canvasId, symbolsDivId, starCount) {
+      const banner = document.getElementById(bannerId);
+      const canvas = document.getElementById(canvasId);
+      const symbolsDiv = document.getElementById(symbolsDivId);
+      if (!banner || !canvas || !symbolsDiv) return;
+
+      const ctx = canvas.getContext('2d');
+      let stars = [], W, H, rafId;
+
+      function resizeCanvas() {
+        W = canvas.width  = banner.offsetWidth;
+        H = canvas.height = banner.offsetHeight;
+      }
+      function initStars() {
+        stars = [];
+        for (let i = 0; i < starCount; i++) {
+          stars.push({
+            x: Math.random() * W, y: Math.random() * H,
+            r: Math.random() * 1.4 + 0.3, a: Math.random(),
+            da: (Math.random() * 0.008 + 0.003) * (Math.random() < 0.5 ? 1 : -1),
+            color: ['#a5b4fc','#c4b5fd','#67e8f9','#fff','#fde68a'][Math.floor(Math.random()*5)]
+          });
+        }
+      }
+      function drawStars() {
+        ctx.clearRect(0, 0, W, H);
+        stars.forEach(s => {
+          s.a += s.da;
+          if (s.a > 1) { s.a = 1; s.da *= -1; }
+          if (s.a < 0.1) { s.a = 0.1; s.da *= -1; }
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = s.a;
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+        rafId = requestAnimationFrame(drawStars);
+      }
+      resizeCanvas(); initStars(); drawStars();
+      window.addEventListener('resize', () => { resizeCanvas(); initStars(); });
+
+      const SYMBOLS = ['∑','∫','π','√','∞','∂','Δ','α','β','γ','θ','λ','μ','σ','φ','ω','≈','≠','≤','≥','∈','∉','⊂','∩','∪','∀','∃','⊕','×','÷','²','³','!','%','±','∓','∝','∇','ℝ','ℤ','ℕ','ℚ','log','lim','sin','cos','tan','f(x)','x²','aₙ','Sₙ'];
+      const colors = ['#a5b4fc','#c4b5fd','#67e8f9','#fde68a','#6ee7b7','#f9a8d4'];
+      for (let i = 0; i < 18; i++) {
+        const span = document.createElement('span');
+        const opacity = Math.random() * 0.35 + 0.18;
+        span.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        span.style.cssText = `position:absolute;left:${Math.random()*94}%;bottom:0;font-size:${Math.random()*14+10}px;color:${colors[Math.floor(Math.random()*colors.length)]};opacity:0;font-family:'Inter',monospace;font-weight:700;animation:mathFloat ${Math.random()*8+7}s ${Math.random()*10}s linear infinite;pointer-events:none;user-select:none;--mo:${opacity}`;
+        symbolsDiv.appendChild(span);
+      }
+
+      if (!document.getElementById('mathFloatStyle')) {
+        const st = document.createElement('style');
+        st.id = 'mathFloatStyle';
+        st.textContent = `@keyframes mathFloat{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:0}8%{opacity:var(--mo,.25)}50%{transform:translateY(-120px) rotate(-6deg) scale(1.05);opacity:var(--mo,.25)}90%{opacity:var(--mo,.1)}100%{transform:translateY(-260px) rotate(8deg) scale(0.9);opacity:0}}`;
+        document.head.appendChild(st);
+      }
+    }
+
+    // Hero banner trang chủ
+    createMathUniverse('heroBanner', 'mathUniverseCanvas', 'mathSymbols', 120);
+    // Banner chi tiết bài học — khởi động khi mở
+    createMathUniverse('lessonDetailBanner', 'lessonBannerCanvas', 'lessonBannerSymbols', 60);
+  </script>
+
+  <!-- COPYRIGHT BAR -->
+  <style>
+    .cp-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 99999;
+      background: transparent;
+      border-top: none;
+      padding: .28rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      font-size: .68rem;
+      color: rgba(255,255,255,.45);
+      font-weight: 500;
+      letter-spacing: .2px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .cp-bar b { color: rgba(165,180,252,.75); }
+    .cp-bar .cp-dot { width: 4px; height: 4px; background: rgba(165,180,252,.3); border-radius: 50%; }
+  </style>
+  <div class="cp-bar">
+    <span>© 2026 <b>DHDTCT LMS Education System</b></span>
+    <span class="cp-dot"></span>
+    <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
+    <span class="cp-dot"></span>
+    <span><b>v1.3.0</b></span>
+  </div>
+
+</body>
+
+
+
+
+
+
+
+
+
+
+

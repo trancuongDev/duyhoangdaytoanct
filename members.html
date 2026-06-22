@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quản lý học viên lớp - DHDTCT LMS</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;background:#f1f5f9;font-family:'Segoe UI',sans-serif;color:#1e293b}
+    /* Layout */
+    .app{display:flex;min-height:100vh}
+    /* Sidebar */
+    .sidebar{width:220px;background:linear-gradient(160deg,#1e1b4b,#312e81);color:#fff;display:flex;flex-direction:column;padding:1.25rem .75rem;gap:.35rem;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+    .sidebar-logo{display:flex;align-items:center;gap:.65rem;padding:.5rem .5rem 1rem;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:.5rem}
+    .sidebar-logo img{width:36px;height:36px;border-radius:10px;object-fit:cover}
+    .sidebar-logo span{font-weight:800;font-size:.88rem;line-height:1.3}
+    .slink{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:10px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;font-weight:500;cursor:pointer;transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left}
+    .slink:hover,.slink.active{background:rgba(255,255,255,.12);color:#fff}
+    .slink-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0}
+    .sidebar-section{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.8px;text-transform:uppercase;padding:.5rem .75rem .2rem;margin-top:.4rem}
+    /* Main */
+    .main{flex:1;padding:1.5rem 1.5rem 4rem;min-width:0}
+    .page-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem}
+    .page-title{font-size:1.25rem;font-weight:900;margin:0}
+    /* Toolbar */
+    .toolbar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+    .select-cls{padding:.48rem .85rem;border:1.5px solid #e0e7ff;border-radius:10px;font-size:.85rem;outline:none;background:#fff;cursor:pointer;color:#1e293b}
+    .search-wrap{position:relative}
+    .search-wrap input{padding:.48rem 1rem .48rem 2rem;border:1.5px solid #e0e7ff;border-radius:10px;font-size:.84rem;outline:none;width:200px;background:#fff}
+    .search-wrap::before{content:'🔍';position:absolute;left:.6rem;top:50%;transform:translateY(-50%);font-size:.82rem;pointer-events:none}
+    .btn{padding:.48rem 1rem;border-radius:10px;font-size:.84rem;font-weight:700;cursor:pointer;border:none;transition:opacity .15s}
+    .btn:hover{opacity:.85}
+    .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+    .btn-outline{background:#fff;color:#6366f1;border:1.5px solid #e0e7ff}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-green{background:#10b981;color:#fff}
+    /* Stats */
+    .stats-row{display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1rem}
+    .stat-card{background:#fff;border-radius:12px;padding:.55rem 1rem;box-shadow:0 1px 6px rgba(0,0,0,.07);font-size:.8rem;color:#64748b;display:flex;align-items:center;gap:.5rem}
+    .stat-card b{font-size:1.05rem;color:#1e293b}
+    /* Table */
+    .tbl-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+    table{width:100%;border-collapse:collapse}
+    th{background:#f8faff;font-size:.72rem;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.5px;padding:.6rem .85rem;text-align:left;border-bottom:1.5px solid #e0e7ff;white-space:nowrap}
+    td{padding:.55rem .85rem;font-size:.84rem;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:#f8faff}
+    .code-badge{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:.73rem;padding:.15rem .5rem;border-radius:6px;font-family:monospace;letter-spacing:.5px;white-space:nowrap}
+    .cls-badge{background:#e0e7ff;color:#4338ca;font-size:.73rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;white-space:nowrap}
+    .act-btn{background:none;border:none;cursor:pointer;font-size:.95rem;padding:.2rem .3rem;border-radius:6px;transition:background .15s}
+    .act-btn:hover{background:#f1f5f9}
+    .empty{text-align:center;padding:3rem;color:#94a3b8;font-size:.9rem}
+    /* Modal */
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:1rem}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:20px;padding:1.75rem 1.5rem;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto}
+    .modal h2{margin:0 0 1rem;font-size:1.05rem}
+    .fg{display:flex;flex-direction:column;gap:.28rem;margin-bottom:.65rem}
+    .fg label{font-size:.71rem;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.5px}
+    .fg input,.fg select{padding:.52rem .8rem;border:1.5px solid #e0e7ff;border-radius:10px;font-size:.88rem;outline:none;transition:border-color .2s}
+    .fg input:focus,.fg select:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+    .code-box{background:#ede9fe;color:#6d28d9;font-weight:700;font-family:monospace;padding:.52rem .85rem;border-radius:10px;font-size:.9rem;letter-spacing:1px;border:1.5px solid #ddd6fe}
+    .modal-actions{display:flex;gap:.65rem;justify-content:flex-end;margin-top:1rem}
+    .err{color:#ef4444;font-size:.8rem;margin-top:.35rem}
+    @media(max-width:768px){.sidebar{display:none}.form-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="icons/icon-192.png" alt="Logo"/>
+      <span>DHDTCT<br/>Quản lý lớp</span>
+    </div>
+    <div class="sidebar-section">Học viên</div>
+    <button class="slink active" id="tabMembers"><span class="slink-icon">👥</span>Danh sách HV</button>
+    <button class="slink" id="tabAddMember"><span class="slink-icon">➕</span>Thêm học viên</button>
+    <div class="sidebar-section">Lớp học</div>
+    <button class="slink" id="tabClasses"><span class="slink-icon">🏫</span>Quản lý lớp</button>
+    <button class="slink" id="tabAddClass"><span class="slink-icon">➕</span>Tạo lớp mới</button>
+    <div style="margin-top:auto;padding-top:1rem;border-top:1px solid rgba(255,255,255,.1)">
+      <a href="admin.html" class="slink"><span class="slink-icon">←</span>Về trang Admin</a>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ===== TRANG DANH SÁCH HV ===== -->
+    <div id="pageMembers">
+      <div class="page-header">
+        <h1 class="page-title">👥 Danh sách học viên</h1>
+        <div class="toolbar">
+          <select class="select-cls" id="clsFilter"><option value="">Tất cả lớp</option></select>
+          <div class="search-wrap"><input id="searchInput" placeholder="Tìm tên, mã, SĐT..."/></div>
+          <button class="btn btn-primary" id="openAddMemberBtn">➕ Thêm học viên</button>
+          <button class="btn btn-outline" id="exportBtn">📥 Xuất CSV</button>
+        </div>
+      </div>
+      <div class="stats-row" id="statsRow"></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Mã HV</th><th>Họ tên</th>
+            <th>Zalo</th><th>Gmail</th><th>Tên FB</th>
+            <th>Lớp</th><th>Ghi chú</th><th></th>
+          </tr></thead>
+          <tbody id="memberBody"></tbody>
+        </table>
+        <div class="empty" id="emptyMembers" style="display:none">Chưa có học viên nào.</div>
+      </div>
+    </div>
+
+    <!-- ===== TRANG QUẢN LÝ LỚP ===== -->
+    <div id="pageClasses" style="display:none">
+      <div class="page-header">
+        <h1 class="page-title">🏫 Quản lý lớp</h1>
+        <button class="btn btn-primary" id="openAddClassBtn">➕ Tạo lớp mới</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Tên lớp</th><th>Số học viên</th><th>Ngày tạo</th><th></th></tr></thead>
+          <tbody id="classBody"></tbody>
+        </table>
+        <div class="empty" id="emptyClasses" style="display:none">Chưa có lớp nào.</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL: Thêm/sửa học viên -->
+<div class="overlay" id="memberModal">
+  <div class="modal">
+    <h2 id="memberModalTitle">➕ Thêm học viên</h2>
+    <div class="fg">
+      <label>Lớp *</label>
+      <select id="fClass"></select>
+    </div>
+    <div class="fg">
+      <label>Mã học viên (tự động)</label>
+      <div class="code-box" id="codePreview">—</div>
+    </div>
+    <div class="fg">
+      <label>Họ và tên *</label>
+      <input id="fName" placeholder="Nguyễn Văn A"/>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Zalo</label><input id="fZalo" placeholder="SĐT Zalo"/></div>
+      <div class="fg"><label>Gmail</label><input id="fGmail" placeholder="abc@gmail.com"/></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Tên Facebook</label><input id="fFb" placeholder="Nguyễn Văn A"/></div>
+    </div>
+    <div class="fg"><label>Ghi chú</label><input id="fNotes" placeholder="Ghi chú..."/></div>
+    <div class="err" id="memberErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="memberCancelBtn">Hủy</button>
+      <button class="btn btn-primary" id="memberSaveBtn">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Tạo lớp -->
+<div class="overlay" id="classModal">
+  <div class="modal" style="max-width:360px">
+    <h2 id="classModalTitle">➕ Tạo lớp mới</h2>
+    <div class="fg"><label>Tên lớp *</label><input id="fClassName" placeholder="VD: Vsat 7, Lớp 10A..."/></div>
+    <div class="err" id="classErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="classCancelBtn">Hủy</button>
+      <button class="btn btn-primary" id="classSaveBtn">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Xác nhận xóa -->
+<div class="overlay" id="confirmModal">
+  <div class="modal" style="max-width:340px;text-align:center">
+    <div style="font-size:2rem;margin-bottom:.4rem">🗑</div>
+    <h2 id="confirmTitle" style="margin:0 0 .5rem;font-size:1rem">Xác nhận xóa</h2>
+    <p id="confirmDesc" style="color:#666;font-size:.86rem;margin:0 0 1.25rem"></p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-outline" id="confirmCancelBtn">Hủy</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Xóa</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const db = supabase.createClient(
+  'https://gojpmogjretoxplydjvg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
+);
+
+const _role = sessionStorage.getItem('dh_role');
+if (_role !== 'teacher' && _role !== 'assistant') location.href = 'index.html';
+
+let allMembers=[], allClasses=[], memberCounts={}, editingMemberId=null, editingClassId=null;
+
+// ── Tạo mã ──
+function genCode(cls){
+  const upper='ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower='abcdefghjkmnpqrstuvwxyz';
+  const nums='23456789';
+  const all=upper+lower+nums;
+  // Đảm bảo có ít nhất 1 hoa, 1 thường, 1 số
+  let s=upper[Math.floor(Math.random()*upper.length)]
+       +lower[Math.floor(Math.random()*lower.length)]
+       +nums[Math.floor(Math.random()*nums.length)];
+  for(let i=0;i<2;i++) s+=all[Math.floor(Math.random()*all.length)];
+  // Xáo trộn 5 ký tự
+  s=s.split('').sort(()=>Math.random()-.5).join('');
+  return (cls||'').toUpperCase().replace(/\s+/g,'-').slice(0,8)+'-'+s;
+}
+async function genUniqueCode(cls){
+  let code,ex=true;
+  while(ex){code=genCode(cls);const{data}=await db.from('class_members').select('id').eq('member_code',code).maybeSingle();ex=!!data;}
+  return code;
+}
+
+// ── Navigation ──
+function showPage(p){
+  document.getElementById('pageMembers').style.display = p==='members'?'':'none';
+  document.getElementById('pageClasses').style.display = p==='classes'?'':'none';
+  document.querySelectorAll('.sidebar .slink').forEach(s=>s.classList.remove('active'));
+}
+document.getElementById('tabMembers').addEventListener('click',()=>{showPage('members');document.getElementById('tabMembers').classList.add('active');loadMembers();});
+document.getElementById('tabAddMember').addEventListener('click',()=>{showPage('members');document.getElementById('tabMembers').classList.add('active');openAddMember();});
+document.getElementById('tabClasses').addEventListener('click',()=>{showPage('classes');document.getElementById('tabClasses').classList.add('active');loadClasses();});
+document.getElementById('tabAddClass').addEventListener('click',()=>{showPage('classes');document.getElementById('tabClasses').classList.add('active');openAddClass();});
+
+// ── Load lớp ──
+async function loadClasses(){
+  const{data}=await db.from('fb_classes').select('*').order('name');
+  allClasses=data||[];
+  // Đếm HV mỗi lớp
+  const{data:cnt}=await db.from('class_members').select('class_name');
+  memberCounts={};
+  (cnt||[]).forEach(r=>{memberCounts[r.class_name]=(memberCounts[r.class_name]||0)+1;});
+  // Render bảng lớp
+  const tbody=document.getElementById('classBody');
+  tbody.innerHTML='';
+  document.getElementById('emptyClasses').style.display=allClasses.length?'none':'block';
+  allClasses.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:#94a3b8;font-size:.75rem">${i+1}</td>
+      <td><b>${c.name}</b></td>
+      <td><span class="cls-badge">${memberCounts[c.name]||0} HV</span></td>
+      <td style="font-size:.78rem;color:#94a3b8">${new Date(c.created_at).toLocaleDateString('vi-VN')}</td>
+      <td style="white-space:nowrap">
+        <button class="act-btn" data-edit="${c.id}" title="Đổi tên">✏️</button>
+        <button class="act-btn" data-del="${c.id}" title="Xóa lớp">🗑</button>
+      </td>`;
+    tr.querySelector('[data-edit]').addEventListener('click',()=>openEditClass(c));
+    tr.querySelector('[data-del]').addEventListener('click',()=>confirmDel(`Xóa lớp "${c.name}"? Học viên trong lớp sẽ không bị xóa.`,async()=>{
+      await db.from('fb_classes').delete().eq('id',c.id); loadClasses();
+    }));
+    tbody.appendChild(tr);
+  });
+  // Cập nhật select lớp
+  const opts='<option value="">-- Chọn lớp --</option>'+allClasses.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  document.getElementById('fClass').innerHTML=opts;
+  const f=document.getElementById('clsFilter');
+  const cur=f.value;
+  f.innerHTML='<option value="">Tất cả lớp</option>'+allClasses.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  if(cur) f.value=cur;
+}
+
+// ── Load học viên ──
+async function loadMembers(){
+  const cls=document.getElementById('clsFilter').value;
+  let q=db.from('class_members').select('*').order('created_at',{ascending:false});
+  if(cls) q=q.eq('class_name',cls);
+  const{data}=await q; allMembers=data||[];
+  renderMembers();
+  // Stats
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-card"><span>👥</span><b>${allMembers.length}</b> học viên${cls?` lớp ${cls}`:''}</div>
+    ${!cls?`<div class="stat-card"><span>🏫</span><b>${allClasses.length}</b> lớp</div>`:''}`;
+}
+
+function renderMembers(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  const list=q?allMembers.filter(m=>(m.full_name||'').toLowerCase().includes(q)||(m.member_code||'').toLowerCase().includes(q)||(m.phone||'').includes(q)||(m.gmail||'').toLowerCase().includes(q)||(m.fb_name||'').toLowerCase().includes(q)):allMembers;
+  const tbody=document.getElementById('memberBody');
+  tbody.innerHTML='';
+  document.getElementById('emptyMembers').style.display=list.length?'none':'block';
+  list.forEach((m,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:#94a3b8;font-size:.75rem">${i+1}</td>
+      <td><span class="code-badge">${m.member_code||'—'}</span></td>
+      <td><b>${m.full_name||'—'}</b></td>
+      <td style="font-size:.8rem">${m.zalo||'—'}</td>
+      <td style="font-size:.78rem">${m.gmail||'—'}</td>
+      <td style="font-size:.78rem">${m.fb_name||'—'}</td>
+      <td><span class="cls-badge">${m.class_name}</span></td>
+      <td style="font-size:.76rem;color:#94a3b8;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.notes||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="act-btn" data-edit="${m.id}" title="Sửa">✏️</button>
+        <button class="act-btn" data-del="${m.id}" title="Xóa">🗑</button>
+      </td>`;
+    tr.querySelector('[data-edit]').addEventListener('click',()=>openEditMember(m));
+    tr.querySelector('[data-del]').addEventListener('click',()=>confirmDel(`Xóa học viên "${m.full_name}" (${m.member_code})?`,async()=>{
+      await db.from('class_members').delete().eq('id',m.id); loadMembers();
+    }));
+    tbody.appendChild(tr);
+  });
+}
+</script>
+
+<script>
+// ── Modal học viên ──
+async function openAddMember(){
+  editingMemberId=null;
+  document.getElementById('memberModalTitle').textContent='➕ Thêm học viên';
+  ['fName','fZalo','fGmail','fFb','fNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('memberErr').textContent='';
+  document.getElementById('codePreview').textContent='—';
+  document.getElementById('codePreview').dataset.code='';
+  // Ưu tiên lớp đang filter, fallback lớp đầu tiên
+  const cls=document.getElementById('clsFilter').value||allClasses[0]?.name||'';
+  if(cls) document.getElementById('fClass').value=cls;
+  if(cls) await refreshCode();
+  document.getElementById('memberModal').classList.add('open');
+}
+function openEditMember(m){
+  editingMemberId=m.id;
+  document.getElementById('memberModalTitle').textContent='✏️ Sửa học viên';
+  document.getElementById('fClass').value=m.class_name;
+  document.getElementById('fName').value=m.full_name||'';
+  document.getElementById('fZalo').value=m.zalo||'';
+  document.getElementById('fGmail').value=m.gmail||'';
+  document.getElementById('fFb').value=m.fb_name||'';
+  document.getElementById('fNotes').value=m.notes||'';
+  document.getElementById('codePreview').textContent=m.member_code||'—';
+  document.getElementById('codePreview').dataset.code=m.member_code||'';
+  document.getElementById('memberErr').textContent='';
+  document.getElementById('memberModal').classList.add('open');
+}
+async function refreshCode(){
+  const cls=document.getElementById('fClass').value;
+  if(!editingMemberId&&cls){
+    document.getElementById('codePreview').textContent='⏳...';
+    const c=await genUniqueCode(cls);
+    document.getElementById('codePreview').textContent=c;
+    document.getElementById('codePreview').dataset.code=c;
+  }
+}
+document.getElementById('fClass').addEventListener('change',refreshCode);
+document.getElementById('openAddMemberBtn').addEventListener('click',openAddMember);
+document.getElementById('memberCancelBtn').addEventListener('click',()=>document.getElementById('memberModal').classList.remove('open'));
+document.getElementById('memberSaveBtn').addEventListener('click',async()=>{
+  const name=document.getElementById('fName').value.trim();
+  const cls=document.getElementById('fClass').value;
+  const err=document.getElementById('memberErr');
+  if(!name){err.textContent='Vui lòng nhập họ tên.';return;}
+  if(!cls){err.textContent='Vui lòng chọn lớp.';return;}
+  const payload={full_name:name,class_name:cls,
+    zalo:document.getElementById('fZalo').value.trim()||null,
+    gmail:document.getElementById('fGmail').value.trim()||null,
+    fb_name:document.getElementById('fFb').value.trim()||null,
+    notes:document.getElementById('fNotes').value.trim()||null};
+  if(editingMemberId){
+    const{error}=await db.from('class_members').update(payload).eq('id',editingMemberId);
+    if(error){err.textContent='Lỗi: '+error.message;return;}
+  } else {
+    payload.member_code=document.getElementById('codePreview').dataset.code;
+    const{error}=await db.from('class_members').insert(payload);
+    if(error){err.textContent='Lỗi: '+error.message;return;}
+  }
+  document.getElementById('memberModal').classList.remove('open');
+  loadMembers();
+});
+
+// ── Modal lớp ──
+function openAddClass(){
+  editingClassId=null;
+  document.getElementById('classModalTitle').textContent='➕ Tạo lớp mới';
+  document.getElementById('fClassName').value='';
+  document.getElementById('classErr').textContent='';
+  document.getElementById('classModal').classList.add('open');
+}
+function openEditClass(c){
+  editingClassId=c.id;
+  document.getElementById('classModalTitle').textContent='✏️ Đổi tên lớp';
+  document.getElementById('fClassName').value=c.name;
+  document.getElementById('classErr').textContent='';
+  document.getElementById('classModal').classList.add('open');
+}
+document.getElementById('openAddClassBtn').addEventListener('click',openAddClass);
+document.getElementById('classCancelBtn').addEventListener('click',()=>document.getElementById('classModal').classList.remove('open'));
+document.getElementById('classSaveBtn').addEventListener('click',async()=>{
+  const name=document.getElementById('fClassName').value.trim();
+  const err=document.getElementById('classErr');
+  if(!name){err.textContent='Vui lòng nhập tên lớp.';return;}
+  if(editingClassId){
+    const{error}=await db.from('fb_classes').update({name}).eq('id',editingClassId);
+    if(error){err.textContent='Lỗi: '+error.message;return;}
+  } else {
+    const{error}=await db.from('fb_classes').insert({name});
+    if(error){err.textContent='Lỗi: '+error.message;return;}
+  }
+  document.getElementById('classModal').classList.remove('open');
+  loadClasses();
+});
+
+// ── Confirm xóa ──
+function confirmDel(desc,onOk){
+  document.getElementById('confirmDesc').textContent=desc;
+  document.getElementById('confirmModal').classList.add('open');
+  const okBtn=document.getElementById('confirmOkBtn');
+  const newOk=okBtn.cloneNode(true); okBtn.replaceWith(newOk);
+  newOk.addEventListener('click',()=>{document.getElementById('confirmModal').classList.remove('open');onOk();},{once:true});
+}
+document.getElementById('confirmCancelBtn').addEventListener('click',()=>document.getElementById('confirmModal').classList.remove('open'));
+
+// ── Tìm kiếm & filter ──
+document.getElementById('searchInput').addEventListener('input',renderMembers);
+document.getElementById('clsFilter').addEventListener('change',loadMembers);
+
+// ── Export CSV ──
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  const rows=[['Mã HV','Họ tên','Zalo','Gmail','Tên FB','Lớp','Ghi chú']];
+  allMembers.forEach(m=>rows.push([m.member_code,m.full_name,m.zalo,m.gmail,m.fb_name,m.class_name,m.notes].map(v=>v||'')));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'}));
+  a.download=`hocvien_${document.getElementById('clsFilter').value||'tatca'}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
+// ── Init ──
+loadClasses().then(()=>loadMembers());
+</script>
+
+<!-- COPYRIGHT BAR -->
+<style>
+  .cp-bar{position:fixed;bottom:0;left:0;right:0;z-index:99999;background:transparent;border-top:none;padding:.28rem 1rem;display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.68rem;color:rgba(100,116,139,.5);font-weight:500;letter-spacing:.2px;pointer-events:none;user-select:none}
+  .cp-bar b{color:rgba(99,102,241,.6)}
+  .cp-bar .cp-dot{width:4px;height:4px;background:rgba(99,102,241,.25);border-radius:50%}
+</style>
+<div class="cp-bar">
+  <span>© 2026 <b>DHDTCT LMS Education System</b></span>
+  <span class="cp-dot"></span>
+  <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
+  <span class="cp-dot"></span>
+  <span><b>v1.3.0</b></span>
+</div>
+</body>
+</html>

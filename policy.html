@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chính sách bảo mật & Điều khoản sử dụng - DHDTCT LMS</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="style.css"/>
+  <meta name="theme-color" content="#4f46e5"/>
+  <style>
+    body { background: var(--bg, #f8fafc); color: var(--text, #1e293b); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+    .policy-wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    .policy-header { background: linear-gradient(135deg, #0a0820 0%, #1e1b4b 45%, #312e81 80%, #1e3a5f 100%); border-radius: 20px; padding: 2.25rem 1.75rem; color: #fff; margin-bottom: 2rem; position: relative; overflow: hidden; }
+    .policy-header::before { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; background: rgba(255,255,255,.05); border-radius: 50%; }
+    .policy-header::after  { content: ''; position: absolute; bottom: -60px; left: -20px; width: 220px; height: 220px; background: rgba(255,255,255,.03); border-radius: 50%; }
+    .policy-header h1 { font-size: 1.45rem; font-weight: 900; margin: 0 0 .3rem; letter-spacing: -.3px; position: relative; z-index: 1; }
+    .policy-header p  { font-size: .82rem; opacity: .65; margin: 0; position: relative; z-index: 1; }
+    .toc { background: #fff; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border: 1.5px solid #e2e8f0; }
+    .toc h3 { font-size: .88rem; font-weight: 800; color: #3730a3; margin: 0 0 .75rem; }
+    .toc ol { padding-left: 1.35rem; margin: 0; }
+    .toc li { font-size: .83rem; line-height: 2; color: #4f46e5; }
+    .toc a { color: #4f46e5; text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+    .policy-section { background: #fff; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; border: 1.5px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.04); scroll-margin-top: 1rem; }
+    .policy-section h2 { font-size: 1rem; font-weight: 800; color: #3730a3; margin: 0 0 .85rem; display: flex; align-items: center; gap: .5rem; }
+    .policy-section p, .policy-section li { font-size: .88rem; line-height: 1.9; color: #374151; margin: 0 0 .5rem; }
+    .policy-section ul, .policy-section ol { padding-left: 1.35rem; margin: .35rem 0; }
+    .policy-section li { margin-bottom: .35rem; }
+    .highlight { background: #eef2ff; border-left: 4px solid #6366f1; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #3730a3; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
+    .success  { background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #065f46; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
+    .warn     { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #991b1b; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
+    .info     { background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #0369a1; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
+    .back-btn { display: inline-flex; align-items: center; gap: .5rem; text-decoration: none; color: #6366f1; font-weight: 700; font-size: .88rem; margin-bottom: 1.25rem; padding: .5rem .9rem; border: 1.5px solid #c7d2fe; border-radius: 10px; transition: all .2s; background: #fff; }
+    .back-btn:hover { background: #eef2ff; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .75rem; margin-top: .85rem; }
+    .feature-card { background: var(--bg, #f8fafc); border: 1.5px solid #e2e8f0; border-radius: 12px; padding: .85rem 1rem; }
+    .feature-card .fc-icon { font-size: 1.4rem; margin-bottom: .4rem; }
+    .feature-card .fc-title { font-size: .85rem; font-weight: 800; color: #1e293b; margin-bottom: .25rem; }
+    .feature-card .fc-desc  { font-size: .78rem; color: #64748b; line-height: 1.6; }
+    .stat-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .85rem; }
+    .stat-box { flex: 1; min-width: 120px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 12px; padding: .85rem 1rem; color: #fff; text-align: center; }
+    .stat-box .sb-num  { font-size: 1.5rem; font-weight: 900; }
+    .stat-box .sb-label{ font-size: .72rem; opacity: .8; margin-top: .2rem; }
+    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr 1fr; } .stat-row { gap: .6rem; } }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f172a; color: #e2e8f0; }
+      .toc, .policy-section { background: #1e293b; border-color: #334155; }
+      .toc li, .toc a { color: #a5b4fc; }
+      .policy-section p, .policy-section li { color: #cbd5e1; }
+      .feature-card { background: #0f172a; border-color: #334155; }
+      .feature-card .fc-title { color: #e2e8f0; }
+      .back-btn { background: #1e293b; border-color: #334155; color: #a5b4fc; }
+    }
+  </style>
+</head>
+<body>
+  <div class="policy-wrap">
+
+    <a href="index.html" class="back-btn">← Quay lại trang đăng nhập</a>
+
+    <!-- ===== HEADER ===== -->
+    <div class="policy-header">
+      <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:1rem;position:relative;z-index:1">
+        <div style="width:56px;height:56px;background:rgba(255,255,255,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0;border:1.5px solid rgba(255,255,255,.2)">🔒</div>
+        <div>
+          <h1>Chính sách bảo mật & Điều khoản sử dụng</h1>
+          <p>DHDTCT LMS Education System — dành cho học viên đã đăng ký</p>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:.7rem 1.1rem;font-size:.82rem;color:rgba(255,255,255,.85);line-height:1.7;position:relative;z-index:1">
+        ⚠️ Vui lòng đọc kỹ trước khi sử dụng hệ thống. Việc đăng nhập đồng nghĩa bạn đã đọc, hiểu và <b>đồng ý toàn bộ</b> nội dung dưới đây.
+      </div>
+      <div style="font-size:.73rem;color:rgba(255,255,255,.4);margin-top:.65rem;position:relative;z-index:1">Cập nhật lần cuối: Tháng 6 năm 2026 &nbsp;•&nbsp; Phiên bản v1.3.0</div>
+    </div>
+
+    <!-- ===== MỤC LỤC ===== -->
+    <div class="toc">
+      <h3>📋 Mục lục</h3>
+      <ol>
+        <li><a href="#intro">Giới thiệu về DHDTCT LMS</a></li>
+        <li><a href="#collect">Thông tin thu thập</a></li>
+        <li><a href="#purpose">Mục đích sử dụng thông tin</a></li>
+        <li><a href="#terms">Điều khoản sử dụng</a></li>
+        <li><a href="#security">Bảo mật tài khoản</a></li>
+        <li><a href="#copyright">Nội dung & Bản quyền</a></li>
+        <li><a href="#monitor">Giám sát & Ghi nhận hoạt động</a></li>
+        <li><a href="#device">Chính sách thiết bị</a></li>
+        <li><a href="#expiry">Chính sách hết hạn tài khoản</a></li>
+        <li><a href="#conduct">Quy tắc ứng xử</a></li>
+        <li><a href="#data">Lưu trữ & Xóa dữ liệu</a></li>
+        <li><a href="#update">Thay đổi chính sách</a></li>
+        <li><a href="#contact">Liên hệ hỗ trợ</a></li>
+      </ol>
+    </div>
+
+    <!-- ===== 1. GIỚI THIỆU ===== -->
+    <div class="policy-section" id="intro">
+      <h2>🏫 1. Giới thiệu về DHDTCT LMS</h2>
+      <p><b>DHDTCT LMS (Learning Management System)</b> là hệ thống quản lý học tập trực tuyến được xây dựng riêng cho lớp học của <b>Duy Hoàng</b> — giáo viên dạy Toán luyện thi đại học và VSAT.</p>
+      <p>Hệ thống cung cấp môi trường học tập số an toàn, hiệu quả và được bảo mật chặt chẽ, bao gồm:</p>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-icon">🎬</div>
+          <div class="fc-title">Video bài giảng HD</div>
+          <div class="fc-desc">Kho video chất lượng cao, được phân loại theo từng chuyên đề và lớp học.</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">📄</div>
+          <div class="fc-title">Tài liệu chọn lọc</div>
+          <div class="fc-desc">Đề thi, bài tập, tóm tắt lý thuyết được biên soạn kỹ lưỡng bởi giáo viên.</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">📅</div>
+          <div class="fc-title">Lịch học trực tuyến</div>
+          <div class="fc-desc">Cập nhật lịch học, buổi học live và các sự kiện học tập theo thời gian thực.</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">📢</div>
+          <div class="fc-title">Thông báo từ giáo viên</div>
+          <div class="fc-desc">Nhận thông báo, nhắc nhở và hướng dẫn trực tiếp từ Duy Hoàng.</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🏆</div>
+          <div class="fc-title">Thi đua học tập</div>
+          <div class="fc-desc">Hệ thống điểm, streak, huy chương khuyến khích học viên học đều và chăm chỉ.</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🔒</div>
+          <div class="fc-title">Bảo mật cao</div>
+          <div class="fc-desc">Mã hóa nội dung, giám sát 24/7, chống sao chép và bảo vệ bản quyền tuyệt đối.</div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
+          <div class="sb-num">100%</div>
+          <div class="sb-label">Nội dung độc quyền</div>
+        </div>
+        <div class="stat-box" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">
+          <div class="sb-num">24/7</div>
+          <div class="sb-label">Giám sát bảo mật</div>
+        </div>
+        <div class="stat-box" style="background:linear-gradient(135deg,#10b981,#059669)">
+          <div class="sb-num">AES-256</div>
+          <div class="sb-label">Mã hóa nội dung</div>
+        </div>
+        <div class="stat-box" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+          <div class="sb-num">SHA-256</div>
+          <div class="sb-label">Mã hóa mật khẩu</div>
+        </div>
+      </div>
+      <div class="success" style="margin-top:1rem">✅ Hệ thống chỉ dành cho học viên đã đăng ký chính thức. Mọi truy cập trái phép đều bị ghi nhận và xử lý.</div>
+    </div>
+
+    <!-- ===== 2. THU THẬP THÔNG TIN ===== -->
+    <div class="policy-section" id="collect">
+      <h2>📋 2. Thông tin thu thập</h2>
+      <p>Hệ thống thu thập các thông tin sau khi học viên đăng ký tài khoản:</p>
+      <ul>
+        <li>Họ và tên đầy đủ</li>
+        <li>Địa chỉ Gmail (dùng làm tên đăng nhập)</li>
+        <li>Số điện thoại liên hệ</li>
+        <li>Tên lớp học đã đăng ký (VD: vsat 6)</li>
+        <li>Mã học viên (do hệ thống tự tạo)</li>
+        <li>Ngày hết hạn tài khoản (nếu có)</li>
+        <li>Ghi chú riêng từ giáo viên/trợ lý</li>
+      </ul>
+      <p>Hệ thống tự động ghi nhận thêm:</p>
+      <ul>
+        <li>Lịch sử đăng nhập — thời gian, địa điểm, thiết bị</li>
+        <li>Hoạt động xem bài học, video, tài liệu (thời điểm, tần suất)</li>
+        <li>Số lần nhập sai mật khẩu</li>
+        <li>Thông tin thiết bị truy cập (fingerprint thiết bị)</li>
+        <li>Các hành vi bất thường bị cảnh báo</li>
+        <li>Điểm thi đua và chuỗi ngày học liên tiếp (streak)</li>
+      </ul>
+      <div class="highlight">Tất cả dữ liệu được lưu trữ an toàn trên nền tảng <b>Supabase</b> với tiêu chuẩn bảo mật quốc tế. Không lưu trữ thông tin thanh toán hay tài chính cá nhân.</div>
+    </div>
+
+    <!-- ===== 3. MỤC ĐÍCH SỬ DỤNG ===== -->
+    <div class="policy-section" id="purpose">
+      <h2>🎯 3. Mục đích sử dụng thông tin</h2>
+      <p>Thông tin thu thập được sử dụng cho các mục đích sau:</p>
+      <ul>
+        <li>Cung cấp và quản lý tài khoản học tập cá nhân</li>
+        <li>Kiểm soát quyền truy cập nội dung đúng lớp đã đăng ký</li>
+        <li>Giám sát hoạt động học tập và phát hiện vi phạm bảo mật</li>
+        <li>Gửi thông báo học tập từ giáo viên đến học viên</li>
+        <li>Thống kê và cải thiện chất lượng nội dung dạy học</li>
+        <li>Xây dựng hệ thống thi đua, khuyến khích học tập</li>
+        <li>Hỗ trợ xử lý sự cố kỹ thuật và khôi phục tài khoản</li>
+      </ul>
+      <div class="highlight">🔵 Thông tin của bạn <b>KHÔNG</b> được chia sẻ, bán hoặc chuyển giao cho bên thứ ba vì bất kỳ mục đích thương mại nào.</div>
+    </div>
+
+    <!-- ===== 4. ĐIỀU KHOẢN SỬ DỤNG ===== -->
+    <div class="policy-section" id="terms">
+      <h2>📜 4. Điều khoản sử dụng</h2>
+      <p>Khi sử dụng hệ thống, bạn cam kết tuân thủ đầy đủ các điều khoản sau:</p>
+      <ul>
+        <li>Mỗi tài khoản chỉ được sử dụng bởi <b>01 người duy nhất</b> là chính chủ tài khoản đã đăng ký.</li>
+        <li>Mỗi tài khoản chỉ được đăng nhập trên <b>01 thiết bị</b> tại một thời điểm.</li>
+        <li><b>Nghiêm cấm</b> chia sẻ, cho mượn, bán hoặc chuyển nhượng tài khoản dưới bất kỳ hình thức nào.</li>
+        <li><b>Nghiêm cấm</b> chụp màn hình, quay màn hình, ghi âm nội dung bài giảng.</li>
+        <li><b>Nghiêm cấm</b> phát tán, đăng tải, chia sẻ nội dung học tập lên mạng xã hội hoặc các kênh khác.</li>
+        <li>Không sử dụng công cụ tự động, bot, script để truy cập hoặc tải nội dung từ hệ thống.</li>
+        <li>Không sử dụng VPN, proxy hoặc các công cụ che giấu danh tính khi truy cập hệ thống.</li>
+        <li>Không cố tình phá hoại, xâm nhập, khai thác lỗ hổng bảo mật của hệ thống.</li>
+        <li>Không mạo danh học viên khác hoặc giả mạo thông tin để chiếm quyền truy cập.</li>
+        <li>Cung cấp thông tin chính xác khi đăng ký và liên hệ hỗ trợ.</li>
+      </ul>
+      <div class="warn">⛔ Vi phạm bất kỳ điều khoản nào có thể dẫn đến tài khoản bị <b>khóa vĩnh viễn</b> mà không cần thông báo trước. Bằng chứng vi phạm được lưu trữ và có thể được xử lý theo quy định pháp luật.</div>
+    </div>
+
+    <!-- ===== 5. BẢO MẬT TÀI KHOẢN ===== -->
+    <div class="policy-section" id="security">
+      <h2>🔐 5. Bảo mật tài khoản</h2>
+      <ul>
+        <li>Mật khẩu được mã hóa bằng <b>SHA-256</b> trước khi lưu trữ — hệ thống không thể đọc mật khẩu gốc của bạn.</li>
+        <li>Link video và tài liệu được mã hóa bằng <b>AES-GCM</b> — không thể truy cập trực tiếp khi không đăng nhập.</li>
+        <li>Sau <b>5 lần nhập sai mật khẩu</b>, tài khoản sẽ tự động bị khóa để ngăn chặn tấn công brute-force.</li>
+        <li>Mọi lần đăng nhập từ thiết bị mới đều được ghi lại và thông báo đến giáo viên quản lý ngay lập tức.</li>
+        <li>Hệ thống giám sát 24/7 — các hành vi bất thường được phát hiện và cảnh báo tự động.</li>
+        <li>Bạn có trách nhiệm bảo mật thông tin đăng nhập và không tiết lộ cho bất kỳ ai kể cả trợ lý.</li>
+        <li>Khi phát hiện tài khoản bị truy cập trái phép, hãy liên hệ trợ lý ngay để được xử lý kịp thời.</li>
+      </ul>
+      <div class="info">💡 Hệ thống không hỗ trợ tự đặt lại mật khẩu. Mọi yêu cầu đổi mật khẩu phải thực hiện qua trợ lý chính thức và cung cấp đầy đủ thông tin xác minh.</div>
+    </div>
+
+    <!-- ===== 6. NỘI DUNG & BẢN QUYỀN ===== -->
+    <div class="policy-section" id="copyright">
+      <h2>©️ 6. Nội dung & Bản quyền</h2>
+      <p>Toàn bộ nội dung trên hệ thống bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và mã nguồn đều thuộc quyền sở hữu trí tuệ của <b>DHDTCT LMS</b> và được pháp luật bảo hộ.</p>
+      <ul>
+        <li>Học viên chỉ được phép xem nội dung phục vụ mục đích học tập cá nhân.</li>
+        <li>Mọi hành vi sao chép, chỉnh sửa, phân phối lại, tái bản đều bị nghiêm cấm.</li>
+        <li>Link nội dung được mã hóa và thay đổi định kỳ — không thể chia sẻ hoặc sử dụng lại.</li>
+        <li>Video không hỗ trợ tải xuống dưới bất kỳ hình thức nào.</li>
+        <li>Hành vi vi phạm bản quyền sẽ bị xử lý theo Luật Sở hữu trí tuệ Việt Nam.</li>
+      </ul>
+      <div class="warn">🎥 Hệ thống có khả năng phát hiện hành vi quay màn hình và chụp ảnh. Mọi vi phạm đều được ghi nhận bằng chứng và báo cáo đến giáo viên ngay lập tức.</div>
+    </div>
+
+    <!-- ===== 7. GIÁM SÁT ===== -->
+    <div class="policy-section" id="monitor">
+      <h2>👁 7. Giám sát & Ghi nhận hoạt động</h2>
+      <p>Để đảm bảo tính bảo mật và bản quyền nội dung, hệ thống thực hiện các hoạt động giám sát sau:</p>
+      <ul>
+        <li>Ghi lại toàn bộ lịch sử đăng nhập bao gồm thời gian, thiết bị và địa điểm truy cập.</li>
+        <li>Theo dõi hoạt động xem video và tài liệu (bài nào, lúc nào, bao lâu).</li>
+        <li>Phát hiện đăng nhập đồng thời trên nhiều thiết bị và cảnh báo ngay lập tức.</li>
+        <li>Ghi nhận khi người dùng chuyển tab, ẩn cửa sổ trình duyệt hoặc mất tập trung.</li>
+        <li>Cảnh báo khi phát hiện hành vi bất thường như mở DevTools, cố tải nội dung trái phép.</li>
+        <li>Thống kê điểm thi đua, chuỗi ngày học và thời gian học tập thực tế của từng học viên.</li>
+      </ul>
+      <div class="info">📊 Dữ liệu giám sát chỉ được sử dụng nội bộ để quản lý học tập và bảo vệ bản quyền. Không dùng để theo dõi cá nhân ngoài phạm vi học tập.</div>
+    </div>
+
+    <!-- ===== 8. CHÍNH SÁCH THIẾT BỊ ===== -->
+    <div class="policy-section" id="device">
+      <h2>📱 8. Chính sách thiết bị</h2>
+      <ul>
+        <li>Mỗi tài khoản chỉ được sử dụng trên <b>01 thiết bị chính</b> tại một thời điểm.</li>
+        <li>Khi đăng nhập từ thiết bị mới, thiết bị cũ sẽ bị đăng xuất và giáo viên được thông báo.</li>
+        <li>Thiết bị được nhận diện qua <b>fingerprint trình duyệt</b> — không thể thay đổi bằng cách xóa cookie.</li>
+        <li>Đăng nhập quá nhiều thiết bị trong thời gian ngắn sẽ kích hoạt cảnh báo bảo mật.</li>
+        <li>Nên sử dụng <b>máy tính hoặc tablet</b> để có trải nghiệm học tập tốt nhất.</li>
+        <li>Khi đổi thiết bị học tập, liên hệ trợ lý để được hỗ trợ chuyển đổi đúng quy trình.</li>
+      </ul>
+      <div class="highlight">💻 Khuyến nghị sử dụng trình duyệt Chrome hoặc Edge phiên bản mới nhất để đảm bảo trải nghiệm tốt nhất và ổn định nhất.</div>
+    </div>
+
+    <!-- ===== 9. CHÍNH SÁCH HẾT HẠN ===== -->
+    <div class="policy-section" id="expiry">
+      <h2>⏰ 9. Chính sách hết hạn tài khoản</h2>
+      <ul>
+        <li>Tài khoản có thể được cài đặt ngày hết hạn theo từng khóa học.</li>
+        <li>Hệ thống tự động gửi nhắc nhở khi tài khoản còn <b>7 ngày, 14 ngày hoặc 30 ngày</b> đến hạn.</li>
+        <li>Khi hết hạn, tài khoản sẽ bị khóa tự động và không thể đăng nhập.</li>
+      </ul>
+      <div class="warn">⛔ Tài khoản khi hết hạn, Admin <b>không hỗ trợ gia hạn</b> dưới bất kỳ hình thức nào.</div>
+      <div class="info">📅 Một số tài khoản đặc biệt không có ngày hết hạn (không giới hạn thời gian) tùy theo từng học viên.</div>
+    </div>
+
+    <!-- ===== 10. QUY TẮC ỨNG XỬ ===== -->
+    <div class="policy-section" id="conduct">
+      <h2>🤝 10. Quy tắc ứng xử</h2>
+      <p>Học viên khi sử dụng hệ thống cần tuân thủ các quy tắc ứng xử sau:</p>
+      <ul>
+        <li>Tôn trọng giáo viên, trợ lý và các học viên khác trong mọi tương tác.</li>
+        <li>Không đăng nội dung không phù hợp, phản cảm hoặc gây ảnh hưởng đến môi trường học tập.</li>
+        <li>Liên hệ hỗ trợ theo đúng quy trình — cung cấp đầy đủ thông tin khi yêu cầu hỗ trợ.</li>
+        <li>Không xúc phạm, đe dọa hoặc có hành vi tiêu cực với bộ phận quản lý hệ thống.</li>
+        <li>Báo cáo ngay khi phát hiện lỗi kỹ thuật hoặc hành vi vi phạm của người dùng khác.</li>
+        <li>Sử dụng hệ thống với mục đích học tập nghiêm túc, không lạm dụng tài nguyên.</li>
+      </ul>
+    </div>
+
+    <!-- ===== 11. LƯU TRỮ & XÓA DỮ LIỆU ===== -->
+    <div class="policy-section" id="data">
+      <h2>🗄️ 11. Lưu trữ & Xóa dữ liệu</h2>
+      <ul>
+        <li>Dữ liệu cá nhân được lưu trữ an toàn trên hệ thống <b>Supabase</b> với mã hóa đầu cuối.</li>
+        <li>Lịch sử đăng nhập và nhật ký hoạt động được lưu trữ trong tối đa <b>12 tháng</b>.</li>
+        <li>Khi tài khoản bị xóa, toàn bộ dữ liệu cá nhân sẽ bị xóa vĩnh viễn khỏi hệ thống.</li>
+        <li>Học viên có quyền yêu cầu xem, chỉnh sửa hoặc xóa thông tin cá nhân của mình.</li>
+        <li>Yêu cầu xóa dữ liệu cần được gửi qua trợ lý chính thức và được xử lý trong vòng 7 ngày.</li>
+        <li>Một số dữ liệu có thể được giữ lại theo yêu cầu pháp lý hoặc để giải quyết tranh chấp.</li>
+      </ul>
+      <div class="highlight">🔵 Chúng tôi cam kết bảo vệ quyền riêng tư của bạn theo quy định của Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân tại Việt Nam.</div>
+    </div>
+
+    <!-- ===== 12. THAY ĐỔI CHÍNH SÁCH ===== -->
+    <div class="policy-section" id="update">
+      <h2>🔄 12. Thay đổi chính sách</h2>
+      <p>Chúng tôi có quyền cập nhật, chỉnh sửa chính sách này bất cứ lúc nào mà không cần thông báo trước. Các thay đổi sẽ có hiệu lực ngay khi được đăng tải trên trang này.</p>
+      <p>Việc tiếp tục sử dụng hệ thống sau khi chính sách được cập nhật đồng nghĩa với việc bạn chấp nhận toàn bộ các thay đổi đó.</p>
+      <div class="info">💡 Khuyến nghị kiểm tra trang này định kỳ để cập nhật các thay đổi mới nhất về chính sách và điều khoản.</div>
+    </div>
+
+    <!-- ===== 13. LIÊN HỆ ===== -->
+    <div class="policy-section" id="contact">
+      <h2>📞 13. Liên hệ hỗ trợ</h2>
+      <p>Nếu có thắc mắc về chính sách bảo mật, điều khoản sử dụng hoặc cần hỗ trợ kỹ thuật, vui lòng liên hệ:</p>
+      <ul>
+        <li><b>Hỗ trợ kỹ thuật & Tài khoản:</b> Trợ Lý - Trần Cường hoặc Quốc Toàn</li>
+        <li><b>Thắc mắc chuyên môn & Học tập:</b> Duy Hoàng Giáo viên</li>
+        <li><b>Kênh liên hệ:</b> Nhắn tin Zalo theo đúng quy trình hướng dẫn</li>
+        <li><b>Thời gian hỗ trợ:</b> Thứ 2 – Chủ nhật, 7:00 – 22:00</li>
+      </ul>
+      <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap">
+        <a href="https://zalo.me/84869573231" target="_blank" style="display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;background:linear-gradient(135deg,#0068ff,#0052cc);color:#fff;font-size:.88rem;font-weight:700;padding:.65rem 1.25rem;border-radius:12px;box-shadow:0 4px 12px rgba(0,104,255,.3);transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="white" fill-opacity="0.2"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="900" fill="white" font-family="Arial,sans-serif">Z</text></svg>
+          Zalo Trần Cường
+        </a>
+        <a href="https://zalo.me/84969795482" target="_blank" style="display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;background:linear-gradient(135deg,#0068ff,#0052cc);color:#fff;font-size:.88rem;font-weight:700;padding:.65rem 1.25rem;border-radius:12px;box-shadow:0 4px 12px rgba(0,104,255,.3);transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="white" fill-opacity="0.2"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="900" fill="white" font-family="Arial,sans-serif">Z</text></svg>
+          Zalo Quốc Toàn
+        </a>
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;background:#f1f5f9;color:#475569;font-size:.88rem;font-weight:700;padding:.65rem 1.25rem;border-radius:12px;border:1.5px solid #e2e8f0;transition:all .15s" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+          🏠 Về trang chủ
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;margin-top:2.5rem;padding-top:1.5rem;border-top:1.5px solid #e2e8f0">
+      <div style="font-size:.8rem;font-weight:700;color:#6366f1;margin-bottom:.35rem">DHDTCT LMS Education System</div>
+      <div style="font-size:.72rem;color:#94a3b8;line-height:1.8">
+        © 2026 Bản quyền thuộc về DHDTCT LMS.<br/>
+        Thiết kế & Phát triển bởi <b>Tr.Cường08</b> & <b>Quốc Toàn</b> &nbsp;•&nbsp; Phiên bản v1.3.0
+      </div>
+    </div>
+
+  </div>
+  <!-- COPYRIGHT BAR -->
+  <style>
+    .cp-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 99999;
+      background: transparent;
+      border-top: none;
+      padding: .28rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      font-size: .68rem;
+      color: rgba(255,255,255,.45);
+      font-weight: 500;
+      letter-spacing: .2px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .cp-bar b { color: rgba(165,180,252,.75); }
+    .cp-bar .cp-dot { width: 4px; height: 4px; background: rgba(165,180,252,.3); border-radius: 50%; }
+  </style>
+  <div class="cp-bar">
+    <span>© 2026 <b>DHDTCT LMS Education System</b></span>
+    <span class="cp-dot"></span>
+    <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
+    <span class="cp-dot"></span>
+    <span><b>v1.3.0</b></span>
+  </div>
+
+</body>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Đăng Nhập</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#4f46e5"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Duy Ho�ng DTCT"/>
+</head>
+<body class="auth-page">
+
+  <div class="auth-wrap">
+    <div class="auth-left">
+      <div class="brand white" style="cursor:default"></div>
+      <h2>Chào mừng trở lại!</h2>
+      <p></p>
+    </div>
+
+    <div class="auth-right">
+      <div class="auth-box">
+        <h2>Đăng nhập</h2>
+
+        <div class="tab-row">
+          <button class="tab-btn active" id="tabStudent">Học Sinh</button>
+          <button class="tab-btn" id="tabTeacher">Admin</button>
+        </div>
+
+        <form id="loginForm">
+          <label id="usernameLabel">Gmail</label>
+          <div class="input-icon">
+            <span>📧</span>
+            <input type="text" id="usernameInput" placeholder="Nhập Gmail của bạn" required/>
+          </div>
+          <label id="passwordLabel">Số báo danh</label>
+          <div class="input-icon">
+            <span>🔒</span>
+            <input type="password" id="passwordInput" placeholder="Nhập số báo danh" required/>
+          </div>
+          <div class="auth-row">
+            <label class="checkbox-label"><input type="checkbox"/> Ghi nhớ đăng nhập</label>
+            <a href="#" class="link-muted">Quên mật khẩu?</a>
+          </div>
+          <div id="loginError" class="error-msg"></div>
+          <button type="submit" class="btn-primary btn-block">Đăng Nhập</button>
+        </form>
+
+        <p class="auth-hint">Chưa có tài khoản? Liên hệ Trợ Lý Trần Cường hoặc Quốc Toàn.</p>
+        <p class="auth-hint" style="margin-top:.25rem"><a href="#" id="showGuideBtn" style="color:#6c63ff">📖 Hướng dẫn sử dụng</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HƯỚNG DẪN -->
+  <div id="guideModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;overflow-y:auto;">
+    <div style="background:#fff;max-width:600px;margin:2rem auto;border-radius:12px;padding:2rem;position:relative;">
+      <button id="closeGuideBtn" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;">✕</button>
+      <h2 style="margin-bottom:1rem">📖 Hướng dẫn sử dụng</h2>
+
+      <h3>🔐 Đăng nhập</h3>
+      <p>Học viên vui lòng nhắn <b>Trợ Lý - Trần Cường hoặc Quốc Toàn</b> và cung cấp tên lớp, Gmail + SĐT để nhận thông tin đăng nhập. Mỗi tài khoản chỉ được phép hoạt động trên <b>01 thiết bị</b> tại một thời điểm nhằm đảm bảo tính bảo mật và quyền lợi học tập.</p>
+      <div style="background:#f0fdf4;border-radius:10px;padding:.75rem 1rem;margin:.6rem 0;border:1px solid #bbf7d0;font-size:.88rem">
+        <div style="font-weight:700;color:#065f46;margin-bottom:.4rem">📌 Mẫu nhắn tin (4 tin nhắn riêng):</div>
+        <div style="display:flex;flex-direction:column;gap:.3rem;font-family:monospace;color:#166534">
+          <div><span style="background:#dcfce7;padding:.1rem .35rem;border-radius:4px;font-weight:700;font-size:.8rem;margin-right:.4rem">Tin 1</span>xin cấp tài khoản học tập trên web kèm theo lớp đã đăng ký</div>
+          <div><span style="background:#dcfce7;padding:.1rem .35rem;border-radius:4px;font-weight:700;font-size:.8rem;margin-right:.4rem">Tin 2</span>Tên lớp (VD: vsat 6)</div>
+          <div><span style="background:#dcfce7;padding:.1rem .35rem;border-radius:4px;font-weight:700;font-size:.8rem;margin-right:.4rem">Tin 3</span>Số điện thoại (VD: 0901234567)</div>
+          <div><span style="background:#dcfce7;padding:.1rem .35rem;border-radius:4px;font-weight:700;font-size:.8rem;margin-right:.4rem">Tin 4</span>Gmail (VD: hocsinh@gmail.com)</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:1rem">📚 Xem bài học</h3>
+      <p>Truy cập mục <b>Bài học</b> → chọn bài học tương ứng để xem video bài giảng và tài liệu đi kèm. Hệ thống chỉ hiển thị nội dung thuộc đúng lớp học mà bạn đã đăng ký.</p>
+
+      <h3 style="margin-top:1rem">🎬 Xem video bài giảng</h3>
+      <p>Nhấn vào ảnh đại diện (thumbnail) của bài học để bắt đầu xem video. Đối với điện thoại, nên <b>xoay ngang màn hình</b> để có trải nghiệm học tập tốt nhất. Video được bảo vệ bản quyền và <b>không hỗ trợ tải xuống</b> dưới mọi hình thức.</p>
+
+      <h3 style="margin-top:1rem">🚨 Lưu ý bảo mật</h3>
+      <ul style="padding-left:1.25rem;line-height:2">
+        <li>Không chia sẻ tài khoản cho người khác sử dụng dưới bất kỳ hình thức nào.</li>
+        <li>Nghiêm cấm hành vi chụp màn hình, quay video hoặc phát tán nội dung bài giảng.</li>
+        <li>Mọi hoạt động bất thường đều được hệ thống ghi nhận và thông báo trực tiếp đến giáo viên quản lý.</li>
+        <li>Tài khoản vi phạm sẽ bị <b>khóa vĩnh viễn</b> mà không cần báo trước.</li>
+      </ul>
+
+      <h3 style="margin-top:1rem">📞 Liên hệ hỗ trợ</h3>
+      <ul style="padding-left:1.25rem;line-height:2">
+        <li>Hỗ trợ kỹ thuật &amp; Tài khoản: Vui lòng liên hệ <b>Trợ Lý - Trần Cường hoặc Quốc Toàn</b> và cung cấp tên lớp, Gmail, SĐT và Số báo danh (SBD) để được xử lý nhanh nhất.</li>
+        <li>Thắc mắc chuyên môn: Đối với các bài giảng hoặc bài toán khó chưa hiểu, vui lòng liên hệ trực tiếp với <b>Duy Hoàng Giáo viên</b>.</li>
+      </ul>
+      <p style="margin-top:.75rem;font-style:italic">Chúng tôi luôn đồng hành cùng bạn trên hành trình chinh phục mục tiêu đại học. 💪</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from './supabase.js';
+
+    // Đăng ký Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+
+      // Tự động reload khi có bản cập nhật mới
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'SW_UPDATED') window.location.reload();
+      });
+    }
+
+    localStorage.setItem('dh_teacher', JSON.stringify({ username: 'admin124532Dh', password: 'admindH89065', full_name: 'Admin' }));
+
+    let role = 'student';
+    function setLabels() {
+      document.getElementById('usernameLabel').textContent  = role === 'student' ? 'Gmail' : 'Tên đăng nhập';
+      document.getElementById('passwordLabel').textContent  = role === 'student' ? 'Số báo danh' : 'Mật khẩu';
+      document.getElementById('usernameInput').placeholder  = role === 'student' ? 'Nhập Gmail của bạn' : 'Nhập tên đăng nhập';
+      document.getElementById('passwordInput').placeholder  = role === 'student' ? 'Nhập số báo danh' : 'Nhập mật khẩu';
+    }
+
+    function setTab(r) {
+      role = r;
+      ['tabStudent','tabTeacher'].forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById(r === 'student' ? 'tabStudent' : 'tabTeacher').classList.add('active');
+      setLabels();
+    }
+
+    document.getElementById('tabStudent').onclick = () => setTab('student');
+    document.getElementById('tabTeacher').onclick = () => setTab('teacher');
+
+    document.getElementById('showGuideBtn').onclick = e => { e.preventDefault(); document.getElementById('guideModal').style.display='block'; };
+    document.getElementById('closeGuideBtn').onclick = () => document.getElementById('guideModal').style.display='none';
+    document.getElementById('guideModal').onclick = e => { if(e.target===document.getElementById('guideModal')) document.getElementById('guideModal').style.display='none'; };
+
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const u = document.getElementById('usernameInput').value.trim();
+      const p = document.getElementById('passwordInput').value.trim();
+      const err = document.getElementById('loginError');
+      err.textContent = '';
+
+      if (role === 'teacher') {
+        const t = JSON.parse(localStorage.getItem('dh_teacher'));
+        if (u === t.username && p === t.password) {
+          sessionStorage.setItem('dh_role', 'teacher');
+          sessionStorage.setItem('dh_user', u);
+          sessionStorage.setItem('dh_name', t.full_name);
+          window.location.href = 'admin.html';
+        } else { err.textContent = 'Sai tên đăng nhập hoặc mật khẩu.'; }
+
+      } else {
+        // Học sinh đăng nhập qua Supabase
+        const { data, error } = await supabase.from('students').select('*').eq('username', u).eq('password', p).single();
+        if (error || !data) { err.textContent = 'Sai tên đăng nhập hoặc mật khẩu.'; return; }
+        if (!data.active) {
+          if (data.class_name) {
+            const { data: cls } = await supabase.from('classes').select('end_date').eq('name', data.class_name).single();
+            if (cls?.end_date) {
+              const endDate = new Date(cls.end_date); endDate.setHours(0,0,0,0);
+              const today = new Date(); today.setHours(0,0,0,0);
+              if (today > endDate) {
+                err.textContent = `Khóa học "${data.class_name}" đã kết thúc vào ngày ${endDate.toLocaleDateString('vi-VN')}. Vui lòng liên hệ trợ lý để được hỗ trợ.`;
+                return;
+              }
+            }
+          }
+          if (data.expiry_date) {
+            const expiry = new Date(data.expiry_date);
+            err.textContent = `Tài khoản đã hết hạn vào ngày ${expiry.toLocaleDateString('vi-VN')}. Vui lòng liên hệ trợ lý để gia hạn.`;
+            return;
+          }
+          err.textContent = 'Tài khoản đã bị khóa. Vui lòng liên hệ trợ lý để được hỗ trợ.';
+          return;
+        }
+
+        // Kiểm tra hết hạn tài khoản cá nhân
+        if (data.expiry_date) {
+          const today = new Date(); today.setHours(0,0,0,0);
+          const expiry = new Date(data.expiry_date); expiry.setHours(0,0,0,0);
+          if (today > expiry) {
+            if (data.active) {
+              await supabase.from('students').update({ active: false }).eq('id', data.id);
+            }
+            const d = expiry.toLocaleDateString('vi-VN');
+            err.textContent = `Tài khoản đã hết hạn vào ngày ${d}. Vui lòng liên hệ trợ lý để gia hạn.`;
+            return;
+          }
+        }
+
+        // Kiểm tra lớp học đã kết thúc (bỏ qua nếu admin đã mở thủ công)
+        if (data.class_name && !data.manually_unlocked) {
+          const { data: cls } = await supabase.from('classes').select('end_date').eq('name', data.class_name).single();
+          if (cls && cls.end_date) {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const endDate = new Date(cls.end_date); endDate.setHours(0,0,0,0);
+            if (today > endDate) {
+              if (data.active) await supabase.from('students').update({ active: false }).eq('id', data.id);
+              err.textContent = `Khóa học "${data.class_name}" đã kết thúc vào ngày ${endDate.toLocaleDateString('vi-VN')}. Vui lòng liên hệ trợ lý để được hỗ trợ.`;
+              return;
+            }
+          }
+        }
+
+        sessionStorage.setItem('dh_role', 'student');
+        sessionStorage.setItem('dh_user', u);
+        sessionStorage.setItem('dh_name', data.full_name);
+
+        // Tạo session token mới — thiết bị cũ sẽ bị đăng xuất tức thì qua Realtime
+        const token = Math.random().toString(36).slice(2) + Date.now();
+        await supabase.from('students').update({
+          session_token: token,
+          login_attempts: 0,
+          last_login: new Date().toISOString(),
+          is_online: true,
+          last_seen: new Date().toISOString()
+        }).eq('id', data.id);
+        sessionStorage.setItem('dh_token', token);
+        sessionStorage.setItem('dh_code', data.student_code || u);
+
+        window.location.href = 'student.html';
+      }
+    });
+  </script>
+  <!-- COPYRIGHT BAR -->
+  <style>
+    .cp-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 99999;
+      background: transparent;
+      border-top: none;
+      padding: .28rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      font-size: .68rem;
+      color: rgba(255,255,255,.45);
+      font-weight: 500;
+      letter-spacing: .2px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .cp-bar b { color: rgba(165,180,252,.75); }
+    .cp-bar .cp-dot { width: 4px; height: 4px; background: rgba(165,180,252,.3); border-radius: 50%; }
+  </style>
+  <div class="cp-bar">
+    <span>© 2026 <b>DHDTCT LMS Education System</b></span>
+    <span class="cp-dot"></span>
+    <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
+    <span class="cp-dot"></span>
+    <span><b>v1.3.0</b></span>
+  </div>
+
+</body>

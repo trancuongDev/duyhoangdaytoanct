@@ -1,0 +1,1013 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
+  <title>Quản Trị - DHDTCT LMS v1.3.0</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#4f46e5"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="DHDTCT LMS"/>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="dashboard-page">
+
+  <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/></div>
+      <span class="sidebar-brand-text">DHDTCT LMS</span>
+      <button class="sidebar-mini-toggle" title="Thu gọn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;transition:all .2s;flex-shrink:0" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="slink active" data-page="overview" data-label="Tổng quan"><span class="slink-icon">📊</span><span class="slink-label">Tổng quan</span><span id="sidebarOnlineBadge" style="display:none;background:#10b981;color:#fff;font-size:.65rem;font-weight:700;padding:.1rem .45rem;border-radius:20px;margin-left:auto">0</span></a>
+      <a href="#" class="slink" data-page="lessons" data-label="Bài học"><span class="slink-icon">📚</span><span class="slink-label">Bài học</span></a>
+      <a href="#" class="slink" data-page="lesson-groups" data-label="Nhóm bài học"><span class="slink-icon">📂</span><span class="slink-label">Nhóm bài học</span></a>
+      <a href="#" class="slink" data-page="create-student" data-label="Thêm học viên"><span class="slink-icon">➕</span><span class="slink-label">Thêm học viên mới</span></a>
+      <a href="#" class="slink" data-page="students" data-label="Học sinh"><span class="slink-icon">👨‍🎓</span><span class="slink-label">Danh sách học sinh</span></a>
+      <a href="#" class="slink" data-page="classes" data-label="Lớp học"><span class="slink-icon">🏫</span><span class="slink-label">Lớp học</span></a>
+      <a href="members.html" class="slink" data-label="Quản lý lớp FB"><span class="slink-icon">👥</span><span class="slink-label">Quản lý lớp FB</span></a>
+      <a href="#" class="slink" data-page="security" data-label="Cảnh báo"><span class="slink-icon">🚨</span><span class="slink-label">Nhật ký cảnh báo <span id="alertNavBadge" class="nav-badge" style="display:none"></span></span></a>
+      <a href="#" class="slink" data-page="devices" data-label="Thiết bị"><span class="slink-icon">📱</span><span class="slink-label">Cảnh báo thiết bị</span></a>
+      <a href="#" class="slink" data-page="access-stats" data-label="Thống kê"><span class="slink-icon">📈</span><span class="slink-label">Thống kê truy cập</span></a>
+      <a href="#" class="slink" data-page="competition" data-label="Thi đua"><span class="slink-icon">🏆</span><span class="slink-label">Thi đua học viên</span></a>
+      <a href="#" class="slink" data-page="login-history" data-label="Đăng nhập"><span class="slink-icon">🕐</span><span class="slink-label">Lịch sử đăng nhập</span></a>
+      <a href="#" class="slink" data-page="announcements" data-label="Thông báo"><span class="slink-icon">📢</span><span class="slink-label">Thông báo</span></a>
+      <a href="#" class="slink" data-page="schedule" data-label="Lịch học"><span class="slink-icon">📅</span><span class="slink-label">Lịch học</span></a>
+      <a href="#" class="slink" data-page="profile" data-label="Hồ sơ"><span class="slink-icon">�</span><span class="slink-label">Hồ sơ</span></a>/
+    </nav>
+    <a href="index.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất"><span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span></a>
+    <a href="https://thienshin12112008-cloud.github.io/htql.1.1.2/index.html" target="_blank" class="slink" style="margin:.4rem .75rem" data-label="Trang đăng nhập"><span class="slink-icon">🔗</span><span class="slink-label">Trang đăng nhập</span></a>
+    <a href="#" class="slink" id="maintenanceSideBtn" style="margin:.4rem .75rem" data-label="Bảo trì"><span class="slink-icon">🔧</span><span class="slink-label">Chế độ bảo trì</span></a>
+    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.3.0</div>
+    <div class="sidebar-mini-reopen">
+      <button class="sidebar-mini-toggle" title="Mở rộng">▶</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="dash-main">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+
+      <!-- Tìm kiếm toàn cục -->
+      <div style="flex:1;max-width:320px;position:relative;margin:0 1rem">
+        <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.95rem;pointer-events:none">🔍</span>
+        <input id="globalSearch" type="text" placeholder="Tìm học sinh..." autocomplete="off"
+          style="width:100%;padding:.5rem 1rem .5rem 2.2rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg);color:var(--text);transition:border-color .2s,box-shadow .2s"
+          onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.1)'"
+          onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"/>
+        <div id="globalSearchDropdown" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:999;max-height:320px;overflow-y:auto"></div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Nút Dark Mode -->
+        <button id="darkModeBtn" title="Chế độ tối" style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s">🌙</button>
+        <!-- Nút Bảo trì -->
+        <button id="maintenanceBtn" title="Bật/tắt bảo trì" style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s">🔧</button>
+        <div class="avatar-info">
+          <div class="avatar">GV</div>
+          <div>
+            <div class="av-name" id="teacherName">Giáo viên</div>
+            <div class="av-role">Admin</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE: TỔNG QUAN -->
+    <section class="page active" id="pageOverview">
+      <div id="greetingBanner" style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+        <div>
+          <div id="greetingText" style="font-size:1.15rem;font-weight:900;letter-spacing:-.3px"></div>
+          <div id="greetingDate" style="font-size:.8rem;opacity:.65;margin-top:.2rem"></div>
+        </div>
+        <div id="greetingTime" style="font-size:1.5rem;font-weight:900;font-variant-numeric:tabular-nums;opacity:.9"></div>
+      </div>
+      <h1 class="page-title">Tổng quan</h1>
+      <div class="stat-grid">
+        <div class="stat-card blue"><div class="stat-icon">📄</div><div><div class="stat-num" id="statExams">0</div><div class="stat-label">Tài liệu</div></div></div>
+        <div class="stat-card green"><div class="stat-icon">🎬</div><div><div class="stat-num" id="statVideos">0</div><div class="stat-label">Video bài giảng</div></div></div>        <div class="stat-card purple"><div class="stat-icon">👨‍🎓</div><div><div class="stat-num" id="statStudents">0</div><div class="stat-label">Học sinh</div></div></div>
+        <div class="stat-card red"><div class="stat-icon">🚨</div><div><div class="stat-num" id="statAlerts">0</div><div class="stat-label">Cảnh báo hôm nay</div></div></div>
+      </div>
+      <div class="overview-grid">
+        <div class="overview-panel">
+          <div class="panel-header"><span>Bài học mới nhất</span><a href="#" class="link-blue" data-goto="lessons">Xem tất cả</a></div>
+          <div id="recentExams"></div>
+        </div>
+        <div class="overview-panel">
+          <div class="panel-header"><span>Cảnh báo gần nhất</span><a href="#" class="link-blue" data-goto="security">Xem tất cả</a></div>
+          <div id="recentAlerts"></div>
+        </div>
+      </div>
+      <!-- Thông báo lớp hết hạn / sắp hết hạn -->
+      <div id="classExpiryNotices" style="margin-top:1rem"></div>
+
+      <!-- Nhắc nhở hết hạn -->
+      <div id="expiryReminderPanel" class="overview-panel" style="margin-top:1rem">
+        <div class="panel-header">
+          <span>⏰ Nhắc nhở sắp hết hạn</span>
+          <button class="btn-sm btn-primary" id="sendExpiryRemindersBtn">📢 Gửi nhắc nhở tự động</button>
+        </div>
+        <div id="expiryReminderList" style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem"></div>
+        <div class="empty-state" id="emptyExpiryReminder" style="display:none">Không có học viên nào sắp hết hạn.</div>
+      </div>
+
+      <!-- Học sinh đang online -->
+      <div class="overview-panel" style="margin-top:1.5rem">
+        <div class="panel-header">
+          <span>🟢 Học sinh đang online</span>
+          <span id="onlineCount" class="status-pill green" style="font-size:.75rem">0</span>
+        </div>
+        <div id="onlineStudentList" style="display:flex;flex-wrap:wrap;gap:.5rem;min-height:2rem">
+          <p class="muted-sm">Chưa có học sinh nào online.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: BÀI HỌC -->
+    <section class="page" id="pageLessons">
+      <div id="lessonListView">
+        <div class="page-header">
+          <h1 class="page-title">Bài học</h1>
+          <button class="btn-primary" id="openAddLessonBtn">➕ Tạo bài học</button>
+        </div>
+        <div class="filter-bar">
+          <select id="lessonFilterClass"><option value="">Tất cả lớp</option></select>
+        </div>
+        <div class="content-list" id="lessonList"></div>
+        <div class="empty-state" id="emptyLessons">Chưa có bài học nào.</div>
+      </div>
+
+      <div id="lessonDetailView" style="display:none">
+        <div class="page-header">
+          <h1 class="page-title" id="lessonDetailTitle"></h1>
+          <button class="btn-outline" id="backToLessonsBtn">← Quay lại</button>
+        </div>
+        <p class="muted-sm" id="lessonDetailDesc"></p>
+
+        <div class="two-col" style="margin-top:1rem">
+          <div>
+            <div class="panel-header" style="margin-bottom:.5rem">
+              <span>🎬 Video</span>
+              <button class="btn-sm btn-primary" id="openAddVideoBtn">➕ Thêm video</button>
+            </div>
+            <div class="video-grid" id="lessonVideoGrid"></div>
+            <div class="empty-state" id="emptyLessonVideos" style="font-size:.85rem">Chưa có video.</div>
+          </div>
+          <div>
+            <div class="panel-header" style="margin-bottom:.5rem">
+              <span>📄 Tài liệu</span>
+              <button class="btn-sm btn-primary" id="openAddDocBtn">➕ Thêm tài liệu</button>
+              <input type="file" id="lessonDocInput" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" hidden/>
+            </div>
+            <div class="content-list" id="lessonDocList"></div>
+            <div class="empty-state" id="emptyLessonDocs" style="font-size:.85rem">Chưa có tài liệu.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: TẠO TÀI KHOẢN -->
+    <!-- PAGE: NHÓM BÀI HỌC -->
+    <section class="page" id="pageLessonGroups">
+      <div class="page-header">
+        <h1 class="page-title">Nhóm bài học</h1>
+        <button class="btn-primary" id="openAddGroupBtn">➕ Tạo nhóm</button>
+      </div>
+      <div class="filter-bar" style="margin-bottom:1rem">
+        <div style="position:relative;flex:1;max-width:360px">
+          <span style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">🔍</span>
+          <input type="text" id="groupSearch" placeholder="Tìm bài học theo tên..." style="width:100%;padding:.55rem 1rem .55rem 2.4rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem;background:var(--card);transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"/>
+        </div>
+      </div>
+      <div id="groupSearchResults" style="display:none;margin-bottom:1rem"></div>
+      <div class="content-list" id="groupList"></div>
+      <div class="empty-state" id="emptyGroups">Chưa có nhóm nào.</div>
+    </section>
+
+    <!-- PAGE: TẠO TÀI KHOẢN -->
+    <section class="page" id="pageCreateStudent">
+      <h1 class="page-title">Thêm học viên mới</h1>
+      <div class="two-col">
+
+        <!-- FORM -->
+        <div class="form-panel">
+          <h3>Thông tin học viên</h3>
+
+          <label>Mã học viên</label>
+          <input type="text" id="csCode" placeholder="Tự động tạo..." style="background:var(--bg,#f8fafc);color:var(--muted,#94a3b8)" readonly/>
+
+          <label>Họ và tên <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="csName" placeholder="Nhập họ và tên..."/>
+
+          <label>Số điện thoại</label>
+          <input type="tel" id="csPhone" placeholder="VD: 0901234567" maxlength="10" inputmode="numeric"/>
+
+          <label>Gmail (tên đăng nhập) <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="csUsername" placeholder="VD: hocsinh@gmail.com"/>
+
+          <label>Mật khẩu <span style="color:var(--danger)">*</span></label>
+          <div style="position:relative">
+            <input type="text" id="csPassword" placeholder="Tự động theo mã học viên" style="width:100%;background:var(--bg,#f8fafc);color:var(--muted,#94a3b8)" readonly/>
+          </div>
+
+          <label>Lớp</label>
+          <select id="csClassSelect"><option value="">-- Chọn lớp --</option></select>
+
+          <div id="csExpiryGroup">
+          <label>Ngày hết hạn <span class="muted">(để trống = không giới hạn)</span></label>
+          <input type="date" id="csExpiry"/>
+          </div>
+
+          <label>Ghi chú <span class="muted">(tuỳ chọn)</span></label>
+          <textarea id="csNotes" placeholder="Ghi chú riêng cho học viên..." rows="2" style="resize:vertical"></textarea>
+
+          <div id="csError" class="error-msg"></div>
+          <div id="csSuccess" class="success-msg"></div>
+
+          <div class="form-actions">
+            <button class="btn-outline" id="csResetBtn">Làm mới</button>
+            <button class="btn-primary" id="csSaveBtn">💾 Lưu & xem danh sách</button>
+          </div>
+        </div>
+
+        <!-- PREVIEW danh sách vừa tạo -->
+        <div class="form-panel">
+          <h3>Vừa thêm gần đây</h3>
+          <table class="mini-table" id="miniStudentTable">
+            <thead><tr><th>Mã HV</th><th>Họ tên</th><th>SĐT</th><th>Gmail</th><th>Lớp</th><th>Trạng thái</th><th>Ngày cấp</th><th></th></tr></thead>
+            <tbody id="miniStudentBody"></tbody>
+          </table>
+          <div class="table-pagination" id="miniPagination"></div>
+          <div style="margin-top:1rem;text-align:right">
+            <button class="btn-primary" id="goToStudentListBtn">👨‍🎓 Xem toàn bộ danh sách →</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PAGE: DANH SÁCH HỌC SINH -->
+    <section class="page" id="pageStudents">
+      <div class="page-header">
+        <h1 class="page-title">Danh sách học sinh</h1>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn-outline" id="genMissingCodesBtn" title="Tự động sinh mã cho học viên chưa có">🔧 Sinh mã còn thiếu</button>
+          <button class="btn-outline" id="syncExpiryBtn" title="Đồng bộ ngày hết hạn từ lớp" data-teacher-only>📅 Đồng bộ hết hạn</button>
+          <button class="btn-outline" id="syncClassNameBtn" title="Đồng bộ tên lớp từ student_classes vào cột Lớp" data-teacher-only>🔄 Đồng bộ lớp</button>
+          <button class="btn-outline" id="exportStudentsBtn">⬇ Xuất Excel</button>
+          <button class="btn-primary" id="openAddStudentBtn">➕ Thêm học sinh</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="studentSearch" placeholder="🔍 Tìm kiếm học sinh..."/>
+        <select id="studentFilterClass"><option value="">Tất cả lớp</option></select>
+        <select id="studentFilterExpiry" data-teacher-only style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem">
+          <option value="">Tất cả trạng thái</option>
+          <option value="7">⚠️ Hết hạn trong 7 ngày</option>
+          <option value="14">⚠️ Hết hạn trong 14 ngày</option>
+          <option value="30">⚠️ Hết hạn trong 30 ngày</option>
+          <option value="expired">🔴 Đã hết hạn</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)">
+      <table class="data-table" style="min-width:900px">
+        <thead><tr><th>Mã HV</th><th>Họ Tên</th><th>SĐT</th><th>Gmail</th><th>Lớp</th><th>Ngày tạo</th><th>Hết hạn</th><th>Trạng thái</th><th>Học tập</th><th style="width:48px"></th></tr></thead>
+        <tbody id="studentBody"></tbody>
+      </table>
+      </div>
+      <div class="empty-state" id="emptyStudents">Chưa có học sinh nào.</div>
+    </section>
+
+    <!-- PAGE: LỚP HỌC -->
+    <section class="page" id="pageClasses">
+      <!-- View: danh sách lớp -->
+      <div id="classListView">
+        <div class="page-header">
+          <h1 class="page-title">Lớp học</h1>
+          <button class="btn-primary" id="openAddClassBtn">➕ Tạo lớp</button>
+        </div>
+        <div class="stat-grid" id="classGrid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))"></div>
+        <div class="empty-state" id="emptyClasses">Chưa có lớp nào. Hãy thêm học sinh và gán lớp.</div>
+      </div>
+      <!-- View: học sinh trong lớp -->
+      <div id="classDetailView" style="display:none">
+        <div class="page-header">
+          <h1 class="page-title" id="classDetailTitle"></h1>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn-success btn-sm" id="unlockAllClassBtn" style="padding:.5rem 1rem;font-size:.85rem">🔓 Mở khóa toàn bộ</button>
+            <button class="btn-outline" id="backToClassesBtn">← Quay lại</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Mã HV</th><th>Họ tên</th><th>SĐT</th><th>Gmail</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+          <tbody id="classStudentBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyClassStudents">Không có học sinh nào trong lớp này.</div>
+      </div>
+    </section>
+
+    <!-- PAGE: CẢNH BÁO THIẾT BỊ -->
+    <section class="page" id="pageDevices">
+      <div class="page-header">
+        <h1 class="page-title">Cảnh báo thiết bị</h1>
+        <button class="btn-outline" id="clearDeviceAlertsBtn">🗑 Xóa tất cả</button>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="deviceAlertSearch" placeholder="🔍 Tìm theo tên học sinh..."/>
+      </div>
+      <div class="content-list" id="deviceAlertList"></div>
+      <div class="empty-state" id="emptyDeviceAlerts">Chưa có cảnh báo thiết bị nào.</div>
+    </section>
+
+    <!-- PAGE: NHẬT KÝ CẢNH BÁO -->
+    <section class="page" id="pageSecurity">
+      <div class="page-header">
+        <h1 class="page-title">Nhật ký cảnh báo</h1>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn-outline" id="exportAlertsBtn">⬇ Tải CSV</button>
+          <button class="btn-outline" id="clearAlertsBtn">🗑 Xóa tất cả</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="alertSearch" placeholder="🔍 Tìm theo tên học sinh..."/>
+        <input type="date" id="alertDateFilter" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem"/>
+        <button class="btn-sm btn-outline" id="alertDateClear">✕ Xóa ngày</button>
+      </div>
+      <div class="content-list" id="alertList"></div>
+      <div class="empty-state" id="emptyAlerts">Chưa có cảnh báo nào.</div>
+    </section>
+
+    <!-- PAGE: THỐNG KÊ TRUY CẬP -->
+    <section class="page" id="pageAccessStats">
+      <div class="page-header">
+        <h1 class="page-title">Thống kê truy cập</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <input type="date" id="accessDateFrom" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem"/>
+          <input type="date" id="accessDateTo" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem"/>
+          <select id="accessFilterClass" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem"><option value="">Tất cả lớp</option></select>
+          <select id="accessFilterType" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem">
+            <option value="">Tất cả loại</option>
+            <option value="video">Video</option>
+            <option value="doc">Tài liệu</option>
+          </select>
+          <button class="btn-outline" id="exportAccessBtn">⬇ Tải CSV</button>
+        </div>
+      </div>
+
+      <!-- Stat tổng -->
+      <div class="stat-grid" id="accessStatGrid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.5rem"></div>
+
+      <!-- Biểu đồ lượt xem theo ngày -->
+      <!-- Top bài học được xem nhiều -->
+      <div class="overview-grid" style="margin-bottom:1.5rem">
+        <div class="overview-panel">
+          <div class="panel-header"><span>🏆 Bài học được xem nhiều nhất</span></div>
+          <div id="topLessons"></div>
+        </div>
+        <div class="overview-panel">
+          <div class="panel-header"><span>👨‍🎓 Học sinh hoạt động nhiều nhất</span></div>
+          <div id="topStudents"></div>
+        </div>
+      </div>
+
+      <!-- Log chi tiết -->
+      <div class="overview-panel">
+        <div class="panel-header">
+          <span>📋 Nhật ký truy cập</span>
+          <input type="text" id="accessSearch" placeholder="🔍 Tìm học sinh..." style="padding:.4rem .8rem;border:1.5px solid var(--border);border-radius:8px;outline:none;font-size:.83rem;width:200px"/>
+        </div>
+        <div id="accessLogList"></div>
+        <div class="empty-state" id="emptyAccessLog">Chưa có dữ liệu truy cập.</div>
+      </div>
+    </section>
+
+    <!-- PAGE: LỊCH SỬ ĐĂNG NHẬP -->
+    <section class="page" id="pageLoginHistory">
+      <div class="page-header">
+        <h1 class="page-title">🕐 Lịch sử đăng nhập</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <input type="date" id="loginHistoryDateFrom" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem"/>
+          <input type="date" id="loginHistoryDateTo" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem"/>
+          <select id="loginHistoryFilterClass" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem"><option value="">Tất cả lớp</option></select>
+          <button class="btn-outline" id="exportLoginHistoryBtn">⬇ Xuất CSV</button>
+          <button class="btn-outline btn-danger" id="clearLoginHistoryBtn">🗑 Xóa tất cả</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="loginHistorySearch" placeholder="🔍 Tìm theo tên hoặc Gmail..."/>
+      </div>
+      <div class="stat-grid" id="loginHistoryStats" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.5rem"></div>
+      <div class="overview-panel">
+        <div id="loginHistoryList"></div>
+        <div class="empty-state" id="emptyLoginHistory">Chưa có lịch sử đăng nhập.</div>
+      </div>
+    </section>
+
+    <!-- PAGE: THÔNG BÁO -->
+    <section class="page" id="pageAnnouncements">
+      <div class="page-header">
+        <h1 class="page-title">📢 Thông báo</h1>
+      </div>
+      <div class="two-col">
+        <!-- Form tạo thông báo -->
+        <div class="form-panel">
+          <h3 id="annFormTitle">✏️ Tạo thông báo mới</h3>
+          <label>Tiêu đề <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="annTitle" placeholder="VD: Lịch học tuần tới..."/>
+          <label>Nội dung <span style="color:var(--danger)">*</span></label>
+          <textarea id="annContent" rows="4" placeholder="Nội dung thông báo..." style="resize:vertical"></textarea>
+          <label>Link đính kèm <span class="muted">(tuỳ chọn)</span></label>
+          <input type="text" id="annLink" placeholder="https://..."/>
+          <input type="text" id="annLinkText" placeholder="Tên hiển thị (VD: Xem tại đây)" style="margin-top:.4rem"/>
+          <label>Gửi đến lớp <span class="muted">(để trống = tất cả)</span></label>
+          <select id="annClass"><option value="">-- Tất cả học sinh --</option></select>
+          <label>Hoặc gửi cho học sinh cụ thể <span class="muted">(ưu tiên hơn lớp)</span></label>
+          <div style="position:relative">
+            <input type="text" id="annStudentSearch" placeholder="🔍 Tìm tên học sinh..." autocomplete="off"/>
+            <div id="annStudentDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;border:1.5px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;background:var(--card);z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.12);margin-top:2px"></div>
+          </div>
+          <div id="annStudentSelected" style="display:none;background:#eef2ff;border-radius:8px;padding:.4rem .75rem;font-size:.83rem;color:#3730a3;display:flex;align-items:center;gap:.5rem">
+            <span id="annStudentSelectedName"></span>
+            <button id="annStudentClearBtn" style="background:none;border:none;cursor:pointer;color:#6366f1;font-size:1rem;padding:0;margin-left:auto">✕</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+            <input type="checkbox" id="annPinned"/> Ghim thông báo (hiện nổi bật)
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+            <input type="checkbox" id="annExpire24h"/> Tự biến mất sau 24 giờ
+          </label>
+          <div id="annError" class="error-msg"></div>
+          <div class="form-actions">
+            <button class="btn-outline" id="annCancelBtn">Hủy</button>
+            <button class="btn-primary" id="annSaveBtn">📢 Gửi thông báo</button>
+          </div>
+        </div>
+        <!-- Danh sách thông báo -->
+        <div class="form-panel">
+          <h3>Danh sách thông báo</h3>
+          <div id="annList" style="display:flex;flex-direction:column;gap:.6rem"></div>
+          <div class="empty-state" id="emptyAnn">Chưa có thông báo nào.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: THI ĐUA HỌC VIÊN -->
+    <section class="page" id="pageCompetition">
+      <div class="page-header">
+        <h1 class="page-title">🏆 Thi đua học viên</h1>
+        <button class="btn-outline" id="refreshCompetitionBtn">🔄 Làm mới</button>
+      </div>
+      <div class="stat-grid" style="margin-bottom:1rem">
+        <div class="stat-card purple"><div class="stat-icon">👨‍🎓</div><div><div class="stat-num" id="compStatStudents">0</div><div class="stat-label">Học viên có dữ liệu</div></div></div>
+        <div class="stat-card blue"><div class="stat-icon">🥇</div><div><div class="stat-num" id="compStatTop1">—</div><div class="stat-label">Top 1 hiện tại</div></div></div>
+        <div class="stat-card green"><div class="stat-icon">🎖️</div><div><div class="stat-num" id="compStatAvgBadges">0</div><div class="stat-label">TB huy chương / học viên</div></div></div>
+        <div class="stat-card orange"><div class="stat-icon">⚡</div><div><div class="stat-num" id="compStatTopPoints">0</div><div class="stat-label">Điểm cao nhất</div></div></div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="competitionSearch" placeholder="Tìm theo tên hoặc username..."/>
+      </div>
+      <div style="overflow:auto">
+        <table class="data-table" id="competitionTable">
+          <thead>
+            <tr>
+              <th>Top</th>
+              <th>Học viên</th>
+              <th>Lớp</th>
+              <th>Điểm</th>
+              <th>Streak</th>
+              <th>Huy chương</th>
+              <th>Huy chương đã mở</th>
+            </tr>
+          </thead>
+          <tbody id="competitionBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyCompetition" style="display:none">Chưa có dữ liệu thi đua.</div>
+    </section>
+
+    <!-- PAGE: HỒ SƠ -->
+    <section class="page" id="pageProfile">
+      <h1 class="page-title">Hồ sơ</h1>
+      <div class="profile-card">
+        <div class="profile-avatar">GV</div>
+        <div class="profile-info">
+          <div class="profile-name" id="profileName"></div>
+          <div class="profile-role">Admin</div>
+        </div>
+      </div>
+      <div class="form-panel" style="max-width:480px;margin-top:1.5rem">
+        <h3>Đổi mật khẩu</h3>
+        <label>Mật khẩu hiện tại</label>
+        <input type="password" id="pwOld" placeholder="Mật khẩu hiện tại"/>
+        <label>Mật khẩu mới</label>
+        <input type="password" id="pwNew" placeholder="Mật khẩu mới"/>
+        <label>Xác nhận mật khẩu mới</label>
+        <input type="password" id="pwConfirm" placeholder="Nhập lại mật khẩu mới"/>
+        <div id="pwError" class="error-msg"></div>
+        <div id="pwSuccess" class="success-msg"></div>
+        <button class="btn-primary" id="pwSaveBtn" style="margin-top:0.5rem">Lưu thay đổi</button>
+      </div>
+    </section>
+
+    <!-- PAGE: LỊCH HỌC -->
+    <section class="page" id="pageSchedule">
+      <div class="page-header">
+        <h1 class="page-title">📅 Lịch học</h1>
+        <button class="btn-primary" id="openAddScheduleBtn">➕ Thêm lịch học</button>
+      </div>
+      <div class="filter-bar">
+        <select id="scheduleFilterClass"><option value="">Tất cả lớp</option></select>
+      </div>
+      <div id="scheduleGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:.5rem"></div>
+      <div class="empty-state" id="emptySchedule">Chưa có lịch học nào.</div>
+    </section>
+
+  <!-- MODAL: Thêm lịch học -->
+  <div class="modal-overlay" id="addScheduleModal">
+    <div class="modal" style="max-width:480px">
+      <h2>📅 Thêm lịch học</h2>
+      <label>Tiêu đề</label>
+      <input type="text" id="scheduleTitle" placeholder="VD: Lịch học tuần 1..."/>
+      <label>Lớp <span class="muted">(để trống = tất cả)</span></label>
+      <select id="scheduleClass" style="position:relative;z-index:9999"><option value="">-- Tất cả lớp --</option></select>
+      <label>Hình ảnh lịch học</label>
+      <div id="scheduleDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--bg)" onclick="document.getElementById('scheduleFileInput').click()">
+        <div style="font-size:2rem;margin-bottom:.5rem">🖼️</div>
+        <div style="font-size:.88rem;color:var(--muted)">Bấm để chọn ảnh hoặc kéo thả vào đây</div>
+        <div id="scheduleFileInfo" style="margin-top:.5rem;font-size:.82rem;color:var(--primary);font-weight:600"></div>
+      </div>
+      <input type="file" id="scheduleFileInput" accept="image/*" hidden/>
+      <div id="schedulePreview" style="display:none;margin-top:.75rem"><img id="schedulePreviewImg" style="width:100%;border-radius:10px;max-height:300px;object-fit:contain"/></div>
+      <div id="scheduleError" class="error-msg"></div>
+      <div class="modal-actions">
+        <button class="btn-outline" id="scheduleCancelBtn">Hủy</button>
+        <button class="btn-primary" id="scheduleSaveBtn">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Thông tin tài khoản vừa tạo -->
+  <div class="modal-overlay" id="newAccountModal">
+    <div class="modal" style="max-width:420px;padding:0;overflow:hidden;border-radius:20px">
+
+      <!-- Header gradient -->
+      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:1.75rem 1.5rem 1.25rem;text-align:center;position:relative">
+        <div style="font-size:2.8rem;margin-bottom:.4rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.2))">🎉</div>
+        <div style="color:#fff;font-size:1.15rem;font-weight:800;letter-spacing:.01em">Tài khoản đăng nhập học sinh</div>
+        <div style="color:rgba(255,255,255,.75);font-size:.8rem;margin-top:.25rem">Gửi thông tin này cho học viên</div>
+      </div>
+
+      <!-- Card thông tin -->
+      <div style="padding:1.25rem 1.5rem">
+        <div id="naInfoCard" style="background:#f8faff;border:1.5px solid #e0e7ff;border-radius:14px;overflow:hidden;margin-bottom:1rem">
+
+          <!-- Tên học viên nổi bật -->
+          <div style="background:linear-gradient(90deg,#eef2ff,#f5f3ff);padding:.9rem 1.1rem;border-bottom:1px solid #e0e7ff;display:flex;align-items:center;gap:.6rem">
+            <span style="font-size:1.3rem">👤</span>
+            <div>
+              <div style="font-size:.68rem;color:#6366f1;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Học viên</div>
+              <div id="naName" style="font-weight:800;font-size:1rem;color:#1e1b4b"></div>
+            </div>
+          </div>
+
+          <!-- Các dòng thông tin -->
+          <div style="padding:.75rem 1.1rem;display:flex;flex-direction:column;gap:.55rem">
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:.78rem;color:#64748b;font-weight:600">Mã học viên</span>
+              <span id="naCode" style="font-family:monospace;font-size:1.05rem;font-weight:800;color:#6366f1;background:#eef2ff;padding:.15rem .6rem;border-radius:6px;letter-spacing:.08em"></span>
+            </div>
+
+            <div style="height:1px;background:#e0e7ff"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:.78rem;color:#64748b;font-weight:600">Mật khẩu</span>
+              <span id="naPassword" style="font-family:monospace;font-size:1.05rem;font-weight:800;color:#6366f1;background:#eef2ff;padding:.15rem .6rem;border-radius:6px;letter-spacing:.08em"></span>
+            </div>
+            <div id="naPasswordSpelled" style="font-size:.72rem;color:#64748b;line-height:1.8;background:#f8faff;border-radius:8px;padding:.4rem .7rem;border:1px dashed #c7d2fe"></div>
+
+            <div style="height:1px;background:#e0e7ff"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:.78rem;color:#64748b;font-weight:600">Gmail đăng nhập</span>
+              <span id="naUsername" style="font-weight:600;font-size:.82rem;color:#1e293b"></span>
+            </div>
+
+            <div style="height:1px;background:#e0e7ff"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:.78rem;color:#64748b;font-weight:600">Lớp</span>
+              <span id="naClass" style="font-weight:700;color:#1e293b"></span>
+            </div>
+
+            <div style="height:1px;background:#e0e7ff"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:.78rem;color:#64748b;font-weight:600">Khai giảng</span>
+              <span id="naStartDate" style="font-weight:600;color:#059669;font-size:.85rem">Chưa có</span>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:.78rem;color:#64748b;font-weight:600">Kết thúc</span>
+              <span id="naEndDate" style="font-weight:600;color:#dc2626;font-size:.85rem">Chưa có</span>
+            </div>
+
+            <div style="height:1px;background:#e0e7ff"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:.78rem;color:#64748b;font-weight:600">SĐT</span>
+              <span id="naPhone" style="font-weight:600;color:#1e293b"></span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Nút hành động -->
+        <div class="modal-actions" style="justify-content:center;gap:.6rem;padding:0">
+          <button class="btn-outline" id="naCopyBtn" style="flex:1;font-size:.85rem">📋 Sao chép</button>
+          <button class="btn-outline" id="naShareBtn" style="flex:1;font-size:.85rem">📤 Chia sẻ</button>
+          <button class="btn-outline" id="naCancelBtn" style="flex:1;font-size:.85rem;color:var(--danger,#ef4444);border-color:var(--danger,#ef4444)">✕ Hủy</button>
+          <button class="btn-primary" id="naCloseBtn" style="flex:1;font-size:.85rem">✅ Xong</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: Sửa học sinh -->
+  <div class="modal-overlay" id="editStudentModal">
+    <div class="modal">
+      <h2>Chỉnh sửa tài khoản</h2>
+      <label>Mã học viên</label>
+      <div style="display:flex;gap:.5rem">
+        <input type="text" id="esCode" placeholder="Mã học viên..." style="flex:1"/>
+        <button type="button" id="esGenCodeBtn" class="btn-sm btn-outline" style="flex-shrink:0;white-space:nowrap">🔄 Tạo mã mới</button>
+      </div>
+      <label>Mật khẩu <span class="muted">(= mã học viên, tự cập nhật)</span></label>
+      <input type="text" id="esPassword" placeholder="Tự động theo mã học viên" style="background:var(--bg,#f8fafc);color:var(--muted,#94a3b8)" readonly/>
+      <label>Họ và tên</label>
+      <input type="text" id="esName" placeholder="Họ và tên..."/>
+      <label>Gmail (tên đăng nhập)</label>
+      <input type="text" id="esUsername" placeholder="Gmail..."/>
+      <label>Số báo danh mới <span class="muted">(để trống nếu không đổi)</span></label>
+      <input type="password" id="esPassword" placeholder="Số báo danh mới..."/>
+      <label>Lớp chính</label>
+      <select id="esClass"><option value="">-- Chọn lớp --</option></select>
+      <label style="margin-top:.5rem">Các lớp đã đăng ký</label>
+      <div id="esClassList" style="display:flex;flex-wrap:wrap;gap:.4rem;min-height:2rem;padding:.4rem 0"></div>
+      <div style="display:flex;gap:.5rem;margin-top:.3rem">
+        <select id="esAddClassSelect" style="flex:1"><option value="">-- Thêm lớp --</option></select>
+        <button type="button" id="esAddClassBtn" class="btn-sm btn-primary">➕ Thêm</button>
+      </div>
+      <div id="esExpiryGroup">
+      <label>Ngày hết hạn <span class="muted">(để trống = không giới hạn)</span></label>
+      <input type="date" id="esExpiry"/>
+      </div>
+      <label>Ghi chú <span class="muted">(tuỳ chọn)</span></label>
+      <textarea id="esNotes" placeholder="Ghi chú riêng cho học viên..." rows="2" style="resize:vertical"></textarea>
+      <div id="esError" class="error-msg"></div>
+      <div class="modal-actions">
+        <button id="esCancelBtn" class="btn-outline">Hủy</button>
+        <button id="esSaveBtn" class="btn-primary">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Xem đề / video -->
+  <div class="modal-overlay" id="viewerModal">
+    <div class="modal viewer-modal">
+      <button class="modal-close" id="closeViewer">✕</button>
+      <h2 id="viewerTitle"></h2>
+      <div id="viewerBody"></div>
+      <div class="modal-actions" style="margin-top:.35rem;padding:.35rem 0 0">
+        <a id="viewerDownload" class="btn-outline" download style="padding:.3rem .85rem;font-size:.82rem">⬇ Tải xuống</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Thêm học sinh -->
+  <div class="modal-overlay" id="addStudentModal">
+    <div class="modal">
+      <h2>Thêm học sinh</h2>
+      <label>Mã học viên</label>
+      <input type="text" id="addCode" placeholder="Tự động tạo..." style="background:var(--bg,#f8fafc);color:var(--muted,#94a3b8)" readonly/>
+      <label>Họ và tên</label>
+      <input type="text" id="addName" placeholder="Nhập họ và tên..."/>
+      <label>Số điện thoại</label>
+      <input type="tel" id="addPhone" placeholder="Nhập số điện thoại..." maxlength="10" inputmode="numeric"/>
+      <label>Gmail (tên đăng nhập)</label>
+      <input type="text" id="addUsername" placeholder="VD: hocsinh@gmail.com"/>
+      <label>Số báo danh (mật khẩu)</label>
+      <input type="text" id="addPassword" placeholder="Tự động theo mã học viên" style="background:var(--bg,#f8fafc);color:var(--muted,#94a3b8)" readonly/>
+      <label>Lớp</label>
+      <select id="addClass"><option value="">-- Chọn lớp --</option></select>
+      <div id="addExpiryGroup">
+      <label>Ngày hết hạn <span class="muted">(để trống = không giới hạn)</span></label>
+      <input type="date" id="addExpiry"/>
+      </div>
+      <label>Ghi chú <span class="muted">(tuỳ chọn)</span></label>
+      <textarea id="addNotes" placeholder="Ghi chú riêng cho học viên..." rows="2" style="resize:vertical"></textarea>
+      <div id="addStudentError" class="error-msg"></div>
+      <div class="modal-actions">
+        <button id="addStudentCancelBtn" class="btn-outline">Hủy</button>
+        <button id="addStudentSaveBtn" class="btn-primary">Thêm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Tạo lớp -->
+  <div class="modal-overlay" id="addClassModal">
+    <div class="modal">
+      <h2>Tạo lớp mới</h2>
+      <label>Tên lớp</label>
+      <input type="text" id="addClassName" placeholder="VD: Lớp 9A..."/>
+      <label>Ngày khai giảng <span class="muted">(tuỳ chọn)</span></label>
+      <input type="date" id="addClassStart"/>
+      <label>Ngày kết thúc <span class="muted">(tuỳ chọn)</span></label>
+      <input type="date" id="addClassEnd"/>
+      <div id="addClassError" class="error-msg"></div>
+      <div class="modal-actions">
+        <button id="addClassCancelBtn" class="btn-outline">Hủy</button>
+        <button id="addClassSaveBtn" class="btn-primary">Tạo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Sửa lớp -->
+  <div class="modal-overlay" id="editClassModal">
+    <div class="modal">
+      <h2>Sửa lớp</h2>
+      <label>Tên lớp</label>
+      <input type="text" id="editClassName" placeholder="Tên lớp..."/>
+      <label>Ngày khai giảng <span class="muted">(tuỳ chọn)</span></label>
+      <input type="date" id="editClassStart"/>
+      <label>Ngày kết thúc <span class="muted">(tuỳ chọn)</span></label>
+      <input type="date" id="editClassEnd"/>
+      <div id="editClassError" class="error-msg"></div>
+      <div class="modal-actions">
+        <button id="editClassCancelBtn" class="btn-outline">Hủy</button>
+        <button id="editClassSaveBtn" class="btn-primary">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Tạo bài học -->
+  <div class="modal-overlay" id="lessonModal">
+    <div class="modal" style="max-width:600px">
+      <h2 id="lessonModalTitle">Tạo bài học</h2>
+      <label>Tên bài học</label>
+      <input type="text" id="lNameInput" placeholder="VD: Bài 1 - Phương trình bậc nhất..."/>
+      <label>Nhóm <span class="muted">(tuỳ chọn)</span></label>
+      <select id="lGroupInput"><option value="">-- Không có nhóm --</option></select>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">
+        Lớp sẽ tự động gán theo nhóm bài học đã chọn.
+      </div>
+      <label>Mô tả <span class="muted">(tuỳ chọn)</span></label>
+      <input type="text" id="lDescInput" placeholder="Mô tả ngắn về bài học..."/>
+
+      <!-- Thêm video/tài liệu ngay khi tạo (chỉ hiện khi tạo mới) -->
+      <div id="lInlineMediaSection" style="margin-top:1rem;border-top:1.5px solid var(--border);padding-top:1rem">
+        <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:.75rem">📎 Thêm nội dung (tuỳ chọn)</div>
+
+        <!-- Video links -->
+        <label style="font-size:.83rem">🎬 Link video <span class="muted">(mỗi dòng 1 link)</span></label>
+        <textarea id="lInlineVideoLinks" placeholder="https://youtube.com/...&#10;https://drive.google.com/..." rows="3" style="resize:vertical;width:100%;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:10px;font-size:.85rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box"></textarea>
+
+        <!-- Tài liệu links -->
+        <label style="font-size:.83rem;margin-top:.5rem">📄 Link tài liệu <span class="muted">(mỗi dòng 1 link)</span></label>
+        <textarea id="lInlineDocLinks" placeholder="https://drive.google.com/file/d/..." rows="3" style="resize:vertical;width:100%;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:10px;font-size:.85rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box"></textarea>
+
+        <!-- Bản viết tay links -->
+        <label style="font-size:.83rem;margin-top:.5rem">✍️ Link bản viết tay <span class="muted">(mỗi dòng 1 link)</span></label>
+        <textarea id="lInlineHwLinks" placeholder="https://drive.google.com/file/d/..." rows="3" style="resize:vertical;width:100%;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:10px;font-size:.85rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box"></textarea>
+      </div>
+
+      <div id="lError" class="error-msg"></div>
+      <div class="modal-actions">
+        <button id="lCancelBtn" class="btn-outline">Hủy</button>
+        <button id="lSaveBtn" class="btn-primary">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Upload Video bài học -->
+  <div class="modal-overlay" id="lessonVideoModal">
+    <div class="modal">
+      <h2>Thêm video vào bài học</h2>
+      <!-- Tab chọn loại -->
+      <div class="tab-row" style="margin-bottom:1rem">
+        <button class="tab-btn active" id="tabVideoFile">📁 Upload file</button>
+        <button class="tab-btn" id="tabVideoLink">🔗 Dán link</button>
+        <button class="tab-btn" id="tabVideoEmbed">📋 Mã nhúng</button>
+      </div>
+      <!-- Upload file -->
+      <div id="videoFileSection">
+        <div class="preview-wrap"><video id="lessonPreviewVideo" controls></video></div>
+        <label style="margin-top:.5rem">Chọn file video</label>
+        <input type="file" id="lessonVideoFileInput" accept="video/*" style="margin-bottom:.5rem"/>
+      </div>
+      <!-- Dán link -->
+      <div id="videoLinkSection" style="display:none">
+        <label>Link video <span class="muted">(YouTube, Google Drive... mỗi dòng 1 link)</span></label>
+        <textarea id="lvLinkInput" placeholder="https://link1...&#10;https://link2..." rows="4" style="resize:vertical;width:100%;padding:.5rem;border:1px solid #ddd;border-radius:8px;font-size:.9rem"></textarea>
+        <div id="lvLinkPreview" style="margin-top:.5rem"></div>
+      </div>
+      <!-- Mã nhúng -->
+      <div id="videoEmbedSection" style="display:none">
+        <label>Mã nhúng (iframe) <span class="muted">— dán thẻ &lt;iframe&gt; vào đây</span></label>
+        <textarea id="lvEmbedInput" placeholder='&lt;iframe src="https://..." ...&gt;&lt;/iframe&gt;' rows="5" style="resize:vertical;width:100%;padding:.5rem;border:1px solid #ddd;border-radius:8px;font-size:.85rem;font-family:monospace"></textarea>
+      </div>
+      <label>Tiêu đề</label>
+      <input type="text" id="lvTitleInput" placeholder="Tên video..." style="display:none"/>
+      <div class="modal-actions">
+        <button id="lvCancelBtn" class="btn-outline">Hủy</button>
+        <button id="lvSaveBtn" class="btn-primary">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Upload Tài liệu bài học -->
+  <div class="modal-overlay" id="lessonDocModal">
+    <div class="modal">
+      <h2>Thêm tài liệu vào bài học</h2>
+      <div class="tab-row" style="margin-bottom:1rem">
+        <button class="tab-btn active" id="tabDocFile">📁 Upload file</button>
+        <button class="tab-btn" id="tabDocLink">🔗 Tài liệu</button>
+        <button class="tab-btn" id="tabDocHandwritten">✍️ Viết tay</button>
+      </div>
+      <!-- Upload file -->
+      <div id="docFileSection">
+        <div class="upload-drop" id="docUploadDrop" style="cursor:pointer">
+          <div class="upload-icon">☁️</div>
+          <p>Nhấn để chọn file</p>
+          <div id="lessonDocFileInfo" class="file-info"></div>
+        </div>
+      </div>
+      <!-- Dán link tài liệu + viết tay cùng lúc -->
+      <div id="docLinkSection" style="display:none">
+        <label>Link tài liệu <span class="muted">(mỗi dòng 1 link)</span></label>
+        <textarea id="ldLinkInput" placeholder="https://link1...&#10;https://link2..." rows="3" style="resize:vertical;width:100%;padding:.5rem;border:1px solid #ddd;border-radius:8px;font-size:.9rem;margin-bottom:.75rem"></textarea>
+        <label>Link bản viết tay <span class="muted">(mỗi dòng 1 link, tuỳ chọn)</span></label>
+        <textarea id="ldHandwrittenInput" placeholder="https://link1...&#10;https://link2..." rows="3" style="resize:vertical;width:100%;padding:.5rem;border:1px solid #ddd;border-radius:8px;font-size:.9rem"></textarea>
+      </div>
+      <!-- Bản viết tay riêng (ẩn, giữ để tương thích) -->
+      <div id="docHandwrittenSection" style="display:none"></div>
+      <input type="text" id="ldTitleInput" placeholder="Tên tài liệu..." style="display:none"/>
+      <div class="modal-actions">
+        <button id="ldCancelBtn" class="btn-outline">Hủy</button>
+        <button id="ldSaveBtn" class="btn-primary">Tải lên</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Xác nhận -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width:360px;text-align:center">
+      <div style="font-size:2rem;margin-bottom:.5rem" id="confirmIcon">🗑</div>
+      <h2 id="confirmTitle" style="margin-bottom:.5rem">Xác nhận</h2>
+      <p id="confirmMessage" style="color:#666;margin-bottom:1.25rem;font-size:.95rem"></p>
+      <div class="modal-actions" style="justify-content:center;gap:.75rem">
+        <button id="confirmCancelBtn" class="btn-outline">Hủy</button>
+        <button id="confirmOkBtn" class="btn-primary btn-danger">Xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Xóa lớp (3 chức năng) -->
+  <div class="modal-overlay" id="deleteClassModal">
+    <div class="modal" style="max-width:420px">
+      <div style="text-align:center;margin-bottom:1rem">
+        <div style="font-size:2rem">🗑</div>
+        <h2 id="deleteClassTitle" style="margin:.4rem 0 .3rem;font-size:1.1rem">Xóa lớp</h2>
+        <p id="deleteClassDesc" style="color:#666;font-size:.88rem;margin:0"></p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:1rem">
+        <!-- Option 1 -->
+        <button id="delCls_keepAll" style="display:flex;align-items:flex-start;gap:.75rem;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:.85rem 1rem;cursor:pointer;text-align:left;width:100%;transition:background .15s" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
+          <span style="font-size:1.3rem;flex-shrink:0">👤</span>
+          <div>
+            <div style="font-weight:700;font-size:.88rem;color:#166534">Xóa lớp, giữ học viên</div>
+            <div style="font-size:.78rem;color:#4b7a5a;margin-top:.2rem">Lớp bị xóa. Học viên vẫn còn trong hệ thống, chỉ gỡ khỏi lớp này.</div>
+          </div>
+        </button>
+        <!-- Option 2 -->
+        <button id="delCls_delAll" style="display:flex;align-items:flex-start;gap:.75rem;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:.85rem 1rem;cursor:pointer;text-align:left;width:100%;transition:background .15s" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+          <span style="font-size:1.3rem;flex-shrink:0">💣</span>
+          <div>
+            <div style="font-weight:700;font-size:.88rem;color:#991b1b">Xóa lớp & xóa toàn bộ học viên</div>
+            <div style="font-size:.78rem;color:#9b2c2c;margin-top:.2rem">Xóa lớp và toàn bộ tài khoản học viên thuộc lớp này.</div>
+          </div>
+        </button>
+        <!-- Option 3 -->
+        <button id="delCls_selective" style="display:flex;align-items:flex-start;gap:.75rem;background:#eff6ff;border:1.5px solid #93c5fd;border-radius:12px;padding:.85rem 1rem;cursor:pointer;text-align:left;width:100%;transition:background .15s" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+          <span style="font-size:1.3rem;flex-shrink:0">✅</span>
+          <div>
+            <div style="font-weight:700;font-size:.88rem;color:#1e40af">Xóa học viên có chọn lọc</div>
+            <div style="font-size:.78rem;color:#2563eb;margin-top:.2rem">Chọn từng học viên cần xóa trước khi xóa lớp.</div>
+          </div>
+        </button>
+      </div>
+      <div style="text-align:center">
+        <button id="deleteClassCancelBtn" class="btn-outline" style="min-width:80px">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Chọn lọc học viên xóa -->
+  <div class="modal-overlay" id="selectiveDeleteModal">
+    <div class="modal" style="max-width:500px">
+      <h2 style="margin-bottom:.75rem;font-size:1rem">✅ Chọn học viên cần giữ lại</h2>
+      <p id="selectiveDeleteDesc" style="font-size:.83rem;color:#666;margin-bottom:.75rem"></p>
+      <div style="position:relative;margin-bottom:.65rem">
+        <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.9rem">🔍</span>
+        <input id="selectiveSearch" type="text" placeholder="Tìm theo tên, Gmail, Mã HV..." style="width:100%;box-sizing:border-box;padding:.55rem 1rem .55rem 2.2rem;border:1.5px solid #e0e7ff;border-radius:10px;font-size:.85rem;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e0e7ff'"/>
+      </div>
+      <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:1rem">
+        <div id="selectiveStudentList" style="display:flex;flex-direction:column"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+        <div style="font-size:.8rem;color:#666"><span id="selectiveSelectedCount">0</span> học viên được <b style="color:#10b981">giữ lại</b></div>
+        <div style="display:flex;gap:.5rem">
+          <button id="selectiveCancelBtn" class="btn-outline">Hủy</button>
+          <button id="selectiveConfirmBtn" class="btn-primary btn-danger">🗑 Xóa không chọn & lớp</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Nhóm bài học -->
+  <div class="modal-overlay" id="groupModal">
+    <div class="modal">
+      <h2 id="groupModalTitle">Tạo nhóm</h2>
+      <label>Tên nhóm</label>
+      <input type="text" id="groupNameInput" placeholder="VD: Chương 1, Đại số, Ôn tập..."/>
+      <label>Chia sẻ cho lớp <span class="muted">(để trống = tất cả lớp)</span></label>
+      <!-- Dropdown chọn lớp -->
+      <div style="position:relative">
+        <select id="groupClassSelect" style="width:100%"><option value="">-- Chọn lớp để thêm --</option></select>
+      </div>
+      <!-- Tags lớp đã chọn -->
+      <div id="groupClassTags" style="display:flex;flex-wrap:wrap;gap:.4rem;min-height:2rem;padding:.3rem 0"></div>
+      <div id="groupError" class="error-msg"></div>
+      <div class="modal-actions">
+        <button id="groupCancelBtn" class="btn-outline">Hủy</button>
+        <button id="groupSaveBtn" class="btn-primary">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'SW_UPDATED') window.location.reload();
+      });
+    }
+  </script>
+  <!-- COPYRIGHT BAR -->
+  <style>
+    .cp-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 99999;
+      background: transparent;
+      border-top: none;
+      padding: .28rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      font-size: .68rem;
+      color: rgba(255,255,255,.45);
+      font-weight: 500;
+      letter-spacing: .2px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .cp-bar b { color: rgba(165,180,252,.75); }
+    .cp-bar .cp-dot { width: 4px; height: 4px; background: rgba(165,180,252,.3); border-radius: 50%; }
+  </style>
+  <div class="cp-bar">
+    <span>© 2026 <b>DHDTCT LMS Education System</b></span>
+    <span class="cp-dot"></span>
+    <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
+    <span class="cp-dot"></span>
+    <span><b>v1.3.0</b></span>
+  </div>
+
+</body>
