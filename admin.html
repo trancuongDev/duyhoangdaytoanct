@@ -62,7 +62,7 @@
       <button class="menu-toggle" id="menuToggle">☰</button>
 
       <!-- Tìm kiếm toàn cục -->
-      <div style="flex:1;max-width:320px;position:relative;margin:0 1rem">
+      <div style="flex:1;max-width:320px;position:relative;margin:0 1rem" id="globalSearchWrap">
         <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.95rem;pointer-events:none">🔍</span>
         <input id="globalSearch" type="text" placeholder="Tìm học sinh..." autocomplete="off"
           style="width:100%;padding:.5rem 1rem .5rem 2.2rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg);color:var(--text);transition:border-color .2s,box-shadow .2s"
@@ -70,6 +70,10 @@
           onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"/>
         <div id="globalSearchDropdown" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:999;max-height:320px;overflow-y:auto"></div>
       </div>
+
+      <!-- Nút search trên mobile -->
+      <button id="mobileSearchBtn" onclick="document.getElementById('mobileSearchBar').classList.toggle('open')"
+        style="display:none;background:none;border:1.5px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:1rem;align-items:center;justify-content:center">🔍</button>
 
       <div class="topbar-right">
         <!-- Nút Dark Mode -->
@@ -86,6 +90,14 @@
       </div>
     </header>
 
+    <!-- Mobile search bar -->
+    <div id="mobileSearchBar">
+      <div style="position:relative">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Tìm học sinh, mã HV..." autocomplete="off"
+          oninput="document.getElementById('globalSearch').value=this.value;document.getElementById('globalSearch').dispatchEvent(new Event('input'))"/>
+      </div>
+    </div>
     <!-- PAGE: TỔNG QUAN -->
     <section class="page active" id="pageOverview">
       <div id="greetingBanner" style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">

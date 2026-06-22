@@ -1996,3 +1996,286 @@ body { overflow-x: hidden; }
 .input-icon:focus-within {
   box-shadow: 0 0 0 3px rgba(99,102,241,.15), 0 2px 12px rgba(99,102,241,.1);
 }
+
+/* ══════════════════════════════════════════
+   MOBILE ADMIN OPTIMIZATIONS
+   ══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Sidebar ── */
+  .sidebar { width: 80vw; max-width: 260px; }
+  .sidebar-backdrop { transition: opacity .25s; }
+  .sidebar-backdrop.show { opacity: 1; }
+
+  /* ── Topbar ── */
+  .topbar { padding: 0 .75rem; gap: .4rem; height: 52px; }
+
+  /* Ẩn search input, thay bằng icon */
+  .topbar > div[style*="flex:1"],
+  .topbar > div[style*="flex: 1"] {
+    display: none !important;
+  }
+
+  /* Topbar right gọn lại */
+  .topbar-right { gap: .35rem; }
+  #darkModeBtn, #maintenanceBtn {
+    width: 32px !important; height: 32px !important;
+    font-size: .95rem !important;
+  }
+  .av-name { max-width: 80px; font-size: .78rem; }
+
+  /* ── Page content ── */
+  .page { padding: .75rem .75rem 1rem; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .page-title { font-size: 1.1rem; }
+
+  /* ── Toolbar nút ── */
+  .page-header .btn-primary,
+  .page-header .btn-outline,
+  .page-header button {
+    font-size: .8rem;
+    padding: .42rem .75rem;
+  }
+
+  /* ── Filter bar ── */
+  .filter-bar { flex-wrap: wrap; gap: .4rem; }
+  .filter-bar select,
+  .filter-bar input { font-size: .82rem; padding: .42rem .65rem; }
+
+  /* ── Stats grid ── */
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .stat-card { padding: .75rem; }
+  .stat-num { font-size: 1.4rem; }
+  .stat-label { font-size: .72rem; }
+
+  /* ── Tables ── */
+  .data-table { font-size: .78rem; }
+  .data-table th, .data-table td { padding: .45rem .55rem; }
+
+  /* ── Class cards (lớp học) ── */
+  .class-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Modal ── */
+  .modal { padding: 1.25rem 1rem; border-radius: 16px; margin: .5rem; }
+  .modal h2 { font-size: .95rem; }
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions button { flex: 1; min-width: 0; }
+
+  /* ── Form ── */
+  .form-row, .two-col { grid-template-columns: 1fr !important; }
+  .form-panel { padding: 1rem; }
+
+  /* ── classDetailView table ── */
+  #classDetailView { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #classDetailView table { min-width: 480px; }
+
+  /* ── Toolbar nút học sinh (nhiều nút) ── */
+  #pageStudents .page-header { align-items: stretch; }
+  #pageStudents .page-header > div { flex-wrap: wrap; gap: .4rem; }
+  #pageStudents .page-header button,
+  #pageStudents .page-header select { font-size: .78rem; }
+  #genMissingCodesBtn, #syncExpiryBtn, #syncClassNameBtn { display: none; }
+
+  /* ── Overview greeting ── */
+  .greeting-banner { padding: .85rem 1rem !important; }
+  .greeting-banner .greeting-text { font-size: 1rem !important; }
+  .greeting-banner .greeting-time { font-size: .75rem !important; }
+
+  /* ── Announcement / Schedule cards ── */
+  .ann-card, .schedule-card { padding: .75rem; }
+
+  /* ── Competition / stats ── */
+  .competition-table { display: block; overflow-x: auto; }
+
+  /* ── Bottom padding for copyright bar ── */
+  .dash-main { padding-bottom: 1.5rem; }
+}
+
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .stat-num { font-size: 1.2rem; }
+
+  /* Ẩn cột thứ 4 trở đi trong bảng học sinh */
+  .data-table th:nth-child(n+5),
+  .data-table td:nth-child(n+5) { display: none; }
+
+  /* Nút trong page-header full width */
+  .page-header { gap: .4rem; }
+
+  /* Modal full screen gần như */
+  .modal { margin: .25rem; max-height: 95vh; }
+
+  .topbar { height: 48px; }
+  .av-name { display: none; }
+}
+
+/* ── Mobile search bar (dưới topbar) ── */
+#mobileSearchBar {
+  display: none;
+  position: fixed;
+  top: 52px; left: 0; right: 0;
+  background: var(--card);
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--border);
+  z-index: 998;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+#mobileSearchBar.open { display: block; }
+#mobileSearchBar input {
+  width: 100%; box-sizing: border-box;
+  padding: .5rem 1rem .5rem 2rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px; outline: none;
+  font-size: .88rem;
+  background: var(--bg); color: var(--text);
+}
+#mobileSearchBar .search-icon {
+  position: absolute; left: 1.25rem; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted); pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  #mobileSearchBtn { display: flex !important; }
+  #globalSearchWrap { display: none !important; }
+}
+
+/* ── Fix form-actions thêm học viên trên mobile ── */
+@media (max-width: 768px) {
+  .form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .form-actions button {
+    width: 100%;
+    text-align: center;
+    white-space: normal;
+    word-break: break-word;
+  }
+  #pageCreateStudent .two-col {
+    grid-template-columns: 1fr !important;
+  }
+  #pageCreateStudent .form-panel {
+    padding: .85rem;
+  }
+}
+
+/* ══════════════════════════════════════════
+   FLUID RESPONSIVE — co giãn mọi kích thước
+   ══════════════════════════════════════════ */
+
+/* Base: đảm bảo không element nào vượt container */
+*, *::before, *::after { max-width: 100%; }
+img, video, canvas { max-width: 100%; height: auto; }
+
+/* Sidebar co khi cửa sổ nhỏ */
+@media (max-width: 900px) and (min-width: 769px) {
+  .sidebar { width: 200px; }
+  .sidebar-brand-text { font-size: .82rem; }
+  .slink-label { font-size: .82rem; }
+}
+
+/* Form actions luôn responsive */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.form-actions button {
+  flex: 1 1 auto;
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+/* Stat grid fluid */
+.stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* Two-col fluid */
+.two-col {
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+}
+@media (max-width: 700px) {
+  .two-col { grid-template-columns: 1fr; }
+}
+
+/* Topbar search co lại khi cửa sổ nhỏ */
+#globalSearchWrap {
+  min-width: 0;
+  flex-shrink: 1;
+}
+#globalSearch {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Modal luôn fit màn hình */
+.modal-overlay, .overlay {
+  padding: .75rem;
+  align-items: flex-start;
+  overflow-y: auto;
+}
+.modal, .modal-box {
+  width: 100%;
+  max-height: calc(100vh - 1.5rem);
+  overflow-y: auto;
+}
+
+/* Page header wrap tự động */
+.page-header {
+  flex-wrap: wrap;
+}
+
+/* Filter bar wrap */
+.filter-bar {
+  flex-wrap: wrap;
+}
+
+/* Bảng luôn scroll ngang thay vì tràn */
+.data-table-wrap,
+.tbl-wrap,
+div[style*="overflow-x"] {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Class grid fluid */
+.class-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+/* Overview grid fluid */
+.overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Buttons trong toolbar không bị cắt */
+.page-header button,
+.page-header .btn-primary,
+.page-header .btn-outline {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Group/lesson list fluid */
+.group-list, .content-list {
+  min-width: 0;
+}
+
+/* Topbar co khi < 600px */
+@media (max-width: 600px) {
+  .topbar { gap: .3rem; padding: 0 .5rem; }
+  .av-role { display: none; }
+  .av-name { max-width: 70px; font-size: .74rem; }
+}
+
+/* Ultra small < 400px */
+@media (max-width: 400px) {
+  .page { padding: .5rem; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .page-title { font-size: 1rem; }
+  .av-name { display: none; }
+  #darkModeBtn, #maintenanceBtn { display: none !important; }
+}
