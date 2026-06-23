@@ -5,7 +5,7 @@ const db = supabase.createClient(
 );
 
 // ---- Giải mã link AES-GCM ----
-const _ENC_KEY = 'DHDT-LMS-2025-SECURE-KEY-32BYT';
+const _ENC_KEY = 'DHDTCT-LMS-2025-SECURE-KEY-32BYT'; // 32 ký tự
 async function _getKey() {
   const raw = new TextEncoder().encode(_ENC_KEY.slice(0,32).padEnd(32,'0'));
   return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt','decrypt']);
@@ -1118,9 +1118,13 @@ function renderLessonListFromCache() {
 
 function getEmbedUrl(url) {
   if (!url) return null;
+  // YouTube watch link
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
-  // Dùng youtube-nocookie.com: không tracking, không cho click tên kênh mở tab mới
-  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&modestbranding=1`;
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  // YouTube embed URL đã có sẵn (youtube.com/embed hoặc youtube-nocookie.com/embed)
+  const ytEmbed = url.match(/(?:youtube(?:-nocookie)?\.com\/embed\/)([^?&\s]+)/);
+  if (ytEmbed) return `https://www.youtube.com/embed/${ytEmbed[1]}`;
+  // Google Drive
   const gd = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (gd) return `https://drive.google.com/file/d/${gd[1]}/preview`;
   return null;
@@ -1409,11 +1413,10 @@ function openViewer(title, url, fileName, fileType) {
 
       wrap.appendChild(iframeWrap);
 
-      // Params: tắt logo, related, annotations, bật fullscreen, mã hóa origin
-      const _origin = encodeURIComponent(location.origin || 'https://localhost');
+      // Params: tắt logo, related, annotations, bật fullscreen
       const embedClean = embed.includes('?')
-        ? embed + `&modestbranding=1&rel=0&iv_load_policy=3&fs=1&playsinline=1&origin=${_origin}&enablejsapi=1`
-        : embed + `?modestbranding=1&rel=0&iv_load_policy=3&fs=1&playsinline=1&origin=${_origin}&enablejsapi=1`;
+        ? embed + `&modestbranding=1&rel=0&iv_load_policy=3&fs=1&playsinline=1`
+        : embed + `?modestbranding=1&rel=0&iv_load_policy=3&fs=1&playsinline=1`;
       setTimeout(() => { iframe.src = embedClean; }, 0);
     } else {
       // URL không phải YouTube — có thể là Google Drive video
