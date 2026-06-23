@@ -1,4 +1,4 @@
-const CACHE = 'dhdtct-lms-v1.3.0';
+﻿const CACHE = 'DHDT-lms-v1.4.5';
 const BASE = '/duyhoangdaytaon-cantho.1.1';
 const STATIC = [
   `${BASE}/index.html`,
