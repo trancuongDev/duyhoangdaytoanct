@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quản lý học viên lớp - DHDTCT LMS</title>
+  <title>Quản lý học viên lớp - DHDT LMS</title>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
@@ -75,7 +75,7 @@
   <div class="sidebar">
     <div class="sidebar-logo">
       <img src="icons/icon-192.png" alt="Logo"/>
-      <span>DHDTCT<br/>Quản lý lớp</span>
+      <span>DHDT<br/>Quản lý lớp</span>
     </div>
     <div class="sidebar-section">Học viên</div>
     <button class="slink active" id="tabMembers"><span class="slink-icon">👥</span>Danh sách HV</button>
@@ -438,19 +438,5 @@ document.getElementById('exportBtn').addEventListener('click',()=>{
 // ── Init ──
 loadClasses().then(()=>loadMembers());
 </script>
-
-<!-- COPYRIGHT BAR -->
-<style>
-  .cp-bar{position:fixed;bottom:0;left:0;right:0;z-index:99999;background:transparent;border-top:none;padding:.28rem 1rem;display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.68rem;color:rgba(100,116,139,.5);font-weight:500;letter-spacing:.2px;pointer-events:none;user-select:none}
-  .cp-bar b{color:rgba(99,102,241,.6)}
-  .cp-bar .cp-dot{width:4px;height:4px;background:rgba(99,102,241,.25);border-radius:50%}
-</style>
-<div class="cp-bar">
-  <span>© 2026 <b>DHDTCT LMS Education System</b></span>
-  <span class="cp-dot"></span>
-  <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
-  <span class="cp-dot"></span>
-  <span><b>v1.3.0</b></span>
-</div>
 </body>
 </html>

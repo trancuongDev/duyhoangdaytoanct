@@ -1,5 +1,5 @@
-# 📚 Hướng Dẫn Sử Dụng & Cài Đặt
-## DHDTCT LMS Education System v1.3.0
+﻿# 📚 Hướng Dẫn Sử Dụng & Cài Đặt
+## DHDT LMS v1.4.5
 
 ---
 
@@ -209,4 +209,4 @@ Liên hệ người phát triển để được hỗ trợ cài đặt và vậ
 
 ---
 
-*DHDTCT LMS Education System v1.3.0 — Cần Thơ*
+*DHDT LMS v1.4.5 — Cần Thơ*

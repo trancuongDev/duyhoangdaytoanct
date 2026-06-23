@@ -1,7 +1,7 @@
-{
-  "name": "DHDTCT LMS Education System v1.3.0",
-  "short_name": "DHDTCT LMS",
-  "description": "DHDTCT LMS Education System - v1.3.0",
+﻿{
+  "name": "DHDT LMS v1.4.5",
+  "short_name": "DHDT LMS",
+  "description": "DHDT LMS - v1.4.5",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

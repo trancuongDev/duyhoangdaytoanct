@@ -1,11 +1,11 @@
-// Khởi tạo Supabase client
+﻿// Khởi tạo Supabase client
 const db = supabase.createClient(
   'https://gojpmogjretoxplydjvg.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
 );
 
 // ---- Giải mã link AES-GCM ----
-const _ENC_KEY = 'DHDTCT-LMS-2025-SECURE-KEY-32BYT';
+const _ENC_KEY = 'DHDT-LMS-2025-SECURE-KEY-32BYT';
 async function _getKey() {
   const raw = new TextEncoder().encode(_ENC_KEY.slice(0,32).padEnd(32,'0'));
   return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt','decrypt']);

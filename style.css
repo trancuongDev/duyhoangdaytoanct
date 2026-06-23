@@ -2279,3 +2279,203 @@ div[style*="overflow-x"] {
   .av-name { display: none; }
   #darkModeBtn, #maintenanceBtn { display: none !important; }
 }
+
+/* ══════════════════════════════════════════════════
+   ADMIN MOBILE — Tối ưu toàn diện
+   ══════════════════════════════════════════════════ */
+
+/* ── Bottom nav bar cho admin mobile ── */
+@media (max-width: 768px) {
+
+  /* Thanh nav dưới cùng — truy cập nhanh 5 mục chính */
+  #adminBottomNav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 58px;
+    background: var(--card, #fff);
+    border-top: 1.5px solid var(--border, #e2e8f0);
+    z-index: 1000;
+    box-shadow: 0 -4px 16px rgba(0,0,0,.08);
+  }
+  .dash-main { padding-bottom: 70px !important; }
+
+  /* Bảng học sinh — giữ 3 cột quan trọng nhất */
+  #pageStudents .data-table th:nth-child(1),
+  #pageStudents .data-table td:nth-child(1) { display: none; } /* Mã HV — ẩn */
+  #pageStudents .data-table th:nth-child(5),
+  #pageStudents .data-table td:nth-child(5) { display: none; } /* Lớp — ẩn */
+  #pageStudents .data-table th:nth-child(6),
+  #pageStudents .data-table td:nth-child(6) { display: none; } /* Ngày tạo — ẩn */
+  #pageStudents .data-table th:nth-child(7),
+  #pageStudents .data-table td:nth-child(7) { display: none; } /* Hết hạn — ẩn */
+  #pageStudents .data-table th:nth-child(9),
+  #pageStudents .data-table td:nth-child(9) { display: none; } /* Học tập — ẩn */
+
+  /* Bảng học sinh — wrapper scroll */
+  #pageStudents > div[style*="overflow-x"] { border-radius: 12px; }
+
+  /* Greeting banner admin — gọn hơn */
+  #greetingBanner {
+    padding: .85rem 1rem !important;
+    border-radius: 12px !important;
+  }
+  #greetingText { font-size: 1rem !important; }
+  #greetingDate { font-size: .72rem !important; }
+  #greetingTime { font-size: 1.2rem !important; }
+
+  /* Stat grid — 2x2 gọn */
+  #pageOverview .stat-grid { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .stat-card { border-radius: 12px !important; }
+
+  /* Overview panels stack dọc */
+  #pageOverview .overview-grid { grid-template-columns: 1fr; gap: .75rem; }
+
+  /* Expiry reminder panel */
+  #expiryReminderPanel { margin-top: .75rem; }
+
+  /* Online students list gọn */
+  #onlineStudentList { gap: .35rem; }
+
+  /* Page header — nút nhỏ gọn, wrap */
+  .page-header > div[style] {
+    flex-wrap: wrap !important;
+    gap: .4rem !important;
+  }
+  .page-header button[class*="btn"] {
+    font-size: .78rem !important;
+    padding: .4rem .7rem !important;
+    border-radius: 8px !important;
+  }
+
+  /* Xuất Excel + Thêm học sinh nổi bật hơn */
+  #exportStudentsBtn { order: 1; }
+  #openAddStudentBtn { order: 0; }
+
+  /* Filter bar học sinh */
+  #studentSearch { width: 100% !important; }
+  #studentFilterClass, #studentFilterExpiry {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Form panel — thêm học viên */
+  #pageCreateStudent h3 { font-size: .92rem; }
+  #pageCreateStudent label { font-size: .78rem; }
+  #pageCreateStudent input,
+  #pageCreateStudent select,
+  #pageCreateStudent textarea {
+    font-size: .88rem !important;
+    padding: .55rem .75rem !important;
+  }
+
+  /* Mini student table ẩn cột ít quan trọng */
+  #miniStudentTable th:nth-child(3),
+  #miniStudentTable td:nth-child(3),
+  #miniStudentTable th:nth-child(7),
+  #miniStudentTable td:nth-child(7) { display: none; }
+  #miniStudentTable { font-size: .76rem; }
+
+  /* Bảng lớp học */
+  #pageClasses .stat-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+  /* Class detail table */
+  #classStudentBody tr td:nth-child(3),
+  #classStudentBody tr th:nth-child(3) { display: none; }
+
+  /* Alerts / security log */
+  #alertList .content-row,
+  #deviceAlertList .content-row { padding: .65rem .75rem; }
+
+  /* Access stats — ẩn biểu đồ phức tạp khi quá nhỏ */
+  #pageAccessStats .overview-grid { grid-template-columns: 1fr; }
+
+  /* Competition page */
+  #pageCompetition .stat-grid { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* Login history */
+  #pageLoginHistory .stat-grid { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* Schedule / announcements */
+  #pageAnnouncements .two-col { grid-template-columns: 1fr; }
+  #pageSchedule .two-col { grid-template-columns: 1fr; }
+
+  /* Modal bottom sheet feel */
+  .overlay { align-items: flex-end !important; padding: 0 !important; }
+  .overlay > .modal {
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 !important;
+    max-height: 92vh;
+    width: 100%;
+    overflow-y: auto;
+  }
+
+  /* Sidebar nav items to avoid thumb dead zone */
+  .slink { min-height: 44px; }
+}
+
+@media (max-width: 480px) {
+
+  /* Topbar rất gọn */
+  .topbar { padding: 0 .5rem; gap: .3rem; }
+  #darkModeBtn, #maintenanceBtn {
+    width: 30px !important; height: 30px !important;
+    font-size: .85rem !important;
+  }
+
+  /* Stat card rất gọn */
+  .stat-card { padding: .65rem .55rem; gap: .5rem; }
+  .stat-icon { font-size: 1.4rem; }
+  .stat-num  { font-size: 1.15rem; }
+  .stat-label { font-size: .68rem; }
+
+  /* Page title */
+  .page-title { font-size: 1rem; }
+  .page { padding: .6rem .6rem 1rem; }
+
+  /* Greeting banner ẩn time vì không đủ chỗ */
+  #greetingTime { display: none !important; }
+
+  /* Data table cực nhỏ */
+  .data-table th, .data-table td { font-size: .74rem !important; padding: .4rem .4rem !important; }
+
+  /* Form input */
+  input, select, textarea { font-size: .88rem !important; }
+
+  /* Modal */
+  .modal { padding: 1rem .85rem; }
+  .modal h2 { font-size: .9rem; }
+
+  /* Filter bar full width */
+  .filter-bar > * { width: 100% !important; min-width: 0 !important; }
+
+  /* Competition stat 1 cột */
+  #pageCompetition .stat-grid,
+  #pageLoginHistory .stat-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── Admin bottom nav HTML (thêm vào body qua JS) ── */
+#adminBottomNav {
+  display: none; /* ẩn trên desktop */
+}
+#adminBottomNav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: var(--muted, #94a3b8);
+  font-size: .6rem;
+  font-weight: 600;
+  padding: .35rem .25rem;
+  border-radius: 0;
+  transition: color .15s;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+#adminBottomNav a.active,
+#adminBottomNav a:active { color: var(--primary, #6366f1); }
+#adminBottomNav a span.nav-icon { font-size: 1.3rem; line-height: 1; }

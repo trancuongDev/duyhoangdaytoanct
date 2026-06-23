@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8"/>
   <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Học Sinh - DHDTCT LMS v1.3.0</title>
+  <title>Học Sinh - DHDT LMS v1.4.5</title>
   <meta http-equiv="X-Frame-Options" content="DENY"/>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
@@ -125,7 +125,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/></div>
-      <span class="sidebar-brand-text">DHDTCT LMS</span>
+      <span class="sidebar-brand-text">DHDT LMS</span>
       <button id="sidebarClose" class="sidebar-mini-toggle" title="Thu gọn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;transition:all .2s;flex-shrink:0" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
     </div>
     <nav class="sidebar-nav">
@@ -154,7 +154,7 @@
     <a href="index.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất">
       <span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span>
     </a>
-    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.3.0</div>
+    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.5</div>
     <div class="sidebar-mini-reopen">
       <button id="sidebarMiniReopen" class="sidebar-mini-toggle" title="Mở rộng">▶</button>
     </div>
@@ -168,7 +168,7 @@
       <button class="menu-toggle" id="menuToggle">☰</button>
       <div style="font-weight:700;font-size:.95rem;color:var(--text);display:flex;align-items:center;gap:.5rem">
         <img src="icons/icon-192.png" style="width:24px;height:24px;border-radius:6px"/>
-        DHDTCT LMS Education System
+        DHDT LMS
       </div>
       <div class="topbar-right">
         <button id="studentDarkBtn" title="Chế độ tối" style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s">🌙</button>
@@ -587,10 +587,10 @@
 
     <!-- FOOTER -->
     <footer style="text-align:center;padding:1.5rem 1rem;font-size:.76rem;color:#888;background:#0f172a;border-top:1px solid #1e293b;margin-top:auto;line-height:1.9">
-      <p>© Bản quyền thuộc về <b>DHDTCT LMS Education System</b>. Toàn bộ nội dung trên website bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và hệ thống quản lý đều thuộc quyền sở hữu của chúng tôi và được pháp luật bảo hộ.</p>
+      <p>© Bản quyền thuộc về <b>DHDT LMS</b>. Toàn bộ nội dung trên website bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và hệ thống quản lý đều thuộc quyền sở hữu của chúng tôi và được pháp luật bảo hộ.</p>
       <p>Nghiêm cấm mọi hành vi sao chép, chỉnh sửa, phát tán, chia sẻ hoặc sử dụng dưới bất kỳ hình thức nào khi chưa có sự cho phép bằng văn bản từ chủ sở hữu.</p>
       <p>Mọi hành vi vi phạm bản quyền sẽ bị xử lý theo quy định của pháp luật hiện hành.</p>
-      <p style="margin-top:.5rem;color:#555;font-size:.72rem">Phiên bản <b style="color:#6366f1">v1.3.0</b></p>
+      <p style="margin-top:.5rem;color:#555;font-size:.72rem">Phiên bản <b style="color:#6366f1">v1.4.5</b></p>
     </footer>
   </div>
 
@@ -1236,37 +1236,6 @@
     // Banner chi tiết bài học — khởi động khi mở
     createMathUniverse('lessonDetailBanner', 'lessonBannerCanvas', 'lessonBannerSymbols', 60);
   </script>
-
-  <!-- COPYRIGHT BAR -->
-  <style>
-    .cp-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 99999;
-      background: transparent;
-      border-top: none;
-      padding: .28rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .5rem;
-      font-size: .68rem;
-      color: rgba(255,255,255,.45);
-      font-weight: 500;
-      letter-spacing: .2px;
-      pointer-events: none;
-      user-select: none;
-    }
-    .cp-bar b { color: rgba(165,180,252,.75); }
-    .cp-bar .cp-dot { width: 4px; height: 4px; background: rgba(165,180,252,.3); border-radius: 50%; }
-  </style>
-  <div class="cp-bar">
-    <span>© 2026 <b>DHDTCT LMS Education System</b></span>
-    <span class="cp-dot"></span>
-    <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
-    <span class="cp-dot"></span>
-    <span><b>v1.3.0</b></span>
-  </div>
 
 </body>
 
