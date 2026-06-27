@@ -774,7 +774,9 @@
     <!-- Footer sticky -->
     <div class="hw-modal-footer">
       <button class="btn-outline" onclick="closeModalHW()">Hủy</button>
-      <button class="btn-primary" onclick="saveHomework()">💾 Lưu bài tập</button>
+      <button class="btn-outline" onclick="saveHomework(true)"
+        style="border-color:#f59e0b;color:#92400e;font-weight:700">📋 Lưu nháp</button>
+      <button class="btn-primary" onclick="saveHomework(false)">� Lưu & Giao bài</button>
     </div>
 
     </div><!-- /hw-modal-body -->
@@ -1132,6 +1134,7 @@ async function loadStudentData() {
   const [hwR,subR] = await Promise.all([
     sb.from('homework').select('*')
       .or(`class_name.is.null${cn?',class_name.eq.'+cn:''}`)
+      .eq('is_draft', false)   // chỉ lấy bài đã giao, bỏ qua bài nháp
       .order('created_at',{ascending:false}),
     sb.from('homework_submissions').select('*').eq('username',currentUser.username)
   ]);
@@ -1352,11 +1355,20 @@ function renderAdminList() {
     const subC  = allSubmissions.filter(s=>s.homework_id===hw.id).length;
     const gradC = allSubmissions.filter(s=>s.homework_id===hw.id&&s.status==='graded').length;
     const od    = isOverdue(hw.due_date);
-    return `<div class="hw-card">
+    const isDraft = hw.is_draft === true;
+    return `<div class="hw-card" style="${isDraft?'border-color:#f59e0b;opacity:.92':''}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.5rem">
-        <div style="font-weight:800;font-size:.98rem;flex:1">📝 ${esc(hw.title)}</div>
+        <div style="font-weight:800;font-size:.98rem;flex:1;display:flex;align-items:center;gap:.5rem">
+          ${isDraft?`<span style="background:#fef3c7;color:#92400e;font-size:.7rem;font-weight:800;padding:.15rem .5rem;border-radius:6px;border:1.5px solid #f59e0b;flex-shrink:0">� NHÁP</span>`:''}
+          �📝 ${esc(hw.title)}
+        </div>
         <div style="display:flex;gap:.35rem;flex-shrink:0;flex-wrap:wrap">
-          ${hw.class_name?`<span class="hw-badge pending">🏫 ${esc(hw.class_name)}</span>`:'<span class="hw-badge" style="background:#e0e7ff;color:#3730a3">🌐 Tất cả</span>'}
+          ${isDraft
+            ? `<span style="background:#fef3c7;color:#92400e;padding:.2rem .6rem;border-radius:8px;font-size:.75rem;font-weight:700">⛔ Chưa giao</span>`
+            : hw.class_name
+              ? `<span class="hw-badge pending">🏫 ${esc(hw.class_name)}</span>`
+              : '<span class="hw-badge" style="background:#e0e7ff;color:#3730a3">🌐 Tất cả</span>'
+          }
           ${hw.due_date?`<span class="due-chip${od?' overdue':''}">⏰ ${fmtDate(hw.due_date)}${od?' · Quá hạn':''}</span>`:''}
         </div>
       </div>
@@ -1364,16 +1376,20 @@ function renderAdminList() {
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;font-size:.78rem;color:var(--muted);margin-bottom:.75rem">
         <span>📅 ${fmtDate(hw.created_at)}</span>
         ${hw.time_limit?`<span style="display:inline-flex;align-items:center;gap:.25rem;background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:8px;font-weight:700">⏱ ${hw.time_limit} phút</span>`:''}
-        <span>📬 Đã nộp: <b style="color:var(--primary)">${subC}</b></span>
-        <span>✅ Đã chấm: <b style="color:var(--hw-green)">${gradC}</b></span>
+        ${!isDraft?`<span>📬 Đã nộp: <b style="color:var(--primary)">${subC}</b></span>`:''}
+        ${!isDraft?`<span>✅ Đã chấm: <b style="color:var(--hw-green)">${gradC}</b></span>`:''}
       </div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap">
         <button class="btn-sm" onclick="openEditHW(${hw.id})">✏️ Sửa</button>
         <button class="btn-sm btn-danger" onclick="deleteHW(${hw.id})">🗑 Xóa</button>
-        <button class="btn-sm btn-success" onclick="viewSubmissionsFor(${hw.id})">📬 Bài nộp (${subC})</button>
+        ${isDraft
+          ? `<button class="btn-sm" onclick="publishHW(${hw.id})"
+              style="background:#10b981;border-color:#10b981;color:#fff;font-weight:700">🚀 Giao bài cho học sinh</button>`
+          : `<button class="btn-sm btn-success" onclick="viewSubmissionsFor(${hw.id})">📬 Bài nộp (${subC})</button>`
+        }
         <button class="btn-sm" onclick="previewHW(${hw.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem đề</button>
         <button class="btn-sm" onclick="exportHW(${hw.id})" style="border-color:#0891b2;color:#0e7490">⬇ Xuất đề</button>
-        ${subC?`<button class="btn-sm" onclick="exportScoresByHW(${hw.id})" style="border-color:#10b981;color:#065f46;font-weight:700">📊 Xuất điểm</button>`:''}
+        ${subC&&!isDraft?`<button class="btn-sm" onclick="exportScoresByHW(${hw.id})" style="border-color:#10b981;color:#065f46;font-weight:700">📊 Xuất điểm</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -2676,7 +2692,7 @@ function _applyQImageUrl(_id, url) {
 // ═══════════════════════════════════════════
 // SAVE HOMEWORK (admin)
 // ═══════════════════════════════════════════
-async function saveHomework() {
+async function saveHomework(isDraft=false) {
   const title=document.getElementById('hwTitle').value.trim();
   if(!title){document.getElementById('hwFormErr').textContent='Vui lòng nhập tiêu đề.';return;}
   if(!editorQuestions.length){document.getElementById('hwFormErr').textContent='Vui lòng thêm ít nhất 1 câu hỏi.';return;}
@@ -2689,7 +2705,8 @@ async function saveHomework() {
     realQCount++;
     if(!q.text.trim()){document.getElementById('hwFormErr').textContent=`Câu ${realQCount}: Chưa nhập nội dung câu hỏi.`;return;}
     if(q.type==='multiple_choice'){
-      const filled=q.data.options.filter(o=>o.trim());
+      // options có thể là string (cũ) hoặc {text,img} (mới)
+      const filled=q.data.options.filter(o=>(typeof o==='string'?o:(o.text||'')).trim());
       if(filled.length<2){document.getElementById('hwFormErr').textContent=`Câu ${realQCount}: Cần ít nhất 2 phương án.`;return;}
     }
   }
@@ -2703,7 +2720,8 @@ async function saveHomework() {
     time_limit:parseInt(document.getElementById('hwTimeLimit').value)||null,
     max_attempts: _getMaxAttempts(),
     total_score:  parseFloat(document.getElementById('hwTotalScore').value)||null,
-    created_by:currentUser.username
+    created_by:currentUser.username,
+    is_draft: isDraft
   };
   const editId=document.getElementById('hwEditId').value;
   let hwId=editId?parseInt(editId):null;
@@ -2737,7 +2755,28 @@ async function saveHomework() {
   // Reset cache
   delete allQuestions[hwId];
   closeModalHW(true);
-  showToast(editId?'Đã cập nhật bài tập':'Đã tạo bài tập thành công');
+  if (isDraft) showToast('📋 Đã lưu nháp — học sinh chưa thấy bài này');
+  else showToast(editId ? '✅ Đã cập nhật & giao bài' : '🚀 Đã tạo và giao bài thành công');
+  await loadAdminData();
+  renderAdminList();
+}
+
+async function publishHW(id) {
+  const hw = allHomework.find(h=>h.id===id);
+  const ok = await showConfirm({
+    icon: '🚀',
+    title: 'Giao bài cho học sinh?',
+    msg: `Bài "${hw?.title||''}" sẽ hiện ngay với học sinh${hw?.class_name?' lớp '+hw.class_name:' tất cả lớp'}.`,
+    okText: '🚀 Giao bài',
+    okColor: '#10b981',
+    cancelText: 'Chưa',
+    iconBg: '#d1fae5',
+    accent: 'linear-gradient(90deg,#10b981,#059669)'
+  });
+  if (!ok) return;
+  const { error } = await sb.from('homework').update({ is_draft: false }).eq('id', id);
+  if (error) { showToast('Lỗi: '+error.message, false); return; }
+  showToast('🚀 Đã giao bài cho học sinh!');
   await loadAdminData();
   renderAdminList();
 }
@@ -3620,7 +3659,7 @@ async function openResult(hwId, attemptNum=null) {
         ? `<div style="border:1.5px solid var(--border);border-radius:9px;padding:.5rem .8rem;font-size:.88rem;background:var(--bg);color:var(--text);min-height:2rem">${esc(userAns||'(chưa trả lời)')}</div>`
         : `<div style="font-size:.82rem;color:var(--muted);margin-bottom:.3rem">Câu trả lời của bạn:</div>
            ${q.question_type==='multiple_choice'
-             ? `<div style="font-size:.9rem;font-weight:700">${userAns!=null?String.fromCharCode(65+userAns)+'. '+(q.data.options[userAns]||''):'(chưa chọn)'}</div>`
+             ? `<div style="font-size:.9rem;font-weight:700">${userAns!=null?String.fromCharCode(65+userAns)+'. '+esc(typeof q.data.options[userAns]==='string'?q.data.options[userAns]:(q.data.options[userAns]?.text||'')):'(chưa chọn)'}</div>`
              : q.question_type==='true_false'
                ? `<div style="display:flex;flex-wrap:wrap;gap:.3rem">${(q.data.statements||[]).map((s,i)=>`<span style="font-size:.8rem;padding:.15rem .45rem;border-radius:6px;background:var(--bg);border:1px solid var(--border)">${i+1}: ${userAns&&userAns[i]!==undefined?(userAns[i]?'Đúng':'Sai'):'?'}</span>`).join('')}</div>`
                : `<div style="font-size:.85rem">${JSON.stringify(userAns||'(chưa trả lời)')}</div>`
@@ -3696,7 +3735,7 @@ async function viewStudentResult(subId) {
         q.question_type==='short_answer'
           ? esc(ua||'(trống)')
           : q.question_type==='multiple_choice'
-            ? (ua!=null ? String.fromCharCode(65+ua)+'. '+esc(q.data.options[ua]||'') : '(chưa chọn)')
+            ? (ua!=null ? String.fromCharCode(65+ua)+'. '+esc(typeof q.data.options[ua]==='string'?q.data.options[ua]:(q.data.options[ua]?.text||'')) : '(chưa chọn)')
             : q.question_type==='true_false'
               ? `<div style="display:flex;flex-wrap:wrap;gap:.3rem">${(q.data.statements||[]).map((s,i)=>{
                   const ok=ua&&ua[i]===s.answer;
@@ -4149,12 +4188,21 @@ function initRealtime() {
         const hwClass   = (nw?.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
         const relevant  = !hwClass.length || myClasses.some(c=>hwClass.includes(c));
 
-        if (eventType === 'INSERT' && relevant) {
+        if (eventType === 'INSERT' && relevant && !nw?.is_draft) {
           await loadStudentData();
           renderStudentList();
           updateGuideStats();
           showRealtimeNotify('📝 Bài tập mới', nw?.title || 'Giáo viên vừa giao bài mới!');
-        } else if (eventType === 'UPDATE' || eventType === 'DELETE') {
+        } else if (eventType === 'UPDATE') {
+          // Khi GV publish nháp → học sinh nhận thông báo
+          const wasPublished = !nw?.is_draft && payload.old?.is_draft === true;
+          await loadStudentData();
+          renderStudentList();
+          updateGuideStats();
+          if (wasPublished && relevant) {
+            showRealtimeNotify('📝 Bài tập mới', nw?.title || 'Giáo viên vừa giao bài mới!');
+          }
+        } else if (eventType === 'DELETE') {
           await loadStudentData();
           renderStudentList();
         }
