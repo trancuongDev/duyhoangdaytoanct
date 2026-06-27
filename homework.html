@@ -226,6 +226,21 @@
 }
 #toastHW.show { opacity:1;transform:translateX(-50%) translateY(0); }
 .section-title { font-weight:800;font-size:.88rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:.9rem 0 .5rem; }
+/* ═══ ADD QUESTION BAR ═══ */
+.add-q-bar {
+  display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;
+  padding:.75rem 1rem;
+  background:var(--bg);
+  border:2px dashed var(--border);
+  border-radius:12px;
+  transition:border-color .2s, background .2s;
+}
+.add-q-bar:hover { border-color:var(--primary); background:var(--primary-light); }
+.add-q-bar .add-q-label {
+  font-size:.78rem;font-weight:700;color:var(--muted);
+  margin-right:.25rem;white-space:nowrap;
+}
+
 /* ═══ LIVE LATEX INLINE PREVIEW ═══ */
 .lip { font-size:.84rem;line-height:1.65;padding:.2rem .45rem;color:var(--text);
   word-break:break-word;border-left:2px solid #c7d2fe;margin-top:.15rem;display:none; }
@@ -465,20 +480,11 @@
     </div>
 
     <!-- DANH SÁCH CÂU HỎI -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+    <div style="display:flex;align-items:center;margin-bottom:.75rem">
       <div style="font-weight:800;font-size:.95rem">📋 Danh sách câu hỏi</div>
-      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-        <button class="btn-sm" onclick="addQuestion('multiple_choice')" style="border-color:#3b82f6;color:#1d4ed8">+ Trắc nghiệm</button>
-        <button class="btn-sm" onclick="addQuestion('true_false')"      style="border-color:#10b981;color:#065f46">+ Đúng/Sai</button>
-        <button class="btn-sm" onclick="addQuestion('matching')"        style="border-color:#f59e0b;color:#92400e">+ Ghép đôi</button>
-        <button class="btn-sm" onclick="addQuestion('short_answer')"    style="border-color:#8b5cf6;color:#5b21b6">+ Trả lời ngắn</button>
-      </div>
     </div>
 
     <div id="questionList" style="display:flex;flex-direction:column;gap:.6rem">
-      <div style="text-align:center;padding:2rem;color:var(--muted);border:2px dashed var(--border);border-radius:12px;font-size:.88rem">
-        Nhấn các nút trên để thêm câu hỏi
-      </div>
     </div>
 
     <div id="hwFormErr" class="error-msg" style="margin-top:.75rem"></div>
@@ -793,7 +799,12 @@ function renderLatexAll(container) {
 
 // Escape HTML an toàn
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 
 // ═══════════════════════════════════════════
@@ -1035,9 +1046,15 @@ function addQuestion(type) {
   };
   editorQuestions.push({ _id:++qCounter, type, text:'', image_url:'', data:JSON.parse(JSON.stringify(defaultData[type])), points:1 });
   renderQuestionList();
-  // Scroll to last
-  const ql=document.getElementById('questionList');
-  setTimeout(()=>ql.lastElementChild?.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+  // Scroll xuống câu hỏi vừa thêm (nằm trước thanh nút)
+  setTimeout(() => {
+    const ql = document.getElementById('questionList');
+    const bar = document.getElementById('addQBar');
+    // Scroll đến câu hỏi mới (element trước thanh nút)
+    const newCard = bar?.previousElementSibling;
+    if (newCard) newCard.scrollIntoView({ behavior:'smooth', block:'center' });
+    else bar?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 120);
 }
 
 function removeQuestion(_id) {
@@ -1050,16 +1067,40 @@ function removeQuestion(_id) {
 // ═══════════════════════════════════════════
 // RENDER QUESTION LIST (EDITOR)
 // ═══════════════════════════════════════════
+
+// Thanh nút thêm câu hỏi — luôn nằm cuối danh sách
+function buildAddBar() {
+  return `<div class="add-q-bar" id="addQBar">
+    <span class="add-q-label">➕ Thêm câu:</span>
+    <button class="btn-sm" onclick="addQuestion('multiple_choice')"
+      style="border-color:#3b82f6;color:#1d4ed8;background:#eff6ff">
+      🔵 Trắc nghiệm
+    </button>
+    <button class="btn-sm" onclick="addQuestion('true_false')"
+      style="border-color:#10b981;color:#065f46;background:#f0fdf4">
+      ✅ Đúng/Sai
+    </button>
+    <button class="btn-sm" onclick="addQuestion('matching')"
+      style="border-color:#f59e0b;color:#92400e;background:#fffbeb">
+      🔗 Ghép đôi
+    </button>
+    <button class="btn-sm" onclick="addQuestion('short_answer')"
+      style="border-color:#8b5cf6;color:#5b21b6;background:#faf5ff">
+      ✏️ Trả lời ngắn
+    </button>
+  </div>`;
+}
+
 function renderQuestionList() {
   const el = document.getElementById('questionList');
   if (!editorQuestions.length) {
-    el.innerHTML=`<div style="text-align:center;padding:2rem;color:var(--muted);border:2px dashed var(--border);border-radius:12px;font-size:.88rem">Nhấn các nút trên để thêm câu hỏi</div>`;
+    el.innerHTML = buildAddBar();
     return;
   }
-  el.innerHTML = editorQuestions.map((q,idx)=>buildQEditor(q,idx)).join('');
-  // Typeset LaTeX toàn bộ editor 1 lần
+  el.innerHTML = editorQuestions.map((q,idx)=>buildQEditor(q,idx)).join('')
+    + buildAddBar();  // thanh nút luôn nằm cuối
+  // Hiển thị các lip đã có nội dung (khi edit bài cũ)
   setTimeout(() => {
-    // Hiển thị các lip đã có nội dung (khi edit bài cũ)
     el.querySelectorAll('.lip').forEach(lip => {
       if (lip.textContent.trim()) lip.classList.add('show');
     });
@@ -1393,7 +1434,7 @@ function buildSAEditor(q) {
   return `<div class="section-title">Đáp án mẫu (dùng để chấm tham khảo)</div>
     <textarea rows="3" placeholder="Nhập đáp án mẫu hoặc gợi ý chấm điểm (hỗ trợ LaTeX)"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.6rem .85rem;font-size:.88rem;outline:none;font-family:'Courier New',monospace;resize:vertical;background:var(--card);color:var(--text)"
-      oninput="updateQField(${q._id},'data',{...editorQuestions.find(x=>x._id===${q._id}).data,sample_answer:this.value})"
+      oninput="updateSAAnswer(${q._id}, this.value)"
     >${esc(q.data.sample_answer||'')}</textarea>`;
 }
 
@@ -1403,6 +1444,10 @@ function buildSAEditor(q) {
 function updateQField(_id,field,val) {
   const q=editorQuestions.find(x=>x._id===_id);
   if(q)q[field]=val;
+}
+function updateSAAnswer(_id, val) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (q) q.data = { ...q.data, sample_answer: val };
 }
 function updateQText(_id, val) {
   const q = editorQuestions.find(x=>x._id===_id);
@@ -1708,7 +1753,7 @@ function buildMatchDisplay(q, answers, isPreview, idx) {
       if (userVal != null) selStyle += ';border-color:var(--primary)';
       return `<label style="display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;font-weight:600">
         <span style="color:var(--muted)">${i+1}·</span>
-        <select onchange="matchSelectAnswer(${q.id},${i},parseInt(this.value))"
+        <select onchange="matchSelectAnswer(${q.id},${i},parseInt(this.value),this)"
           style="${selStyle}">
           <option value="-1">·</option>
           ${right.map((r,ri)=>`<option value="${ri}"${userVal===ri?' selected':''}>${String.fromCharCode(65+ri)}</option>`).join('')}
@@ -1720,13 +1765,10 @@ function buildMatchDisplay(q, answers, isPreview, idx) {
   return tableHtml + answerRow;
 }
 
-function matchSelectAnswer(qId, leftIdx, rightIdx) {
+function matchSelectAnswer(qId, leftIdx, rightIdx, selEl) {
   if (!doHWAnswers[qId]) doHWAnswers[qId] = {};
   doHWAnswers[qId][leftIdx] = rightIdx >= 0 ? rightIdx : undefined;
-  // Cập nhật màu viền select
-  const sel = event?.target;
-  if (sel) sel.style.borderColor = rightIdx >= 0 ? 'var(--primary)' : 'var(--border)';
-  // Cập nhật số câu đã trả lời trên countdown
+  if (selEl) selEl.style.borderColor = rightIdx >= 0 ? 'var(--primary)' : 'var(--border)';
   if (typeof updateCountdownUI === 'function') updateCountdownUI(doHWQList.length);
 }
 
