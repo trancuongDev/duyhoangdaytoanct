@@ -343,6 +343,91 @@
   .qnav-btn { width:28px;height:28px;font-size:.7rem;border-radius:7px; }
 }
 
+/* ═══ CUSTOM CONFIRM POPUP ═══ */
+#customConfirmOverlay {
+  display:none;position:fixed;inset:0;z-index:99999;
+  background:rgba(15,23,42,.65);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:1rem;
+}
+#customConfirmOverlay.open { display:flex; }
+#customConfirmBox {
+  background:var(--card);
+  border-radius:24px;
+  padding:0;
+  max-width:380px;width:100%;
+  box-shadow:0 32px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.06);
+  animation:cfPop .22s cubic-bezier(.34,1.56,.64,1);
+  overflow:hidden;
+}
+@keyframes cfPop { from{opacity:0;transform:scale(.84) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+/* Top accent bar — màu theo loại */
+#customConfirmBox::before {
+  content:'';display:block;height:4px;
+  background:var(--cf-accent,linear-gradient(90deg,#6366f1,#8b5cf6));
+}
+
+/* Icon circle */
+#cfIconWrap {
+  display:flex;align-items:center;justify-content:center;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--cf-icon-bg,#ede9fe);
+  font-size:1.6rem;margin:1.5rem auto .85rem;
+  flex-shrink:0;
+}
+
+/* Body */
+#cfBody { padding:0 1.75rem 1.5rem; text-align:center; }
+#customConfirmTitle {
+  font-size:1.05rem;font-weight:800;color:var(--text);
+  margin-bottom:.4rem;line-height:1.3;
+}
+#customConfirmMsg {
+  font-size:.855rem;color:var(--muted);line-height:1.65;
+  margin-bottom:0;
+}
+
+/* Divider */
+#cfDivider { height:1px;background:var(--border);margin-top:1.35rem; }
+
+/* Buttons row — layout: split (mặc định) */
+#customConfirmBtns {
+  display:grid;grid-template-columns:1fr 1fr;
+}
+#customConfirmBtns .cf-cancel {
+  padding:.85rem 1rem;border:none;border-right:1px solid var(--border);
+  background:transparent;color:var(--muted);
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  transition:background .15s,color .15s;border-radius:0 0 0 24px;
+}
+#customConfirmBtns .cf-cancel:hover { background:var(--bg);color:var(--text); }
+#customConfirmBtns .cf-ok {
+  padding:.85rem 1rem;border:none;
+  font-size:.88rem;font-weight:800;cursor:pointer;
+  color:#fff;background:var(--cf-ok-color,#6366f1);
+  transition:filter .15s;border-radius:0 0 24px 0;
+}
+#customConfirmBtns .cf-ok:hover { filter:brightness(1.1); }
+
+/* Buttons row — layout: stack (nộp bài) */
+#customConfirmBtns.cf-stack {
+  display:flex;flex-direction:column;gap:.55rem;
+  padding:0 1.5rem 1.5rem;grid-template-columns:unset;
+}
+#customConfirmBtns.cf-stack .cf-ok {
+  width:100%;padding:1rem 1rem;border-radius:14px;
+  font-size:.95rem;font-weight:800;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);
+  border-radius:14px;
+}
+#customConfirmBtns.cf-stack .cf-cancel {
+  width:100%;padding:.65rem 1rem;border-radius:10px;border:1.5px solid var(--border);
+  background:transparent;color:var(--muted);font-size:.84rem;font-weight:600;
+  cursor:pointer;transition:all .15s;
+  border-right:1.5px solid var(--border);
+}
+#customConfirmBtns.cf-stack .cf-cancel:hover { background:var(--bg);color:var(--text); }
+
 /* ═══ MISC ═══ */
 .hw-empty { text-align:center;padding:3.5rem 1rem;color:var(--muted); }
 .hw-empty-icon { font-size:3rem;margin-bottom:.75rem; }
@@ -402,6 +487,24 @@
 </style>
 
 <div id="toastHW"></div>
+
+<!-- CUSTOM CONFIRM POPUP -->
+<div id="customConfirmOverlay">
+  <div id="customConfirmBox">
+    <div id="cfIconWrap">
+      <span id="customConfirmIcon"></span>
+    </div>
+    <div id="cfBody">
+      <div id="customConfirmTitle"></div>
+      <div id="customConfirmMsg"></div>
+    </div>
+    <div id="cfDivider"></div>
+    <div id="customConfirmBtns">
+      <button class="cf-cancel" id="cfCancelBtn">Hủy</button>
+      <button class="cf-ok"     id="cfOkBtn">Xác nhận</button>
+    </div>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
@@ -503,84 +606,75 @@
             </div>
           </div>
 
-          <!-- Các bước hướng dẫn -->
-          <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.6rem">
+          <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.55rem">
 
-            <div style="font-weight:800;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.1rem">Các bước làm bài</div>
+            <!-- Các bước -->
+            <div style="font-weight:800;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Các bước làm bài</div>
 
-            <!-- Bước 1 -->
-            <div style="display:flex;gap:.75rem;align-items:flex-start;padding:.65rem .9rem;background:var(--primary-light);border-radius:10px;border-left:3px solid var(--primary)">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;margin-top:.05rem">1</div>
+            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:var(--primary-light);border-radius:10px;border-left:3px solid var(--primary)">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">1</div>
               <div>
-                <div style="font-weight:700;font-size:.88rem">Xem bài tập trong tab <b>📌 Chưa nộp</b></div>
-                <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Các bài tập giáo viên giao sẽ xuất hiện tự động — không cần tải lại trang.</div>
+                <div style="font-weight:700;font-size:.86rem">Xem bài trong tab <b>📌 Chưa nộp</b></div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Bài tập xuất hiện tự động khi giáo viên giao — không cần tải lại trang.</div>
               </div>
             </div>
 
-            <!-- Bước 2 -->
-            <div style="display:flex;gap:.75rem;align-items:flex-start;padding:.65rem .9rem;background:#e0f2fe;border-radius:10px;border-left:3px solid #0ea5e9">
-              <div style="width:24px;height:24px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;margin-top:.05rem">2</div>
+            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:#e0f2fe;border-radius:10px;border-left:3px solid #0ea5e9">
+              <div style="width:22px;height:22px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">2</div>
               <div>
-                <div style="font-weight:700;font-size:.88rem">Nhấn <b>✏️ Làm bài</b> để bắt đầu</div>
-                <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Bài có thể gồm nhiều loại câu hỏi khác nhau. Nếu có giới hạn thời gian, đồng hồ đếm ngược sẽ hiện ở trên đầu.</div>
+                <div style="font-weight:700;font-size:.86rem">Nhấn <b>✏️ Làm bài</b> — làm toàn màn hình</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Thanh điều hướng dưới cùng hiện số câu đã làm. Đánh dấu câu cần xem lại bằng nút <b>⚑</b>.</div>
               </div>
             </div>
 
-            <!-- Bước 3 -->
-            <div style="display:flex;gap:.75rem;align-items:flex-start;padding:.65rem .9rem;background:#d1fae5;border-radius:10px;border-left:3px solid var(--hw-green)">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--hw-green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;margin-top:.05rem">3</div>
+            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:#d1fae5;border-radius:10px;border-left:3px solid var(--hw-green)">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--hw-green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">3</div>
               <div>
-                <div style="font-weight:700;font-size:.88rem">Trả lời từng câu rồi nhấn <b>📤 Nộp bài</b></div>
-                <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Trắc nghiệm, Đúng/Sai, Ghép đôi sẽ được chấm điểm tự động ngay. Câu trả lời ngắn sẽ chờ giáo viên chấm.</div>
+                <div style="font-weight:700;font-size:.86rem">Nhấn <b>📤 Nộp bài</b> — có điểm ngay</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Trắc nghiệm, Đúng/Sai, Ghép đôi và Trả lời ngắn <b>⚡ tự chấm</b> chấm điểm tức thì. Câu không có đáp án mẫu chờ GV chấm thêm.</div>
               </div>
             </div>
 
-            <!-- Bước 4 -->
-            <div style="display:flex;gap:.75rem;align-items:flex-start;padding:.65rem .9rem;background:#fef3c7;border-radius:10px;border-left:3px solid var(--hw-orange)">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--hw-orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;margin-top:.05rem">4</div>
+            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:#fef3c7;border-radius:10px;border-left:3px solid var(--hw-orange)">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--hw-orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">4</div>
               <div>
-                <div style="font-weight:700;font-size:.88rem">Xem kết quả trong tab <b>✅ Đã nộp</b></div>
-                <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Nhấn <b>👁 Xem kết quả</b> để thấy điểm, đáp án đúng/sai từng câu và nhận xét của giáo viên.</div>
+                <div style="font-weight:700;font-size:.86rem">Xem kết quả & đối chiếu đáp án</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Nhấn <b>👁 Xem kết quả</b> — thấy từng câu đúng/sai, đáp án đúng, nhận xét GV. Nếu được làm nhiều lần, chọn xem lại từng lần.</div>
               </div>
             </div>
 
-            <!-- Separator -->
-            <div style="border-top:1.5px dashed var(--border);margin:.2rem 0"></div>
-            <div style="font-weight:800;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Các loại câu hỏi</div>
+            <div style="border-top:1.5px dashed var(--border);margin:.1rem 0"></div>
 
-            <!-- 4 loại câu -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+            <!-- Loại câu -->
+            <div style="font-weight:800;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Các loại câu hỏi</div>
 
-              <div style="padding:.6rem .8rem;border:1.5px solid #bfdbfe;border-radius:9px;background:#eff6ff">
-                <div style="font-weight:700;font-size:.83rem;color:#1d4ed8;margin-bottom:.2rem">🔵 Trắc nghiệm</div>
-                <div style="font-size:.77rem;color:var(--muted);line-height:1.5">Chọn <b>1 đáp án đúng</b> trong A, B, C, D bằng cách nhấn vào ô.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem">
+              <div style="padding:.55rem .75rem;border:1.5px solid #bfdbfe;border-radius:9px;background:#eff6ff">
+                <div style="font-weight:700;font-size:.8rem;color:#1d4ed8;margin-bottom:.15rem">🔵 Trắc nghiệm</div>
+                <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Chọn <b>1 đáp án</b> trong A, B, C, D.</div>
               </div>
-
-              <div style="padding:.6rem .8rem;border:1.5px solid #bbf7d0;border-radius:9px;background:#f0fdf4">
-                <div style="font-weight:700;font-size:.83rem;color:#15803d;margin-bottom:.2rem">✅ Đúng / Sai</div>
-                <div style="font-size:.77rem;color:var(--muted);line-height:1.5">Chọn <b>Đúng hoặc Sai</b> cho <b>từng mệnh đề</b> riêng biệt.</div>
+              <div style="padding:.55rem .75rem;border:1.5px solid #bbf7d0;border-radius:9px;background:#f0fdf4">
+                <div style="font-weight:700;font-size:.8rem;color:#15803d;margin-bottom:.15rem">✅ Đúng / Sai</div>
+                <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Chọn <b>Đúng/Sai</b> cho từng mệnh đề.</div>
               </div>
-
-              <div style="padding:.6rem .8rem;border:1.5px solid #fde68a;border-radius:9px;background:#fffbeb">
-                <div style="font-weight:700;font-size:.83rem;color:#b45309;margin-bottom:.2rem">🔗 Ghép đôi</div>
-                <div style="font-size:.77rem;color:var(--muted);line-height:1.5">Xem bảng 2 cột rồi chọn đáp án ghép tương ứng bằng <b>dropdown bên dưới</b>.</div>
+              <div style="padding:.55rem .75rem;border:1.5px solid #fde68a;border-radius:9px;background:#fffbeb">
+                <div style="font-weight:700;font-size:.8rem;color:#b45309;margin-bottom:.15rem">🔗 Ghép đôi</div>
+                <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Nối Cột 1 với Cột 2 qua dropdown.</div>
               </div>
-
-              <div style="padding:.6rem .8rem;border:1.5px solid #e9d5ff;border-radius:9px;background:#faf5ff">
-                <div style="font-weight:700;font-size:.83rem;color:#7c3aed;margin-bottom:.2rem">✏️ Trả lời ngắn</div>
-                <div style="font-size:.77rem;color:var(--muted);line-height:1.5"><b>Gõ câu trả lời</b> vào ô. Giáo viên sẽ chấm điểm thủ công sau.</div>
+              <div style="padding:.55rem .75rem;border:1.5px solid #e9d5ff;border-radius:9px;background:#faf5ff">
+                <div style="font-weight:700;font-size:.8rem;color:#7c3aed;margin-bottom:.15rem">✏️ Trả lời ngắn</div>
+                <div style="font-size:.75rem;color:var(--muted);line-height:1.5"><b>⚡ Tự chấm</b> nếu GV đặt đáp án số. Ngược lại GV chấm tay.</div>
               </div>
-
             </div>
 
-            <!-- Lưu ý quan trọng -->
-            <div style="margin-top:.2rem;padding:.65rem .9rem;background:#fee2e2;border-radius:9px;border-left:3px solid var(--hw-red)">
-              <div style="font-weight:700;font-size:.83rem;color:#991b1b;margin-bottom:.3rem">⚠️ Lưu ý quan trọng</div>
-              <ul style="font-size:.78rem;color:#7f1d1d;line-height:1.9;padding-left:1.1rem">
-                <li>Số lần làm bài do giáo viên quy định — xem badge <b>🔁</b> trên mỗi bài.</li>
-                <li>Nếu có <b>đồng hồ đếm ngược</b>, hệ thống sẽ tự nộp khi hết giờ.</li>
-                <li>Bài tập sẽ xuất hiện <b>ngay lập tức</b> khi giáo viên giao — không cần tải lại trang.</li>
-                <li>Sau khi giáo viên chấm điểm, bạn sẽ nhận <b>thông báo ngay</b> trên trang này.</li>
+            <!-- Lưu ý -->
+            <div style="padding:.6rem .85rem;background:#fee2e2;border-radius:9px;border-left:3px solid var(--hw-red)">
+              <div style="font-weight:700;font-size:.8rem;color:#991b1b;margin-bottom:.25rem">⚠️ Lưu ý</div>
+              <ul style="font-size:.76rem;color:#7f1d1d;line-height:1.85;padding-left:1rem;margin:0">
+                <li>Số lần làm do GV quy định — xem badge <b>🔁</b> trên mỗi bài.</li>
+                <li>Nếu có <b>đồng hồ đếm ngược</b>, hệ thống tự nộp khi hết giờ.</li>
+                <li>Câu <b>⚡ tự chấm</b> — nhập đúng số, không thêm chữ hay đơn vị.</li>
+                <li>Sau khi GV chấm xong, bạn nhận <b>thông báo ngay</b> không cần tải lại.</li>
               </ul>
             </div>
 
@@ -832,6 +926,62 @@
 </div>
 
 <script>
+// ═══════════════════════════════════════════
+// CUSTOM CONFIRM
+// ═══════════════════════════════════════════
+let _cfResolve = null;
+function showConfirm({ icon='⚠️', title='Xác nhận', msg='', msgHtml='', okText='Xác nhận', okColor='#ef4444', cancelText='Hủy', accent=null, iconBg=null, layout='split' }) {
+  return new Promise(resolve => {
+    _cfResolve = resolve;
+    const box  = document.getElementById('customConfirmBox');
+    const btns = document.getElementById('customConfirmBtns');
+    const div  = document.getElementById('cfDivider');
+
+    // Accent + icon bg
+    box.style.setProperty('--cf-accent', accent || `linear-gradient(90deg,${okColor},${okColor}cc)`);
+    box.style.setProperty('--cf-icon-bg', iconBg || okColor + '22');
+    box.style.setProperty('--cf-ok-color', okColor);
+
+    // Icon + text
+    document.getElementById('customConfirmIcon').textContent = icon;
+    document.getElementById('customConfirmTitle').textContent = title;
+    const msgEl = document.getElementById('customConfirmMsg');
+    if (msgHtml) { msgEl.innerHTML = msgHtml; }
+    else { msgEl.innerHTML = ''; msgEl.textContent = msg; }
+
+    // Nút
+    document.getElementById('cfOkBtn').textContent     = okText;
+    document.getElementById('cfCancelBtn').textContent = cancelText;
+
+    // Layout
+    if (layout === 'stack') {
+      btns.classList.add('cf-stack');
+      if (div) div.style.display = 'none';  // ẩn divider khi stack
+    } else {
+      btns.classList.remove('cf-stack');
+      if (div) div.style.display = '';
+    }
+
+    document.getElementById('customConfirmOverlay').classList.add('open');
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cfOkBtn').addEventListener('click', () => {
+    document.getElementById('customConfirmOverlay').classList.remove('open');
+    if (_cfResolve) { _cfResolve(true); _cfResolve = null; }
+  });
+  document.getElementById('cfCancelBtn').addEventListener('click', () => {
+    document.getElementById('customConfirmOverlay').classList.remove('open');
+    if (_cfResolve) { _cfResolve(false); _cfResolve = null; }
+  });
+  document.getElementById('customConfirmOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('customConfirmOverlay').classList.remove('open');
+      if (_cfResolve) { _cfResolve(false); _cfResolve = null; }
+    }
+  });
+});
+
 // ═══════════════════════════════════════════
 // CONFIG & STATE
 // ═══════════════════════════════════════════
@@ -1686,10 +1836,18 @@ async function openEditHW(hwId) {
   setTimeout(() => renderLatexAll(document.getElementById('modalHW')), 300);
 }
 
-function closeModalHW() {
-  // Nếu đang có câu hỏi → hỏi xác nhận
-  if (editorQuestions.length > 0) {
-    if (!confirm('Bạn có câu hỏi chưa lưu.\nThoát ra sẽ MẤT toàn bộ nội dung đã soạn.\n\nBạn có chắc muốn thoát?')) return;
+async function closeModalHW(force=false) {
+  // Nếu đang có câu hỏi → hỏi xác nhận (trừ khi force=true, ví dụ sau khi lưu)
+  if (!force && editorQuestions.length > 0) {
+    const ok = await showConfirm({
+      icon: '📝',
+      title: 'Chưa lưu bài tập',
+      msg: 'Bạn có câu hỏi chưa lưu.\nThoát ra sẽ MẤT toàn bộ nội dung đã soạn.',
+      okText: 'Thoát không lưu',
+      okColor: '#ef4444',
+      cancelText: 'Ở lại'
+    });
+    if (!ok) return;
   }
   document.getElementById('modalHW').classList.remove('open');
 }
@@ -1990,18 +2148,31 @@ function insertNewline(wrapId,qCard) {
 // --- MULTIPLE CHOICE ---
 function buildMCEditor(q) {
   const opts = q.data.options||['','','',''];
+  // Normalize: option có thể là string (cũ) hoặc {text,img} (mới)
+  const normalizedOpts = opts.map(o => typeof o === 'string' ? {text:o, img:''} : o);
+  // Cập nhật data luôn sang format mới
+  q.data.options = normalizedOpts;
+
   return `<div class="section-title">Các phương án (nhấn chữ cái để đánh dấu đúng)</div>
     <div class="opt-list" id="mc_opts_${q._id}">
-      ${opts.map((o,i)=>`
-        <div class="opt-row" style="flex-direction:column;align-items:stretch;gap:.15rem">
+      ${normalizedOpts.map((o,i)=>`
+        <div class="opt-row" style="flex-direction:column;align-items:stretch;gap:.3rem" id="mc_opt_row_${q._id}_${i}">
           <div style="display:flex;gap:.4rem;align-items:center">
             <div class="opt-label${i===q.data.correct?' correct':''}" onclick="mcSetCorrect(${q._id},${i})" title="Chọn đáp án đúng">${String.fromCharCode(65+i)}</div>
-            <input class="opt-input" id="mc_inp_${q._id}_${i}" value="${esc(o)}"
+            <input class="opt-input" id="mc_inp_${q._id}_${i}" value="${esc(o.text||'')}"
               placeholder="Phương án ${String.fromCharCode(65+i)} — gõ $công thức$ để dùng LaTeX"
-              oninput="mcUpdateOpt(${q._id},${i},this.value);livePreviewLatex(this,'mc_lip_${q._id}_${i}')" />
-            ${opts.length>2?`<button class="opt-del" onclick="mcRemoveOpt(${q._id},${i})">✕</button>`:'<span style="width:24px"></span>'}
+              oninput="mcUpdateOpt(${q._id},${i},'text',this.value);livePreviewLatex(this,'mc_lip_${q._id}_${i}')" />
+            <label style="cursor:pointer;flex-shrink:0" title="Thêm ảnh cho đáp án này">
+              <span style="display:inline-flex;align-items:center;gap:.2rem;padding:.22rem .5rem;border:1.5px solid var(--border);border-radius:7px;font-size:.72rem;font-weight:700;color:var(--muted);background:var(--card);transition:all .15s" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🖼</span>
+              <input type="file" accept="image/*" style="display:none" onchange="mcUploadOptImg(${q._id},${i},this)"/>
+            </label>
+            ${normalizedOpts.length>2?`<button class="opt-del" onclick="mcRemoveOpt(${q._id},${i})">✕</button>`:'<span style="width:24px"></span>'}
           </div>
-          <div class="lip" id="mc_lip_${q._id}_${i}">${o||''}</div>
+          ${o.img ? `<div style="position:relative;display:inline-block;margin-left:2.2rem">
+            <img src="${esc(o.img)}" style="max-height:120px;max-width:280px;border-radius:8px;border:1.5px solid var(--border);display:block"/>
+            <button onclick="mcUpdateOpt(${q._id},${i},'img','');document.getElementById('mc_opt_row_${q._id}_${i}').querySelector('img')?.parentElement?.remove()" style="position:absolute;top:-6px;right:-6px;background:#ef4444;border:none;color:#fff;width:18px;height:18px;border-radius:50%;font-size:.65rem;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>
+          </div>` : ''}
+          <div class="lip" id="mc_lip_${q._id}_${i}">${o.text||''}</div>
         </div>`).join('')}
     </div>
     <button class="btn-sm" style="margin-top:.4rem" onclick="mcAddOpt(${q._id})">+ Thêm phương án</button>`;
@@ -2017,38 +2188,81 @@ function mcSetCorrect(_id,i) {
     el.classList.toggle('correct',idx===i);
   });
 }
-function mcUpdateOpt(_id,i,val) {
-  const q=editorQuestions.find(x=>x._id===_id);
-  if(q){q.data.options[i]=val;}
+function mcUpdateOpt(_id, i, field, val) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (!q) return;
+  const o = q.data.options[i];
+  if (typeof o === 'string') {
+    // Nâng cấp từ string cũ
+    q.data.options[i] = field === 'text' ? {text:val, img:''} : {text:o, img:val};
+  } else {
+    q.data.options[i] = {...o, [field]: val};
+  }
+}
+
+async function mcUploadOptImg(_id, i, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { showToast('Ảnh tối đa 5MB', false); return; }
+  showToast('Đang tải ảnh...', true);
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `opt_${Date.now()}.${ext}`;
+    const { error } = await sb.storage.from('homework-images').upload(path, file, { upsert:true });
+    if (!error) {
+      const { data:{publicUrl} } = sb.storage.from('homework-images').getPublicUrl(path);
+      mcUpdateOpt(_id, i, 'img', publicUrl);
+      _reRenderMCEditor(_id);
+      showToast('✅ Tải ảnh thành công');
+      return;
+    }
+  } catch(e) {}
+  // Fallback Base64
+  const reader = new FileReader();
+  reader.onload = e => { mcUpdateOpt(_id, i, 'img', e.target.result); _reRenderMCEditor(_id); showToast('✅ Ảnh đã nhúng'); };
+  reader.readAsDataURL(file);
+}
+
+function _reRenderMCEditor(_id) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (!q) return;
+  const card = document.getElementById('qcard_'+_id);
+  const wrap = card?.querySelector(`#mc_opts_${_id}`);
+  if (!wrap) return;
+  const opts = q.data.options;
+  wrap.innerHTML = opts.map((o,i) => {
+    const txt = typeof o === 'string' ? o : (o.text||'');
+    const img = typeof o === 'string' ? '' : (o.img||'');
+    return `<div class="opt-row" style="flex-direction:column;align-items:stretch;gap:.3rem" id="mc_opt_row_${_id}_${i}">
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <div class="opt-label${i===q.data.correct?' correct':''}" onclick="mcSetCorrect(${_id},${i})">${String.fromCharCode(65+i)}</div>
+        <input class="opt-input" value="${esc(txt)}" placeholder="Phương án ${String.fromCharCode(65+i)}"
+          oninput="mcUpdateOpt(${_id},${i},'text',this.value)"/>
+        <label style="cursor:pointer;flex-shrink:0">
+          <span style="display:inline-flex;align-items:center;padding:.22rem .5rem;border:1.5px solid var(--border);border-radius:7px;font-size:.72rem;font-weight:700;color:var(--muted);background:var(--card)">🖼</span>
+          <input type="file" accept="image/*" style="display:none" onchange="mcUploadOptImg(${_id},${i},this)"/>
+        </label>
+        ${opts.length>2?`<button class="opt-del" onclick="mcRemoveOpt(${_id},${i})">✕</button>`:'<span style="width:24px"></span>'}
+      </div>
+      ${img?`<div style="position:relative;display:inline-block;margin-left:2.2rem">
+        <img src="${esc(img)}" style="max-height:120px;max-width:280px;border-radius:8px;border:1.5px solid var(--border);display:block"/>
+        <button onclick="mcUpdateOpt(${_id},${i},'img','');_reRenderMCEditor(${_id})" style="position:absolute;top:-6px;right:-6px;background:#ef4444;border:none;color:#fff;width:18px;height:18px;border-radius:50%;font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
 }
 function mcAddOpt(_id) {
   const q=editorQuestions.find(x=>x._id===_id);
   if(!q||q.data.options.length>=8)return;
-  q.data.options.push('');
-  const card=document.getElementById('qcard_'+_id);
-  card.querySelector(`#mc_opts_${_id}`).innerHTML=
-    (q.data.options||[]).map((o,i)=>`
-      <div class="opt-row">
-        <div class="opt-label${i===q.data.correct?' correct':''}" onclick="mcSetCorrect(${q._id},${i})">${String.fromCharCode(65+i)}</div>
-        <input class="opt-input" value="${esc(o)}" placeholder="Phương án ${String.fromCharCode(65+i)}"
-          oninput="mcUpdateOpt(${_id},${i},this.value)"/>
-        ${q.data.options.length>2?`<button class="opt-del" onclick="mcRemoveOpt(${_id},${i})">✕</button>`:'<span style="width:24px"></span>'}
-      </div>`).join('');
+  q.data.options.push({text:'',img:''});
+  _reRenderMCEditor(_id);
 }
 function mcRemoveOpt(_id,i) {
   const q=editorQuestions.find(x=>x._id===_id);
   if(!q||q.data.options.length<=2)return;
   q.data.options.splice(i,1);
   if(q.data.correct>=q.data.options.length)q.data.correct=0;
-  const card=document.getElementById('qcard_'+_id);
-  card.querySelector(`#mc_opts_${_id}`).innerHTML=
-    (q.data.options||[]).map((o,idx)=>`
-      <div class="opt-row">
-        <div class="opt-label${idx===q.data.correct?' correct':''}" onclick="mcSetCorrect(${_id},${idx})">${String.fromCharCode(65+idx)}</div>
-        <input class="opt-input" value="${esc(o)}" placeholder="Phương án ${String.fromCharCode(65+idx)}"
-          oninput="mcUpdateOpt(${_id},${idx},this.value)"/>
-        ${q.data.options.length>2?`<button class="opt-del" onclick="mcRemoveOpt(${_id},${idx})">✕</button>`:'<span style="width:24px"></span>'}
-      </div>`).join('');
+  _reRenderMCEditor(_id);
 }
 
 // --- TRUE/FALSE ---
@@ -2060,9 +2274,13 @@ function buildTFEditor(q) {
         <div style="display:flex;flex-direction:column;gap:.1rem">
           <div style="display:flex;align-items:center;gap:.5rem">
             <span style="font-size:.82rem;font-weight:700;color:var(--muted);width:20px;flex-shrink:0">${i+1}.</span>
-            <input class="opt-input" id="tf_inp_${q._id}_${i}" style="flex:1" value="${esc(s.text)}"
+            <input class="opt-input" id="tf_inp_${q._id}_${i}" style="flex:1" value="${esc(s.text||'')}"
               placeholder="Nội dung mệnh đề — gõ $công thức$ để dùng LaTeX"
               oninput="tfUpdateText(${q._id},${i},this.value);livePreviewLatex(this,'tf_lip_${q._id}_${i}')"/>
+            <label style="cursor:pointer;flex-shrink:0" title="Thêm ảnh cho mệnh đề">
+              <span style="display:inline-flex;align-items:center;padding:.22rem .5rem;border:1.5px solid var(--border);border-radius:7px;font-size:.72rem;font-weight:700;color:var(--muted);background:var(--card);transition:all .15s" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🖼</span>
+              <input type="file" accept="image/*" style="display:none" onchange="tfUploadImg(${q._id},${i},this)"/>
+            </label>
             <div class="tf-row" style="flex-shrink:0;gap:.35rem">
               <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer;font-size:.82rem;font-weight:600">
                 <input type="radio" name="tf_${q._id}_${i}" value="true" ${s.answer?'checked':''}
@@ -2077,6 +2295,10 @@ function buildTFEditor(q) {
             </div>
             ${stmts.length>1?`<button class="opt-del" onclick="tfRemoveStmt(${q._id},${i})">✕</button>`:''}
           </div>
+          ${s.img?`<div style="position:relative;display:inline-block;margin-left:28px;margin-top:.2rem">
+            <img src="${esc(s.img)}" style="max-height:120px;max-width:280px;border-radius:8px;border:1.5px solid var(--border);display:block"/>
+            <button onclick="tfRemoveImg(${q._id},${i})" style="position:absolute;top:-6px;right:-6px;background:#ef4444;border:none;color:#fff;width:18px;height:18px;border-radius:50%;font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+          </div>`:''}
           <div class="lip" id="tf_lip_${q._id}_${i}" style="margin-left:28px">${s.text||''}</div>
         </div>`).join('')}
     </div>
@@ -2084,6 +2306,31 @@ function buildTFEditor(q) {
 }
 function tfUpdateText(_id,i,val){const q=editorQuestions.find(x=>x._id===_id);if(q&&q.data.statements[i])q.data.statements[i].text=val;}
 function tfSetAnswer(_id,i,val){const q=editorQuestions.find(x=>x._id===_id);if(q&&q.data.statements[i])q.data.statements[i].answer=val;}
+async function tfUploadImg(_id,i,input) {
+  const file=input.files[0]; if(!file)return;
+  if(file.size>5*1024*1024){showToast('Ảnh tối đa 5MB',false);return;}
+  showToast('Đang tải ảnh...',true);
+  try {
+    const ext=file.name.split('.').pop().toLowerCase();
+    const path=`tf_${Date.now()}.${ext}`;
+    const {error}=await sb.storage.from('homework-images').upload(path,file,{upsert:true});
+    if(!error){
+      const {data:{publicUrl}}=sb.storage.from('homework-images').getPublicUrl(path);
+      _tfApplyImg(_id,i,publicUrl); showToast('✅ Tải ảnh thành công'); return;
+    }
+  } catch(e){}
+  const reader=new FileReader();
+  reader.onload=e=>{_tfApplyImg(_id,i,e.target.result);showToast('✅ Ảnh đã nhúng');};
+  reader.readAsDataURL(file);
+}
+function _tfApplyImg(_id,i,url){
+  const q=editorQuestions.find(x=>x._id===_id);
+  if(q&&q.data.statements[i]){q.data.statements[i].img=url;}
+  const c=document.getElementById('qcard_'+_id);
+  c.innerHTML=buildQEditor(q,editorQuestions.indexOf(q));
+  setTimeout(()=>renderLatexAll(c),100);
+}
+function tfRemoveImg(_id,i){_tfApplyImg(_id,i,'');}
 function tfAddStmt(_id){
   const q=editorQuestions.find(x=>x._id===_id);
   if(!q||q.data.statements.length>=8)return;
@@ -2220,11 +2467,129 @@ function matchRemovePair(_id,i){ matchRemoveLeft(_id,i); }
 
 // --- SHORT ANSWER ---
 function buildSAEditor(q) {
-  return `<div class="section-title">Đáp án mẫu (dùng để chấm tham khảo)</div>
+  const autoGrade = q.data.auto_grade || false;
+  const accepted  = q.data.accepted_answers || [];
+  const hint      = q.data.hint || '';
+  return `
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.65rem;padding:.5rem .75rem;background:${autoGrade?'#d1fae5':'var(--bg)'};border-radius:10px;border:1.5px solid ${autoGrade?'#10b981':'var(--border)'};transition:all .2s">
+      <label style="display:flex;align-items:center;gap:.45rem;cursor:pointer;flex:1">
+        <div style="position:relative;width:36px;height:20px;flex-shrink:0">
+          <input type="checkbox" ${autoGrade?'checked':''} onchange="saToggleAutoGrade(${q._id},this.checked)"
+            style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:1;margin:0"/>
+          <div style="position:absolute;inset:0;background:${autoGrade?'#10b981':'#cbd5e1'};border-radius:20px;transition:background .2s"></div>
+          <div style="position:absolute;top:2px;left:${autoGrade?'18':'2'}px;width:16px;height:16px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s"></div>
+        </div>
+        <div>
+          <div style="font-size:.85rem;font-weight:700;color:${autoGrade?'#065f46':'var(--text)'}">⚡ Tự động chấm</div>
+          <div style="font-size:.73rem;color:var(--muted);margin-top:.05rem">Hệ thống so sánh câu trả lời của học sinh với đáp án chấp nhận</div>
+        </div>
+      </label>
+    </div>
+
+    ${autoGrade ? `
+    <div class="section-title" style="margin-top:.35rem">Đáp án chấp nhận <span style="font-weight:400;color:var(--muted)">(mỗi ô 1 đáp án — chỉ số, dấu . / -)</span></div>
+    <div id="sa_accepted_${q._id}" style="display:flex;flex-direction:column;gap:.3rem">
+      ${(accepted.length ? accepted : ['']).map((a,i)=>`
+        <div style="display:flex;gap:.35rem;align-items:center">
+          <span style="font-size:.75rem;font-weight:700;color:var(--muted);min-width:18px">${i+1}.</span>
+          <input type="text" inputmode="decimal" value="${esc(a)}"
+            placeholder="VD: 2 hoặc -1.5 hoặc 1/3"
+            oninput="saFilterNumeric(this);saUpdateAcceptedFromInputs(${q._id})"
+            style="flex:1;border:1.5px solid var(--primary);border-radius:8px;padding:.4rem .7rem;font-size:.9rem;font-family:'Courier New',monospace;outline:none;background:var(--card);color:var(--text)"
+            onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--primary)'"/>
+          ${accepted.length>0||i>0?`<button type="button" onclick="saRemoveAccepted(${q._id},${i})" class="opt-del">✕</button>`:'<span style="width:24px"></span>'}
+        </div>`).join('')}
+    </div>
+    <button type="button" class="btn-sm" style="margin-top:.35rem" onclick="saAddAccepted(${q._id})">+ Thêm đáp án</button>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem;display:flex;flex-wrap:wrap;gap:.3rem">
+      <span style="background:#e0f2fe;color:#0369a1;padding:.1rem .45rem;border-radius:6px;font-weight:600">💡 Thêm nhiều cách viết khác nhau</span>
+      <span style="background:#f0fdf4;color:#15803d;padding:.1rem .45rem;border-radius:6px;font-weight:600">✅ Đúng = hết điểm, Sai = 0 điểm</span>
+    </div>
+    ` : `
+    <div class="section-title" style="margin-top:.35rem">Đáp án mẫu <span style="font-weight:400;color:var(--muted)">(tham khảo — GV chấm tay)</span></div>
     <textarea rows="3" placeholder="Nhập đáp án mẫu hoặc gợi ý chấm điểm (hỗ trợ LaTeX)"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.6rem .85rem;font-size:.88rem;outline:none;font-family:'Courier New',monospace;resize:vertical;background:var(--card);color:var(--text)"
       oninput="updateSAAnswer(${q._id}, this.value)"
-    >${esc(q.data.sample_answer||'')}</textarea>`;
+    >${esc(q.data.sample_answer||'')}</textarea>
+    `}
+
+    <!-- Ghi chú cách ghi đáp án cho học sinh -->
+    <div class="section-title" style="margin-top:.65rem">
+      📌 Ghi chú / Hướng dẫn cách viết đáp án
+      <span style="font-weight:400;color:var(--muted)">(hiển thị cho học sinh khi làm bài)</span>
+    </div>
+    <input type="text" value="${esc(hint)}"
+      placeholder="VD: Làm tròn 2 chữ số thập phân · Ghi phân số dạng a/b · Đơn vị: cm"
+      oninput="saUpdateHint(${q._id},this.value)"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.55rem .85rem;font-size:.86rem;outline:none;background:var(--card);color:var(--text);transition:border-color .2s"
+      onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+    />`;
+}
+
+function saToggleAutoGrade(_id, val) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (!q) return;
+  q.data = { ...q.data, auto_grade: val, accepted_answers: q.data.accepted_answers||[] };
+  const c = document.getElementById('qcard_'+_id);
+  c.innerHTML = buildQEditor(q, editorQuestions.indexOf(q));
+  setTimeout(() => renderLatexAll(c), 100);
+}
+function saUpdateAccepted(_id, val) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (!q) return;
+  q.data = { ...q.data, accepted_answers: val.split('\n').map(s=>s.trim()).filter(Boolean) };
+}
+function saUpdateAcceptedFromInputs(_id) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (!q) return;
+  const inputs = document.querySelectorAll(`#sa_accepted_${_id} input[type=text]`);
+  q.data = { ...q.data, accepted_answers: [...inputs].map(i=>i.value.trim()).filter(Boolean) };
+}
+function saAddAccepted(_id) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (!q) return;
+  q.data = { ...q.data, accepted_answers: [...(q.data.accepted_answers||[]), ''] };
+  const c = document.getElementById('qcard_'+_id);
+  c.innerHTML = buildQEditor(q, editorQuestions.indexOf(q));
+}
+function saRemoveAccepted(_id, i) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (!q) return;
+  // Lưu giá trị hiện tại từ inputs trước
+  saUpdateAcceptedFromInputs(_id);
+  q.data.accepted_answers.splice(i, 1);
+  const c = document.getElementById('qcard_'+_id);
+  c.innerHTML = buildQEditor(q, editorQuestions.indexOf(q));
+}
+function saUpdateHint(_id, val) {
+  const q = editorQuestions.find(x=>x._id===_id);
+  if (q) q.data = { ...q.data, hint: val };
+}
+
+// Filter: chỉ cho phép ký tự số, dấu . - /
+function saFilterNumeric(el) {
+  const allowed = /[^0-9.\-\/]/g;
+  let v = el.value.replace(allowed, '');
+  // Chỉ cho 1 dấu - ở đầu
+  if (v.indexOf('-') > 0) v = v.replace(/-/g,'');
+  else if ((v.match(/-/g)||[]).length > 1) v = '-' + v.replace(/-/g,'');
+  // Chỉ cho 1 dấu . hoặc /
+  const dots = (v.match(/\./g)||[]).length;
+  const slashes = (v.match(/\//g)||[]).length;
+  if (dots > 1) { let f=false; v=v.replace(/\./g, c=>{ if(!f){f=true;return c;} return ''; }); }
+  if (slashes > 1) { let f=false; v=v.replace(/\//g, c=>{ if(!f){f=true;return c;} return ''; }); }
+  if (el.value !== v) { const pos=el.selectionStart; el.value=v; el.setSelectionRange(pos,pos); }
+}
+
+// Normalize số để so sánh: "1/2" → 0.5, "-3" → -3, "2.5" → 2.5
+function _normNumber(s) {
+  const t = (s||'').toString().trim();
+  if (t.includes('/')) {
+    const [a,b] = t.split('/').map(Number);
+    if (!isNaN(a) && !isNaN(b) && b !== 0) return a/b;
+  }
+  const n = parseFloat(t);
+  return isNaN(n) ? t.toLowerCase().replace(/\s+/g,' ') : n;
 }
 
 // ═══════════════════════════════════════════
@@ -2371,14 +2736,22 @@ async function saveHomework() {
 
   // Reset cache
   delete allQuestions[hwId];
-  closeModalHW();
+  closeModalHW(true);
   showToast(editId?'Đã cập nhật bài tập':'Đã tạo bài tập thành công');
   await loadAdminData();
   renderAdminList();
 }
 
 async function deleteHW(id) {
-  if(!confirm('Xóa bài tập này? Toàn bộ câu hỏi và bài nộp cũng sẽ bị xóa.'))return;
+  const ok = await showConfirm({
+    icon: '🗑️',
+    title: 'Xóa bài tập?',
+    msg: 'Toàn bộ câu hỏi và bài nộp cũng sẽ bị xóa vĩnh viễn.\nHành động này không thể hoàn tác.',
+    okText: 'Xóa',
+    okColor: '#ef4444',
+    cancelText: 'Hủy'
+  });
+  if (!ok) return;
   const{error}=await sb.from('homework').delete().eq('id',id);
   if(error){showToast('Lỗi: '+error.message,false);return;}
   delete allQuestions[id];
@@ -2432,6 +2805,8 @@ async function openDoHW(hwId) {
   }
   // maxAttempts === 0 → không giới hạn, tiếp tục
 
+  // Luôn fetch mới nhất khi bắt đầu làm — tránh dùng cache cũ khi GV đã sửa đề
+  delete allQuestions[hwId];
   const qs = await loadQuestions(hwId);
   if (!qs.length) { showToast('Bài tập chưa có câu hỏi', false); return; }
 
@@ -2459,14 +2834,24 @@ async function openDoHW(hwId) {
   startCountdown(hw.time_limit||null, qs.length);
 }
 
-function closeDoHW() {
+async function closeDoHW(force=false) {
   // Nếu đang làm bài (có câu đã trả lời hoặc timer chạy) → hỏi xác nhận
-  const answered = Object.keys(doHWAnswers).filter(k => {
-    const v = doHWAnswers[k];
-    return v !== undefined && v !== null && v !== '';
-  }).length;
-  if (answered > 0 || cdSecondsLeft > 0) {
-    if (!confirm('Bạn chưa nộp bài.\nThoát ra sẽ MẤT toàn bộ câu trả lời.\n\nBạn có chắc muốn thoát?')) return;
+  if (!force) {
+    const answered = Object.keys(doHWAnswers).filter(k => {
+      const v = doHWAnswers[k];
+      return v !== undefined && v !== null && v !== '';
+    }).length;
+    if (answered > 0 || cdSecondsLeft > 0) {
+      const ok = await showConfirm({
+        icon: '⚠️',
+        title: 'Thoát khỏi bài làm?',
+        msg: 'Bạn chưa nộp bài.\nThoát ra sẽ MẤT toàn bộ câu trả lời.',
+        okText: 'Thoát',
+        okColor: '#ef4444',
+        cancelText: 'Ở lại làm bài'
+      });
+      if (!ok) return;
+    }
   }
   stopCountdown();
   doHWFlagged = new Set();
@@ -2615,12 +3000,18 @@ function buildMCDisplay(q, answers, isPreview, idx) {
   const chosen=answers?answers[q.id]:undefined;
   return `<div style="display:flex;flex-direction:column;gap:.4rem">
     ${opts.map((o,i)=>{
+      // Backward compat: option có thể là string hoặc {text,img}
+      const optText = typeof o === 'string' ? o : (o.text||'');
+      const optImg  = typeof o === 'string' ? '' : (o.img||'');
       let cls='ans-opt';
       if(!isPreview&&chosen===i)cls+=' selected';
       if(isPreview&&i===correct)cls+=' correct';
       return `<div class="${cls}" id="mc_disp_${q.id}_${i}" onclick="${isPreview?'':'mcSelectAnswer('+q.id+','+i+')'}" style="${isPreview?'cursor:default':''}">
         <div class="ans-circle">${String.fromCharCode(65+i)}</div>
-        <div class="q-text" style="font-size:.9rem">${o}</div>
+        <div style="flex:1">
+          <div class="q-text" style="font-size:.9rem">${optText}</div>
+          ${optImg?`<img src="${esc(optImg)}" style="max-height:140px;max-width:100%;border-radius:8px;margin-top:.4rem;display:block;border:1px solid rgba(0,0,0,.08)" onerror="this.style.display='none'"/>`:''}
+        </div>
       </div>`;
     }).join('')}
     ${isPreview?`<div style="margin-top:.4rem;font-size:.8rem;color:var(--hw-green);font-weight:700">✅ Đáp án: ${String.fromCharCode(65+correct)}</div>`:''}
@@ -2647,7 +3038,8 @@ function buildTFDisplay(q, answers, isPreview, idx) {
     ${stmts.map((s,i)=>{
       const userAns=chosen?chosen[i]:undefined;
       return `<div style="border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;background:var(--card)">
-        <div class="q-text" style="font-size:.88rem;margin-bottom:.5rem">${String(i+1)}. ${s.text}</div>
+        <div class="q-text" style="font-size:.88rem;margin-bottom:${s.img?'.4rem':'.5rem'}">${String(i+1)}. ${s.text}</div>
+        ${s.img?`<img src="${esc(s.img)}" style="max-height:160px;max-width:100%;border-radius:8px;margin-bottom:.5rem;display:block;border:1px solid var(--border)" onerror="this.style.display='none'"/>`:''}
         <div class="tf-row" style="gap:.5rem">
           <div class="tf-item${!isPreview&&userAns===true?' selected-true':''} ${isPreview&&s.answer===true?' selected-true':''}"
             onclick="${isPreview?'':'tfSelectAnswer('+q.id+','+i+',true)'}" style="${isPreview?'cursor:default':''}">
@@ -2748,15 +3140,37 @@ function matchSelectAnswer(qId, leftIdx, rightIdx, selEl) {
 }
 
 function buildSADisplay(q, answers, isPreview, idx) {
-  const chosen=answers?answers[q.id]:'';
-  const sample=q.data.sample_answer||'';
+  const chosen  = answers ? answers[q.id] : '';
+  const sample  = q.data.sample_answer || '';
+  const isAuto  = q.data.auto_grade && q.data.accepted_answers?.length;
+  const hint    = q.data.hint || '';
+
   return `<div>
-    ${isPreview&&sample?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:.4rem;padding:.5rem .75rem;background:#f0fdf4;border-left:3px solid var(--hw-green);border-radius:0 8px 8px 0">📌 Đáp án mẫu: <span class="q-text">${sample}</span></div>`:''}
-    ${!isPreview?`<textarea rows="3" placeholder="Nhập câu trả lời của bạn..."
-      oninput="doHWAnswers[${q.id}]=this.value;updateQNavigator()"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;resize:vertical;background:var(--card);color:var(--text);transition:border-color .2s"
-      onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
-    >${esc(chosen||'')}</textarea>`:''}
+    ${isPreview && sample
+      ? `<div style="font-size:.85rem;color:var(--muted);margin-bottom:.4rem;padding:.5rem .75rem;background:#f0fdf4;border-left:3px solid var(--hw-green);border-radius:0 8px 8px 0">📌 Đáp án mẫu: <span class="q-text">${sample}</span></div>`
+      : ''}
+    ${hint && !isPreview ? `<div style="display:flex;align-items:flex-start;gap:.4rem;margin-bottom:.4rem;font-size:.8rem;color:#92400e;background:#fef3c7;border-radius:8px;padding:.35rem .65rem;border-left:3px solid #f59e0b">
+        <span style="flex-shrink:0">📌</span>
+        <span style="font-weight:600">${esc(hint)}</span>
+      </div>` : ''}
+    ${!isPreview ? `
+      ${isAuto ? `<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem;font-size:.78rem;font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:.3rem .65rem">
+        <span>⚡</span>
+        <span>Hệ thống tự chấm — nhập số (cho phép dấu <b>.</b> thập phân, <b>/</b> phân số, <b>-</b> âm)</span>
+      </div>
+      <input type="text" inputmode="decimal"
+        placeholder="VD: 3 hoặc -2.5 hoặc 1/3"
+        oninput="saFilterNumeric(this);doHWAnswers[${q.id}]=this.value;updateQNavigator()"
+        value="${esc(chosen||'')}"
+        style="width:100%;border:2px solid #7dd3fc;border-radius:10px;padding:.65rem .9rem;font-size:1.05rem;font-weight:700;outline:none;font-family:'Courier New',monospace;background:var(--card);color:var(--text);transition:border-color .2s;letter-spacing:.5px"
+        onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#7dd3fc'"
+      />` : `
+      <textarea rows="3" placeholder="Nhập câu trả lời của bạn..."
+        oninput="doHWAnswers[${q.id}]=this.value;updateQNavigator()"
+        style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;resize:vertical;background:var(--card);color:var(--text);transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+      >${esc(chosen||'')}</textarea>`}
+    ` : ''}
   </div>`;
 }
 
@@ -2767,16 +3181,45 @@ async function submitAnswers(autoSubmit=false) {
   const hw = allHomework.find(h=>h.id===doHWId);
   if (!hw) return;
 
-  // Chỉ nhắc nhở nhẹ khi nộp thủ công, không bắt buộc
+  // Xác nhận nộp bài — luôn hỏi khi nộp thủ công
   if (!autoSubmit) {
     const realQs = doHWQList.filter(q => q.question_type !== 'section');
-    const unanswered = realQs.filter(q => {
+    const unansweredQs = realQs.map((q, i) => ({ q, num: i + 1 })).filter(({ q }) => {
       const a = doHWAnswers[q.id];
       return a === undefined || a === null || a === '' ||
         (typeof a === 'object' && Object.keys(a).length === 0);
-    }).length;
-    if (unanswered > 0) {
-      const ok = confirm(`Còn ${unanswered} câu chưa trả lời.\nBạn vẫn muốn nộp bài?`);
+    });
+
+    if (unansweredQs.length > 0) {
+      // Còn câu chưa làm
+      const chips = unansweredQs.map(({ num }) =>
+        `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:#fee2e2;color:#991b1b;font-size:.78rem;font-weight:800;">${num}</span>`
+      ).join('');
+      const ok = await showConfirm({
+        icon: '📋',
+        title: `Còn ${unansweredQs.length} câu chưa trả lời`,
+        msgHtml: `<div style="margin-bottom:.6rem;font-size:.85rem;color:var(--muted)">Các câu chưa làm sẽ được tính 0 điểm:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.75rem">${chips}</div>
+          <div style="font-size:.82rem;color:var(--muted)">Bạn có thể quay lại làm tiếp hoặc nộp ngay.</div>`,
+        okText: '📤 Nộp bài',
+        okColor: '#6366f1',
+        cancelText: '↩ Làm tiếp',
+        layout: 'stack'
+      });
+      if (!ok) return;
+    } else {
+      // Làm hết rồi — xác nhận lần cuối
+      const ok = await showConfirm({
+        icon: '✅',
+        title: 'Nộp bài?',
+        msg: `Bạn đã trả lời đủ ${realQs.length} câu.\nSau khi nộp sẽ không thể sửa lại.`,
+        okText: '📤 Nộp bài',
+        okColor: '#10b981',
+        cancelText: 'Xem lại',
+        layout: 'stack',
+        iconBg: '#d1fae5',
+        accent: 'linear-gradient(90deg,#10b981,#059669)'
+      });
       if (!ok) return;
     }
   }
@@ -2813,55 +3256,103 @@ async function submitAnswers(autoSubmit=false) {
       autoScore += pts * (ok / (pairs.length || 1));
 
     } else if (q.question_type === 'short_answer') {
-      manualMax += pts;  // để GV chấm sau
+      // Nếu bật auto_grade: so sánh với accepted_answers
+      if (q.data.auto_grade && q.data.accepted_answers?.length) {
+        autoMax += pts;
+        const userNorm = _normNumber(a||'');
+        const matched = q.data.accepted_answers.some(ans => {
+          const ansNorm = _normNumber(ans);
+          // So sánh số: nếu cả hai là số thì compare với epsilon
+          if (typeof userNorm === 'number' && typeof ansNorm === 'number') {
+            return Math.abs(userNorm - ansNorm) < 1e-9;
+          }
+          return userNorm === ansNorm;
+        });
+        if (matched) autoScore += pts;
+      } else {
+        manualMax += pts;  // để GV chấm sau
+      }
     }
   });
 
   autoScore = Math.round(autoScore * 100) / 100;
-  const hasShortAnswer = manualMax > 0;
+  const hasShortAnswer = manualMax > 0; // SA cần GV chấm tay
 
-  // Nếu có câu tự luận: lưu điểm tự chấm được vào score,
-  // đánh dấu status='partial' để GV biết cần chấm thêm.
-  // Nếu toàn bộ tự chấm: lưu điểm hoàn chỉnh, status='graded'.
+  // Tính kết quả SA auto-grade để lưu vào manual_scores (GV có thể override)
+  const initialManualScores = {};
+  doHWQList.forEach(q => {
+    if (q.question_type !== 'short_answer') return;
+    if (!q.data.auto_grade || !q.data.accepted_answers?.length) return;
+    const pts = parseFloat(q.points) || 1;
+    const a = doHWAnswers[q.id];
+    const userNorm = _normNumber(a||'');
+    const matched = q.data.accepted_answers.some(ans => {
+      const ansNorm = _normNumber(ans);
+      if (typeof userNorm === 'number' && typeof ansNorm === 'number')
+        return Math.abs(userNorm - ansNorm) < 1e-9;
+      return userNorm === ansNorm;
+    });
+    initialManualScores[q.id] = matched ? pts : 0;
+  });
+
   const finalScore  = autoScore;
   const finalMax    = totalMax;
+  // graded nếu không có SA manual; submitted nếu cần GV chấm thêm
   const finalStatus = hasShortAnswer ? 'submitted' : 'graded';
 
   const maxAttempts = hw?.max_attempts ?? 1;
+
+  // Tính attempt number = số bài đã nộp + 1
+  const myPrevSubs = allSubmissions.filter(s =>
+    String(s.homework_id) === String(doHWId) && s.username === currentUser.username
+  );
+  const attemptNum = myPrevSubs.length + 1;
+
   const subPayload = {
-    homework_id:  doHWId,
-    username:     currentUser.username,
-    student_name: currentUser.full_name || currentUser.username,
-    class_name:   currentUser.class_name || null,
-    answers:      doHWAnswers,
-    note:         document.getElementById('doHWNoteText').value.trim() || null,
-    status:       finalStatus,
-    score:        hasShortAnswer ? null : finalScore,
-    max_score:    finalMax,
-    time_used:    cdUsedSecs > 0 ? cdUsedSecs : null,
-    submitted_at: new Date().toISOString()
+    homework_id:   doHWId,
+    username:      currentUser.username,
+    student_name:  currentUser.full_name || currentUser.username,
+    class_name:    currentUser.class_name || null,
+    answers:       doHWAnswers,
+    note:          document.getElementById('doHWNoteText').value.trim() || null,
+    status:        finalStatus,
+    score:         finalScore,   // luôn lưu điểm tự chấm được (kể cả khi còn SA manual)
+    max_score:     finalMax,
+    manual_scores: Object.keys(initialManualScores).length ? initialManualScores : null,
+    time_used:     cdUsedSecs > 0 ? cdUsedSecs : null,
+    submitted_at:  new Date().toISOString(),
+    attempt:       attemptNum
   };
 
   let error;
   if (maxAttempts === 1) {
-    // 1 lần: upsert (cập nhật nếu đã có)
-    ({ error } = await sb.from('homework_submissions').upsert(subPayload, {onConflict:'homework_id,username'}));
+    // 1 lần duy nhất: upsert theo (homework_id, username, attempt=1)
+    ({ error } = await sb.from('homework_submissions')
+      .upsert({ ...subPayload, attempt: 1 }, { onConflict: 'homework_id,username,attempt' }));
   } else {
-    // Nhiều lần / không giới hạn: luôn insert mới
+    // Nhiều lần: luôn insert mới với attempt tăng dần
     ({ error } = await sb.from('homework_submissions').insert(subPayload));
   }
 
   if (error) { document.getElementById('doHWErr').textContent='Lỗi: '+error.message; return; }
 
-  closeDoHW();
+  closeDoHW(true);
 
-  // Toast thông báo phân biệt rõ
-  if (!hasShortAnswer) {
-    showToast(`✅ Nộp bài xong! Điểm tự động: ${finalScore}/${finalMax}`);
-  } else if (autoMax > 0) {
-    showToast(`📤 Đã nộp! Phần tự chấm: ${autoScore}/${autoMax}đ — Câu tự luận chờ GV chấm (${manualMax}đ)`);
+  // Toast thông báo rõ điểm ngay
+  const autoSAScore = Object.values(initialManualScores).reduce((s,v)=>s+v, 0);
+  const autoSAMax   = doHWQList.filter(q=>q.question_type==='short_answer'&&q.data.auto_grade&&q.data.accepted_answers?.length).reduce((s,q)=>s+(parseFloat(q.points)||1),0);
+  if (!hasShortAnswer && autoSAMax === 0) {
+    // Toàn bộ tự chấm (MC/TF/Match)
+    showToast(`✅ Điểm: ${finalScore}/${finalMax}`);
+  } else if (hasShortAnswer && autoSAMax === 0) {
+    // Có SA manual, không có SA auto
+    showToast(`📤 Đã nộp! Điểm tạm: ${finalScore}/${finalMax} — Câu tự luận chờ GV chấm`);
+  } else if (!hasShortAnswer && autoSAMax > 0) {
+    // Có SA auto-grade, không có SA manual
+    showToast(`✅ Điểm: ${finalScore}/${finalMax} — Hệ thống tự chấm tất cả`);
   } else {
-    showToast('📤 Đã nộp! Chờ giáo viên chấm điểm.');
+    // Hỗn hợp
+    showToast(`📤 Điểm tạm: ${finalScore}/${finalMax} — Câu tự luận chờ GV kiểm tra`);
   }
   await loadStudentData();
   renderStudentList();
@@ -2872,12 +3363,51 @@ async function submitAnswers(autoSubmit=false) {
 // ═══════════════════════════════════════════
 // XEM KẾT QUẢ BÀI LÀM (học sinh)
 // ═══════════════════════════════════════════
-async function openResult(hwId) {
-  const hw=allHomework.find(h=>h.id===hwId);
-  const sub=allSubmissions.find(s=>s.homework_id===hwId);
-  if(!hw||!sub)return;
-  const qs=await loadQuestions(hwId);
-  const answers=sub.answers||{};
+async function openResult(hwId, attemptNum=null) {
+  const hw  = allHomework.find(h=>h.id===hwId);
+  if (!hw) return;
+
+  // Lấy tất cả lần làm của bài này
+  const allSubs = allSubmissions
+    .filter(s => String(s.homework_id)===String(hwId))
+    .sort((a,b) => (a.attempt||1)-(b.attempt||1));
+  if (!allSubs.length) return;
+
+  // Chọn lần xem: mặc định là lần mới nhất
+  const targetAttempt = attemptNum ?? allSubs[allSubs.length-1].attempt ?? allSubs.length;
+  const sub = allSubs.find(s=>(s.attempt||1)===targetAttempt) || allSubs[allSubs.length-1];
+
+  const qs      = await loadQuestions(hwId);   // dùng cache OK khi xem kết quả
+  const answers = sub.answers||{};
+
+  document.getElementById('resultTitle').textContent = allSubs.length > 1
+    ? `📋 ${hw.title}  —  Lần ${targetAttempt}/${allSubs.length}`
+    : '📋 ' + hw.title;
+
+  // ── Tab chọn lần xem (chỉ hiện khi > 1 lần) ──────────────
+  let attemptTabHtml = '';
+  if (allSubs.length > 1) {
+    const tabs = allSubs.map(s => {
+      const att  = s.attempt||1;
+      const pct  = s.max_score>0&&s.score!=null ? Math.round(s.score/s.max_score*100) : null;
+      const col  = pct===null?'#94a3b8':pct>=80?'#10b981':pct>=50?'#f59e0b':'#ef4444';
+      const isActive = att===targetAttempt;
+      return `<button onclick="openResult(${hwId},${att})"
+        style="display:flex;flex-direction:column;align-items:center;gap:.15rem;
+          padding:.5rem .9rem;border-radius:10px;cursor:pointer;transition:all .15s;
+          border:2px solid ${isActive?'var(--primary)':'var(--border)'};
+          background:${isActive?'var(--primary-light)':'var(--card)'};
+          color:${isActive?'var(--primary)':'var(--muted)'}">
+          <span style="font-size:.78rem;font-weight:700">Lần ${att}</span>
+          <span style="font-size:.82rem;font-weight:900;color:${col}">${s.score!=null?s.score+'đ':'—'}</span>
+          <span style="font-size:.65rem;color:var(--muted)">${s.submitted_at?new Date(s.submitted_at).toLocaleDateString('vi-VN'):''}</span>
+        </button>`;
+    }).join('');
+    attemptTabHtml = `<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1rem;padding:.65rem;background:var(--bg);border-radius:12px;border:1.5px solid var(--border)">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;width:100%;margin-bottom:.25rem">Chọn lần xem</div>
+      ${tabs}
+    </div>`;
+  }
 
   document.getElementById('resultTitle').textContent='📋 '+hw.title;
 
@@ -2989,7 +3519,31 @@ async function openResult(hwId) {
     if(q.question_type==='multiple_choice'){
       const isCorrect=userAns===q.data.correct;
       verdict=isCorrect?'correct':'wrong';
-      correctMarkHtml=`<div style="font-size:.8rem;margin-top:.4rem;font-weight:700;color:${isCorrect?'var(--hw-green)':'var(--hw-red)'}">${isCorrect?'✅ Đúng':'❌ Sai — Đáp án: '+String.fromCharCode(65+q.data.correct)}</div>`;
+      const opts = q.data.options||[];
+      const getOptText = o => typeof o === 'string' ? o : (o.text||'');
+      const getOptImg  = o => typeof o === 'string' ? '' : (o.img||'');
+      const correctLetter = String.fromCharCode(65+q.data.correct);
+      const correctText   = getOptText(opts[q.data.correct]||'');
+      const correctImg    = getOptImg(opts[q.data.correct]||'');
+      const userLetter    = userAns!=null ? String.fromCharCode(65+userAns) : null;
+      const userText      = userAns!=null ? getOptText(opts[userAns]||'') : null;
+      const userImg       = userAns!=null ? getOptImg(opts[userAns]||'') : '';
+      correctMarkHtml = isCorrect
+        ? `<div style="margin-top:.5rem;display:flex;flex-direction:column;gap:.3rem">
+             <span style="background:#d1fae5;border-radius:6px;padding:.2rem .55rem;font-size:.85rem;font-weight:700;color:#065f46;display:inline-block">✅ Đúng — ${correctLetter}. ${esc(correctText)}</span>
+             ${correctImg?`<img src="${esc(correctImg)}" style="max-height:120px;border-radius:8px;border:1px solid #86efac" onerror="this.style.display='none'"/>`:''}
+           </div>`
+        : `<div style="margin-top:.5rem;display:flex;flex-direction:column;gap:.4rem">
+             <div>
+               <span style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:.2rem .55rem;font-size:.83rem;font-weight:700">❌ Bạn chọn: ${userLetter?userLetter+'. '+esc(userText):'(chưa chọn)'}</span>
+               ${userImg?`<img src="${esc(userImg)}" style="max-height:80px;border-radius:8px;border:1px solid #fca5a5;margin-top:.3rem;display:block" onerror="this.style.display='none'"/>`:''}
+             </div>
+             <div>
+               <span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:.2rem .55rem;font-size:.83rem;font-weight:700">✅ Đáp án đúng: ${correctLetter}. ${esc(correctText)}</span>
+               ${correctImg?`<img src="${esc(correctImg)}" style="max-height:80px;border-radius:8px;border:1px solid #86efac;margin-top:.3rem;display:block" onerror="this.style.display='none'"/>`:''}
+             </div>
+           </div>`;
+
     } else if(q.question_type==='true_false'){
       const stmts=q.data.statements||[];
       let correct=0;
@@ -2997,19 +3551,57 @@ async function openResult(hwId) {
         const ua=userAns?userAns[i]:undefined;
         const ok=ua===s.answer;
         if(ok)correct++;
-        return `<span style="font-size:.78rem;padding:.15rem .45rem;border-radius:6px;background:${ok?'#d1fae5':'#fee2e2'};color:${ok?'#065f46':'#991b1b'}">${i+1}: ${ua===true?'Đúng':ua===false?'Sai':'?'} ${ok?'✅':'❌'}</span>`;
-      }).join(' ');
+        const correctAns = s.answer ? 'Đúng' : 'Sai';
+        const userAnsStr = ua===true?'Đúng':ua===false?'Sai':'?';
+        return `<div style="display:flex;align-items:flex-start;gap:.4rem;flex-wrap:wrap;font-size:.8rem;padding:.3rem 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--muted);min-width:18px;font-weight:600">${i+1}.</span>
+          <div style="flex:1">
+            <span style="color:var(--text)">${esc(s.text)}</span>
+            ${s.img?`<img src="${esc(s.img)}" style="max-height:100px;max-width:100%;border-radius:7px;margin-top:.3rem;display:block;border:1px solid var(--border)" onerror="this.style.display='none'"/>`:''}
+          </div>
+          ${ok
+            ? `<span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:.15rem .45rem;font-weight:700;flex-shrink:0">✅ ${userAnsStr}</span>`
+            : `<span style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:.15rem .45rem;font-weight:700;flex-shrink:0">❌ ${userAnsStr}</span>
+               <span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:.15rem .45rem;font-weight:700;flex-shrink:0">→ ${correctAns}</span>`
+          }
+        </div>`;
+      }).join('');
       verdict=correct===stmts.length?'correct':correct>0?'partial':'wrong';
-      correctMarkHtml=`<div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">${details}</div>`;
+      correctMarkHtml=`<div style="margin-top:.5rem;border:1px solid var(--border);border-radius:10px;padding:.4rem .7rem">${details}</div>`;
+
     } else if(q.question_type==='matching'){
-      const pairs=q.data.correct_pairs||[];
+      const left  = q.data.left  || [];
+      const right = q.data.right || [];
+      const pairs = q.data.correct_pairs||[];
+      const correctMap = {};
+      pairs.forEach(([l,r])=>{ correctMap[l]=r; });
       let correct=0;
-      pairs.forEach(([l,r])=>{ if(userAns&&userAns[l]===r)correct++; });
+      const details = left.map((lText,i)=>{
+        const userR   = userAns?.[i];
+        const correctR= correctMap[i];
+        const ok      = userR===correctR;
+        if(ok)correct++;
+        const userLabel    = userR!=null    ? String.fromCharCode(65+userR)   +'. '+esc(right[userR]||'')    : '?';
+        const correctLabel = correctR!=null ? String.fromCharCode(65+correctR)+'. '+esc(right[correctR]||'') : '?';
+        return `<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.82rem;padding:.3rem 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--muted);font-weight:700;min-width:16px">${i+1}.</span>
+          <span style="flex:1">${esc(lText)}</span>
+          ${ok
+            ? `<span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:.15rem .45rem;font-weight:700">✅ ${correctLabel}</span>`
+            : `<span style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:.15rem .45rem;font-weight:700">❌ ${userLabel}</span>
+               <span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:.15rem .45rem;font-weight:700">→ ${correctLabel}</span>`
+          }
+        </div>`;
+      }).join('');
       verdict=correct===pairs.length?'correct':correct>0?'partial':'wrong';
-      correctMarkHtml=`<div style="font-size:.8rem;margin-top:.4rem;color:var(--muted)">${correct}/${pairs.length} cặp đúng</div>`;
+      correctMarkHtml=`<div style="margin-top:.5rem;border:1px solid var(--border);border-radius:10px;padding:.4rem .7rem">${details}</div>`;
+
     } else {
       verdict='manual';
-      correctMarkHtml=`<div style="font-size:.8rem;margin-top:.4rem;color:var(--muted);font-style:italic">✏️ Giáo viên chấm thủ công</div>`;
+      const manualPts = sub.manual_scores?.[q.id];
+      correctMarkHtml=`<div style="font-size:.8rem;margin-top:.4rem;padding:.35rem .65rem;background:${manualPts!=null?'#ede9fe':'#fef3c7'};border-radius:8px;color:${manualPts!=null?'#5b21b6':'#92400e'}">
+        ${manualPts!=null ? `✏️ Giáo viên chấm: <b>${manualPts}/${q.points||1} điểm</b>` : '⏳ Chờ giáo viên chấm'}
+      </div>`;
     }
 
     const borderColor={correct:'var(--hw-green)',wrong:'var(--hw-red)',partial:'var(--hw-orange)',manual:'var(--muted)',''  :'var(--border)'}[verdict];
@@ -3039,7 +3631,7 @@ async function openResult(hwId) {
     </div>`;
   }).join('');
 
-  document.getElementById('resultContent').innerHTML=scoreHtml+qResultHtml;
+  document.getElementById('resultContent').innerHTML = attemptTabHtml + scoreHtml + qResultHtml;
   document.getElementById('modalResult').classList.add('open');
   setTimeout(() => renderLatexAll(document.getElementById('modalResult')), 200);
 }
@@ -3180,50 +3772,115 @@ async function openGrade(subId, studentName) {
   // Build câu tự luận từng câu
   const block = document.getElementById('gradeManualBlock');
   block.innerHTML = '';
-  if (manualQs.length) {
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'margin-bottom:1.25rem;display:flex;flex-direction:column;gap:.85rem';
-    wrap.innerHTML = `<div style="font-weight:800;font-size:.88rem;color:var(--text);margin-bottom:-.2rem">
-      ✏️ Câu tự luận cần chấm <span style="color:var(--muted);font-weight:500">(${manualQs.length} câu — tổng ${manualMax}đ)</span>
+
+  // Tách SA thành 2 nhóm: auto-grade (hệ thống chấm) và manual (GV chấm)
+  const allSAQs   = qs.filter(q => q.question_type === 'short_answer');
+  const autoSAQs  = allSAQs.filter(q => q.data.auto_grade && q.data.accepted_answers?.length);
+  const manualSAQs = allSAQs.filter(q => !(q.data.auto_grade && q.data.accepted_answers?.length));
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-bottom:1.25rem;display:flex;flex-direction:column;gap:.85rem';
+
+  // ── Nhóm 1: SA auto-grade (GV kiểm tra lại) ──
+  if (autoSAQs.length) {
+    wrap.innerHTML += `<div style="font-weight:800;font-size:.88rem;color:var(--text)">
+      ⚡ Câu tự luận đã tự chấm
+      <span style="color:var(--muted);font-weight:500">(${autoSAQs.length} câu — GV kiểm tra và chỉnh nếu cần)</span>
     </div>`;
-    manualQs.forEach((q, i) => {
+    autoSAQs.forEach((q, i) => {
+      const ua  = answers[q.id];
+      const pts = parseFloat(q.points)||1;
+      const prevScore = (sub.manual_scores && sub.manual_scores[q.id] != null)
+        ? sub.manual_scores[q.id] : 0;
+      const isCorrect = prevScore >= pts;
+      const userNorm  = _normNumber(ua||'');
+      const accepted  = (q.data.accepted_answers||[]);
+      const matchedAns = accepted.find(ans => {
+        const ansNorm = _normNumber(ans);
+        if (typeof userNorm === 'number' && typeof ansNorm === 'number')
+          return Math.abs(userNorm - ansNorm) < 1e-9;
+        return userNorm === ansNorm;
+      });
+
+      const card = document.createElement('div');
+      card.style.cssText = `border:2px solid ${isCorrect?'#10b981':'#ef4444'};border-radius:14px;overflow:hidden;background:var(--card)`;
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;background:${isCorrect?'#f0fdf4':'#fff1f2'};border-bottom:1.5px solid ${isCorrect?'#86efac':'#fecaca'};gap:.75rem;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <div style="width:28px;height:28px;border-radius:50%;background:${isCorrect?'#10b981':'#ef4444'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0">${i+1}</div>
+            <div>
+              <div style="font-size:.8rem;font-weight:700;color:var(--text)" class="q-text">${q.question_text}</div>
+              <div style="font-size:.72rem;margin-top:.1rem;color:${isCorrect?'#065f46':'#991b1b'};font-weight:700">
+                ${isCorrect ? `✅ Hệ thống chấm: ĐÚNG (${prevScore}/${pts}đ)` : `❌ Hệ thống chấm: SAI (0/${pts}đ)`}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+            <span style="font-size:.72rem;color:var(--muted);font-weight:600">GV chỉnh:</span>
+            <input type="number" min="0" max="${pts}" step="0.25"
+              value="${prevScore}" data-qid="${q.id}" data-max="${pts}"
+              oninput="_updateGradeSummary()"
+              style="width:65px;padding:.3rem .5rem;border:2px solid ${isCorrect?'#10b981':'#ef4444'};border-radius:9px;font-size:.92rem;font-weight:800;outline:none;background:var(--card);color:${isCorrect?'#065f46':'#991b1b'};text-align:center"/>
+            <span style="font-size:.75rem;color:var(--muted)">/ ${pts}đ</span>
+          </div>
+        </div>
+        <div style="padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-start">
+          <div style="flex:1;min-width:140px">
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:.2rem">ĐÁP ÁN HỌC SINH:</div>
+            <div style="font-size:1rem;font-weight:800;font-family:'Courier New',monospace;padding:.4rem .7rem;background:var(--bg);border-radius:8px;border:1.5px solid ${isCorrect?'#86efac':'#fecaca'}">${esc(ua||'(trống)')}</div>
+          </div>
+          <div style="flex:1;min-width:140px">
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:.2rem">ĐÁP ÁN CHẤP NHẬN:</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.25rem">
+              ${accepted.map(a=>`<span style="font-family:'Courier New',monospace;font-size:.82rem;padding:.15rem .45rem;border-radius:6px;background:${_normNumber(a)===(typeof userNorm==='number'?userNorm:null)||a===ua?'#d1fae5':'var(--bg)'};border:1px solid ${_normNumber(a)===(typeof userNorm==='number'?userNorm:null)||a===ua?'#10b981':'var(--border)'}">${esc(a)}</span>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      wrap.appendChild(card);
+    });
+  }
+
+  // ── Nhóm 2: SA manual (GV chấm tay) ──
+  if (manualSAQs.length) {
+    wrap.innerHTML += `<div style="font-weight:800;font-size:.88rem;color:var(--text);margin-top:${autoSAQs.length?'.5rem':'0'}">
+      ✏️ Câu tự luận cần chấm tay
+      <span style="color:var(--muted);font-weight:500">(${manualSAQs.length} câu — tổng ${manualMax}đ)</span>
+    </div>`;
+    manualSAQs.forEach((q, i) => {
       const ua = answers[q.id];
       const pts = parseFloat(q.points)||1;
-      // Lấy điểm đã chấm trước đó nếu có
       const prevScore = (sub.manual_scores && sub.manual_scores[q.id] != null)
         ? sub.manual_scores[q.id] : 0;
       const card = document.createElement('div');
       card.style.cssText = 'border:1.5px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card)';
       card.innerHTML = `
-        <!-- Header câu -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;background:var(--bg);border-bottom:1.5px solid var(--border);gap:.75rem;flex-wrap:wrap">
           <div style="display:flex;align-items:center;gap:.6rem">
             <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0">${i+1}</div>
             <div>
               <div style="font-size:.8rem;font-weight:700;color:var(--text)" class="q-text">${q.question_text}</div>
-              ${q.data.sample_answer?`<div style="font-size:.73rem;color:#065f46;margin-top:.15rem">📌 Đáp án mẫu: ${esc(q.data.sample_answer)}</div>`:''}
+              ${q.data.sample_answer?`<div style="font-size:.73rem;color:#065f46;margin-top:.1rem">📌 Đáp án mẫu: ${esc(q.data.sample_answer)}</div>`:''}
             </div>
           </div>
-          <!-- Ô điểm câu này -->
           <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
             <span style="font-size:.78rem;color:var(--muted);font-weight:600">Điểm</span>
-            <span style="font-size:.75rem;color:var(--muted)">(0–${pts})</span>
             <input type="number" min="0" max="${pts}" step="0.25"
-              value="${prevScore}"
-              placeholder="—"
+              value="${prevScore}" placeholder="—"
               data-qid="${q.id}" data-max="${pts}"
               oninput="_updateGradeSummary()"
               style="width:72px;padding:.35rem .55rem;border:2px solid var(--primary);border-radius:9px;font-size:.95rem;font-weight:800;outline:none;background:var(--card);color:var(--primary);text-align:center"/>
             <span style="font-size:.78rem;color:var(--muted);font-weight:600">/ ${pts}đ</span>
           </div>
         </div>
-        <!-- Bài làm học sinh -->
         <div style="padding:.75rem 1rem">
           <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-bottom:.3rem">📝 Bài làm học sinh:</div>
-          <div style="font-size:.92rem;line-height:1.7;padding:.65rem .9rem;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;min-height:3rem;white-space:pre-wrap">${ua ? esc(ua) : '<span style="color:var(--muted);font-style:italic">Không trả lời</span>'}</div>
+          <div style="font-size:.92rem;line-height:1.7;padding:.65rem .9rem;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;min-height:3rem;white-space:pre-wrap">${ua?esc(ua):'<span style="color:var(--muted);font-style:italic">Không trả lời</span>'}</div>
         </div>`;
       wrap.appendChild(card);
     });
+  }
+
+  if (allSAQs.length) {
     block.appendChild(wrap);
     setTimeout(()=>renderLatexAll(block), 150);
   } else {
@@ -3480,25 +4137,23 @@ function initRealtime() {
     .on('postgres_changes', {
       event: '*', schema: 'public', table: 'homework'
     }, async (payload) => {
-      const { eventType, new: nw, old } = payload;
+      const { eventType, new: nw } = payload;
 
       if (currentUser.role === 'admin') {
-        // Admin: reload và re-render
         await loadAdminData();
         if (adminTab === 'list') renderAdminList();
         else renderAdminSubmissions();
-        if (eventType === 'INSERT')
-          showToast('📝 Bài tập mới đã được thêm', true);
       } else {
         // Học sinh: kiểm tra bài mới có dành cho lớp mình không
-        if (eventType === 'INSERT') {
-          const hw = nw;
-          const myClass = currentUser.class_name;
-          if (!hw.class_name || hw.class_name === myClass) {
-            await loadStudentData();
-            renderStudentList();
-            showRealtimeNotify('📝 Bài tập mới', hw.title || 'Vừa có bài tập mới!');
-          }
+        const myClasses = (currentUser.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+        const hwClass   = (nw?.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+        const relevant  = !hwClass.length || myClasses.some(c=>hwClass.includes(c));
+
+        if (eventType === 'INSERT' && relevant) {
+          await loadStudentData();
+          renderStudentList();
+          updateGuideStats();
+          showRealtimeNotify('📝 Bài tập mới', nw?.title || 'Giáo viên vừa giao bài mới!');
         } else if (eventType === 'UPDATE' || eventType === 'DELETE') {
           await loadStudentData();
           renderStudentList();
@@ -3506,16 +4161,18 @@ function initRealtime() {
       }
     })
 
-    // ── Bảng homework_submissions: HS nộp bài ───────────────
+    // ── Bảng homework_submissions: HS nộp bài / GV chấm ─────
     .on('postgres_changes', {
       event: '*', schema: 'public', table: 'homework_submissions'
     }, async (payload) => {
       const { eventType, new: nw } = payload;
 
       if (currentUser.role === 'admin') {
+        // Cập nhật allSubmissions local
         if (eventType === 'INSERT') {
-          // Thêm vào đầu danh sách
           allSubmissions = [nw, ...allSubmissions.filter(s=>s.id!==nw.id)];
+          // Preload questions nếu chưa có để calcScoreBreakdown hoạt động
+          if (nw?.homework_id) await loadQuestions(nw.homework_id);
         } else if (eventType === 'UPDATE') {
           const idx = allSubmissions.findIndex(s=>s.id===nw.id);
           if (idx>=0) allSubmissions[idx]=nw; else allSubmissions.unshift(nw);
@@ -3523,29 +4180,32 @@ function initRealtime() {
           allSubmissions = allSubmissions.filter(s=>s.id!==payload.old?.id);
         }
 
-        // Luôn cập nhật badge trên tab + card danh sách
         _updateSubmissionBadge();
 
-        // Re-render tab đang active
         if (adminTab === 'submissions') renderAdminSubmissions();
-        else renderAdminList(); // cập nhật số "Đã nộp" trên từng card
+        else renderAdminList();
 
         if (eventType === 'INSERT') {
-          const hwTitle = allHomework.find(h=>h.id===nw.homework_id)?.title || '';
+          const hwTitle = allHomework.find(h=>h.id===nw?.homework_id)?.title||'';
           showRealtimeNotify(
             '📬 Bài nộp mới',
             `${nw.student_name||nw.username} vừa nộp${hwTitle?' — '+hwTitle:''}`
           );
         }
       } else {
-        // Học sinh: cập nhật khi GV chấm điểm
-        if (nw.username === currentUser.username) {
+        // Học sinh: cập nhật khi nộp thành công hoặc GV chấm
+        if (nw?.username === currentUser.username) {
           const idx = allSubmissions.findIndex(s=>s.id===nw.id);
           if (idx>=0) allSubmissions[idx]=nw; else allSubmissions.push(nw);
           renderStudentList();
           updateGuideStats();
-          if (eventType==='UPDATE' && nw.status==='graded')
-            showRealtimeNotify('✅ Bài đã được chấm', `Điểm: ${nw.score}/${nw.max_score||10}`);
+          if (eventType==='UPDATE' && nw.status==='graded') {
+            const hwTitle = allHomework.find(h=>h.id===nw.homework_id)?.title||'';
+            showRealtimeNotify(
+              '✅ Bài đã được chấm',
+              `${hwTitle?hwTitle+' — ':''}Điểm: ${nw.score}/${nw.max_score||10}`
+            );
+          }
         }
       }
     })
@@ -3554,13 +4214,11 @@ function initRealtime() {
       const dot   = document.getElementById('rtDot');
       const label = document.getElementById('rtLabel');
       if (status === 'SUBSCRIBED') {
-        console.log('[Realtime] Kết nối thành công');
-        dot?.classList.add('connected');
-        if (label) { label.style.display='inline'; label.style.color='#10b981'; }
+        if (dot)  { dot.style.background='#10b981'; dot.style.boxShadow='0 0 0 3px rgba(16,185,129,.25)'; }
+        if (label){ label.style.display='inline'; label.style.color='#10b981'; }
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        console.warn('[Realtime] Mất kết nối, thử lại sau 5s...');
-        dot?.classList.remove('connected');
-        if (label) label.style.display='none';
+        if (dot)  { dot.style.background='#ef4444'; dot.style.boxShadow='none'; }
+        if (label){ label.style.display='none'; }
         setTimeout(initRealtime, 5000);
       }
     });
