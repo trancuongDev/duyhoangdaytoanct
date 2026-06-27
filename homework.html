@@ -119,6 +119,10 @@
   transition:all .15s;
 }
 .latex-btn:hover { background:var(--primary);color:#fff;border-color:var(--primary); }
+.latex-btn-newline {
+  background:#e0f2fe;border-color:#7dd3fc;color:#0369a1;font-family:inherit;font-weight:700;
+}
+.latex-btn-newline:hover { background:#0ea5e9;border-color:#0ea5e9;color:#fff; }
 
 /* ═══ OPTIONS LIST ═══ */
 .opt-list { display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem; }
@@ -156,7 +160,7 @@
 /* ═══ QUESTION DISPLAY ═══ */
 .q-display { background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:1.25rem 1.4rem;margin-bottom:1rem; }
 .q-num-badge { display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-weight:800;font-size:.85rem;flex-shrink:0; }
-.q-text { font-size:.95rem;line-height:1.75;color:var(--text);font-weight:500; }
+.q-text { font-size:.95rem;line-height:1.75;color:var(--text);font-weight:500;white-space:pre-wrap; }
 .q-image { max-width:100%;max-height:280px;border-radius:10px;margin:.75rem 0;display:block;border:1px solid var(--border); }
 
 /* ═══ SCORE BAR ═══ */
@@ -169,6 +173,37 @@
 .modal-overlay.open { display:flex; }
 .hw-modal { background:var(--card);border-radius:20px;padding:2rem;width:100%;max-width:760px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.25);border:1px solid var(--border); }
 .hw-modal-sm { max-width:480px; }
+
+/* ═══ FULLSCREEN MODAL (làm bài & kết quả) ═══ */
+.modal-overlay.fullscreen-mode {
+  padding:0;
+  background:rgba(0,0,0,.92);
+  align-items:stretch;
+  justify-content:stretch;
+}
+.modal-overlay.fullscreen-mode .hw-modal-fullscreen {
+  border-radius:0;
+  max-width:100%;
+  width:100%;
+  height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;          /* tắt scroll trực tiếp ở đây */
+  padding:0;
+  display:flex;
+  flex-direction:column;
+}
+/* Vùng nội dung cuộn được */
+.modal-overlay.fullscreen-mode .hw-modal-fullscreen .hw-modal-body {
+  flex:1;
+  overflow-y:auto;
+  padding:1.25rem 1.5rem;
+  display:flex;
+  flex-direction:column;
+}
+/* Navigator cố định ở đáy — xem block ═══ NAVIGATOR BAR ═══ bên dưới */
+@media(max-width:640px) {
+  .modal-overlay.fullscreen-mode .hw-modal-fullscreen .hw-modal-body { padding:.75rem 1rem; }
+}
 .hw-modal h2 { font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:1.1rem; }
 .hw-modal label { font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin:.6rem 0 .25rem; }
 .hw-modal input[type=text],.hw-modal input[type=url],.hw-modal input[type=date],.hw-modal input[type=number],.hw-modal select,.hw-modal textarea:not(.latex-field-wrap textarea) {
@@ -187,33 +222,126 @@
 .img-drop:hover,.img-drop.dragover { border-color:var(--primary);background:var(--primary-light);color:var(--primary); }
 .img-preview { max-width:100%;max-height:200px;border-radius:10px;margin-top:.5rem;display:none; }
 
-/* ═══ COUNTDOWN TIMER ═══ */
+/* ═══ NAVIGATOR BAR ═══ */
+#qNavWrap {
+  flex-shrink:0;
+  background:var(--card);
+  border-top:1px solid var(--border);
+  box-shadow:0 -2px 16px rgba(0,0,0,.08);
+  z-index:20;
+  transition:border-top-color .3s, background .3s;
+}
+/* Header row */
+#qNavHeader {
+  display:flex;align-items:center;gap:.75rem;
+  padding:.55rem 1.5rem .45rem;
+  border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+  row-gap:.35rem;
+}
+/* Timer pill */
 #countdownBar {
-  position:sticky;top:0;z-index:10;
-  background:linear-gradient(135deg,#1e1b4b,#312e81);
-  border-radius:12px;padding:.65rem 1.1rem;margin-bottom:1rem;
-  display:flex;align-items:center;justify-content:space-between;gap:.75rem;
-  box-shadow:0 4px 16px rgba(99,102,241,.25);
+  display:none;align-items:center;gap:.5rem;
+  padding:.32rem .7rem;
+  border-radius:99px;
+  background:linear-gradient(135deg,#312e81,#4f46e5);
+  flex-shrink:0;
+  transition:background .45s, box-shadow .3s;
+  box-shadow:0 2px 8px rgba(79,70,229,.3);
 }
 #countdownBar.warning {
-  background:linear-gradient(135deg,#92400e,#b45309);
-  animation:cdPulse 1s ease-in-out infinite;
+  background:linear-gradient(135deg,#92400e,#d97706) !important;
+  box-shadow:0 2px 8px rgba(217,119,6,.35) !important;
+  animation:cdPulse .9s ease-in-out infinite;
 }
 #countdownBar.danger {
-  background:linear-gradient(135deg,#7f1d1d,#b91c1c);
-  animation:cdPulse .5s ease-in-out infinite;
+  background:linear-gradient(135deg,#991b1b,#dc2626) !important;
+  box-shadow:0 0 0 2px #fca5a5, 0 2px 12px rgba(220,38,38,.4) !important;
+  animation:cdPulse .4s ease-in-out infinite;
 }
-@keyframes cdPulse { 0%,100%{opacity:1} 50%{opacity:.85} }
+@keyframes cdPulse { 0%,100%{opacity:1} 50%{opacity:.78} }
 #countdownDisplay {
-  font-size:1.5rem;font-weight:900;font-variant-numeric:tabular-nums;
-  color:#fff;letter-spacing:.5px;min-width:72px;text-align:center;
+  font-size:.95rem;font-weight:900;font-variant-numeric:tabular-nums;
+  color:#fff;letter-spacing:.5px;min-width:46px;text-align:center;line-height:1;
 }
-.cd-label { font-size:.73rem;color:rgba(255,255,255,.65);font-weight:600;letter-spacing:.4px;text-align:center; }
-.cd-progress-wrap { flex:1;background:rgba(255,255,255,.15);border-radius:20px;height:8px;overflow:hidden;min-width:80px; }
-.cd-progress-bar   { height:100%;border-radius:20px;background:#a5f3fc;transition:width .95s linear; }
-#countdownBar.warning .cd-progress-bar { background:#fcd34d; }
-#countdownBar.danger  .cd-progress-bar { background:#fca5a5; }
-.cd-answered { font-size:.8rem;color:rgba(255,255,255,.7);text-align:right;white-space:nowrap; }
+#cdTimerLabel { font-size:.6rem;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.3px;white-space:nowrap; }
+.cd-progress-wrap { width:60px;background:rgba(255,255,255,.2);border-radius:20px;overflow:hidden;height:4px;flex-shrink:0; }
+.cd-progress-bar  { height:100%;border-radius:20px;background:rgba(255,255,255,.85);transition:width .95s linear; }
+#countdownBar.warning .cd-progress-bar { background:#fde68a; }
+#countdownBar.danger  .cd-progress-bar { background:#fecaca; }
+#cdElapsed { font-size:.6rem;color:rgba(255,255,255,.5);white-space:nowrap; }
+/* Nav meta (title, legend, progress) */
+#qNavMeta {
+  flex:1;display:flex;align-items:center;justify-content:space-between;
+  gap:.5rem;flex-wrap:wrap;min-width:0;
+}
+#qNavLabel {
+  font-size:.72rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;
+}
+#qNavLegend {
+  display:flex;gap:.55rem;flex-wrap:wrap;align-items:center;
+}
+.qnav-legend-item { display:flex;align-items:center;gap:.22rem;font-size:.68rem;color:var(--muted);white-space:nowrap; }
+.qnav-legend-dot { width:8px;height:8px;border-radius:2px;flex-shrink:0; }
+#qNavProgress {
+  font-size:.75rem;font-weight:800;color:var(--primary);
+  white-space:nowrap;
+  background:var(--primary-light);
+  padding:.15rem .55rem;border-radius:99px;
+}
+/* Grid area */
+#qNavGrid {
+  display:flex;flex-wrap:wrap;gap:.3rem;
+  padding:.45rem 1.5rem .55rem;
+  max-height:82px;overflow-y:auto;
+}
+/* Buttons */
+.qnav-btn {
+  width:32px;height:32px;border-radius:8px;
+  border:1.5px solid var(--border);
+  background:var(--card);color:var(--muted);
+  font-size:.76rem;font-weight:700;
+  cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;position:relative;
+}
+.qnav-btn:hover { border-color:var(--primary);color:var(--primary);transform:translateY(-1px);box-shadow:0 2px 6px rgba(99,102,241,.2); }
+.qnav-btn.answered {
+  background:linear-gradient(135deg,#d1fae5,#a7f3d0);
+  border-color:#10b981;color:#065f46;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+}
+.qnav-btn.flagged {
+  background:linear-gradient(135deg,#fef3c7,#fde68a);
+  border-color:#f59e0b;color:#92400e;
+}
+.qnav-btn.flagged::after {
+  content:'';position:absolute;top:3px;right:3px;
+  width:5px;height:5px;border-radius:50%;background:#f59e0b;
+}
+.qnav-btn.answered.flagged {
+  background:linear-gradient(135deg,#d1fae5,#fef3c7);
+  border-color:#f59e0b;
+}
+/* danger state trên cả thanh */
+#qNavWrap.nav-danger { border-top-color:#ef4444; }
+#qNavWrap.nav-danger #qNavHeader { background:linear-gradient(to right,#fff1f2,var(--card)); }
+#qNavWrap.nav-danger #qNavProgress { background:#fee2e2;color:#dc2626; }
+/* flag button trên câu hỏi */
+.qnav-flag-btn {
+  display:inline-flex;align-items:center;gap:.28rem;
+  background:none;border:1.5px solid var(--border);border-radius:99px;
+  padding:.18rem .55rem;font-size:.72rem;font-weight:700;color:var(--muted);
+  cursor:pointer;transition:all .15s;
+}
+.qnav-flag-btn:hover { border-color:#f59e0b;color:#92400e;background:#fef3c7; }
+.qnav-flag-btn.active { background:#fef3c7;border-color:#f59e0b;color:#92400e; }
+@media(max-width:640px) {
+  #qNavHeader { padding:.45rem 1rem .38rem; }
+  #qNavGrid { padding:.4rem 1rem .5rem;max-height:74px; }
+  .qnav-btn { width:28px;height:28px;font-size:.7rem;border-radius:7px; }
+}
 
 /* ═══ MISC ═══ */
 .hw-empty { text-align:center;padding:3.5rem 1rem;color:var(--muted); }
@@ -470,10 +598,18 @@
 <!-- ══════════════════════════════════════════════════════
      MODAL: TẠO / SỬA BÀI TẬP (admin)
      ══════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modalHW">
-  <div class="hw-modal" style="max-width:920px">
-    <h2 id="modalHWTitle">➕ Giao bài tập mới</h2>
+<div class="modal-overlay fullscreen-mode" id="modalHW">
+  <div class="hw-modal hw-modal-fullscreen">
+
+    <!-- Header sticky -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.5rem;border-bottom:1.5px solid var(--border);flex-shrink:0;background:var(--card);gap:.75rem">
+      <h2 id="modalHWTitle" style="margin:0">➕ Giao bài tập mới</h2>
+      <button class="btn-outline" onclick="closeModalHW()">✕ Đóng</button>
+    </div>
     <input type="hidden" id="hwEditId"/>
+
+    <!-- Vùng cuộn -->
+    <div class="hw-modal-body">
 
     <!-- Thông tin chung -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
@@ -532,7 +668,7 @@
     </div>
 
     <!-- DANH SÁCH CÂU HỎI -->
-    <div style="display:flex;align-items:center;margin-bottom:.75rem">
+    <div style="display:flex;align-items:center;margin:.85rem 0 .75rem">
       <div style="font-weight:800;font-size:.95rem">📋 Danh sách câu hỏi</div>
     </div>
 
@@ -540,87 +676,158 @@
     </div>
 
     <div id="hwFormErr" class="error-msg" style="margin-top:.75rem"></div>
+
+    <!-- Footer sticky -->
     <div class="hw-modal-footer">
       <button class="btn-outline" onclick="closeModalHW()">Hủy</button>
       <button class="btn-primary" onclick="saveHomework()">💾 Lưu bài tập</button>
     </div>
+
+    </div><!-- /hw-modal-body -->
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
      MODAL: LÀM BÀI (học sinh)
      ══════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modalDoHW">
-  <div class="hw-modal" style="max-width:820px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.75rem">
-      <h2 style="margin:0" id="doHWTitle">Làm bài</h2>
-      <button class="btn-outline" onclick="closeDoHW()">✕ Đóng</button>
-    </div>
-    <p id="doHWDesc" style="font-size:.86rem;color:var(--muted);margin-bottom:1rem"></p>
+<div class="modal-overlay fullscreen-mode" id="modalDoHW">
+  <div class="hw-modal hw-modal-fullscreen">
 
-    <!-- COUNTDOWN TIMER -->
-    <div id="countdownBar" style="display:none">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:.1rem">
-        <div id="countdownDisplay">00:00</div>
-        <div class="cd-label">⏱ còn lại</div>
+    <!-- ── Vùng cuộn ── -->
+    <div class="hw-modal-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.75rem;flex-shrink:0">
+        <h2 style="margin:0" id="doHWTitle">Làm bài</h2>
+        <button class="btn-outline" onclick="closeDoHW()">✕ Đóng</button>
       </div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:.3rem">
-        <div class="cd-progress-wrap">
-          <div class="cd-progress-bar" id="cdProgressBar" style="width:100%"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="cd-answered" id="cdAnswered" style="font-size:.75rem;color:rgba(255,255,255,.65)">0/0 câu</div>
-          <div id="cdElapsed" style="font-size:.73rem;color:rgba(255,255,255,.5)"></div>
-        </div>
+      <p id="doHWDesc" style="font-size:.86rem;color:var(--muted);margin-bottom:.75rem;flex-shrink:0"></p>
+
+      <!-- COUNTDOWN TIMER đã chuyển xuống qNavWrap -->
+
+      <div id="doHWQuestions"></div>
+      <div id="doHWNote" style="margin-top:1rem">
+        <label style="font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.25rem">Ghi chú cho giáo viên (tuỳ chọn)</label>
+        <textarea id="doHWNoteText" rows="2" placeholder="..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;background:var(--card);color:var(--text);resize:vertical"></textarea>
       </div>
-      <button id="cdPauseBtn" onclick="togglePauseCountdown()"
-        style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.3rem .65rem;cursor:pointer;font-size:.8rem;font-weight:700;flex-shrink:0;transition:all .15s"
-        onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'"
-        title="Tạm dừng / Tiếp tục">⏸ Dừng</button>
+      <div id="doHWErr" class="error-msg" style="margin-top:.5rem;margin-bottom:1rem"></div>
+
+      <!-- Footer nằm trong body, sticky dưới vùng cuộn -->
+      <div class="hw-modal-footer">
+        <button class="btn-outline" onclick="closeDoHW()">Hủy</button>
+        <button class="btn-primary" onclick="submitAnswers()">📤 Nộp bài</button>
+      </div>
     </div>
 
-    <div id="doHWQuestions"></div>
-    <div id="doHWNote" style="margin-top:1rem">
-      <label style="font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.25rem">Ghi chú cho giáo viên (tuỳ chọn)</label>
-      <textarea id="doHWNoteText" rows="2" placeholder="..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;background:var(--card);color:var(--text);resize:vertical"></textarea>
+    <!-- ── Navigator + Timer cố định ở đáy modal ── -->
+    <div id="qNavWrap" style="display:none">
+
+      <!-- Header: timer + meta -->
+      <div id="qNavHeader">
+
+        <!-- Timer pill (chỉ hiện khi có time limit) -->
+        <div id="countdownBar" style="display:none;align-items:center;gap:.4rem">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:.05rem">
+            <div id="countdownDisplay">00:00</div>
+            <div id="cdTimerLabel">còn lại</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;align-items:flex-start">
+            <div class="cd-progress-wrap"><div class="cd-progress-bar" id="cdProgressBar" style="width:100%"></div></div>
+            <div id="cdElapsed"></div>
+          </div>
+        </div>
+
+        <!-- Meta: label + legend + progress -->
+        <div id="qNavMeta">
+          <span id="qNavLabel">📋 Điều hướng câu hỏi</span>
+          <div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">
+            <div id="qNavLegend">
+              <div class="qnav-legend-item">
+                <div class="qnav-legend-dot" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1.5px solid #10b981"></div>Đã làm
+              </div>
+              <div class="qnav-legend-item">
+                <div class="qnav-legend-dot" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid #f59e0b"></div>Đánh dấu
+              </div>
+              <div class="qnav-legend-item">
+                <div class="qnav-legend-dot" style="background:var(--card);border:1.5px solid var(--border)"></div>Chưa làm
+              </div>
+            </div>
+            <span id="qNavProgress">0/0 câu</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Lưới số câu -->
+      <div id="qNavGrid"></div>
+
     </div>
-    <div id="doHWErr" class="error-msg" style="margin-top:.5rem"></div>
-    <div class="hw-modal-footer">
-      <button class="btn-outline" onclick="closeDoHW()">Hủy</button>
-      <button class="btn-primary" onclick="submitAnswers()">📤 Nộp bài</button>
-    </div>
+
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
      MODAL: XEM BÀI ĐÃ NỘP / KẾT QUẢ
      ══════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modalResult">
-  <div class="hw-modal" style="max-width:820px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.75rem">
+<div class="modal-overlay fullscreen-mode" id="modalResult">
+  <div class="hw-modal hw-modal-fullscreen">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.75rem;flex-shrink:0">
       <h2 style="margin:0" id="resultTitle">Kết quả bài làm</h2>
       <button class="btn-outline" onclick="document.getElementById('modalResult').classList.remove('open')">✕ Đóng</button>
     </div>
-    <div id="resultContent"></div>
+    <div id="resultContent" style="flex:1;min-height:0;overflow-y:auto"></div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
      MODAL: CHẤM BÀI (admin)
      ══════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modalGrade">
-  <div class="hw-modal hw-modal-sm">
-    <h2>✏️ Chấm bài</h2>
-    <input type="hidden" id="gradeSubmitId"/>
-    <p id="gradeStudentName" style="font-size:.88rem;color:var(--muted);margin-bottom:.75rem"></p>
-    <label>Điểm <span style="color:var(--muted);font-weight:400">(0–10)</span></label>
-    <input type="number" id="gradeScore" min="0" max="10" step="0.25" placeholder="VD: 8.5"/>
-    <label>Nhận xét / Phản hồi</label>
-    <textarea id="gradeFeedback" rows="4" placeholder="Nhận xét cho học sinh..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;resize:vertical;background:var(--card);color:var(--text)"></textarea>
-    <div class="hw-modal-footer">
-      <button class="btn-outline" onclick="document.getElementById('modalGrade').classList.remove('open')">Hủy</button>
-      <button class="btn-primary" onclick="saveGrade()">✅ Lưu</button>
+<div class="modal-overlay fullscreen-mode" id="modalGrade">
+  <div class="hw-modal hw-modal-fullscreen">
+
+    <!-- Header sticky -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.5rem;border-bottom:1.5px solid var(--border);flex-shrink:0;background:var(--card);gap:.75rem">
+      <div>
+        <h2 style="margin:0;font-size:1.05rem">✏️ Chấm bài tự luận</h2>
+        <p id="gradeStudentName" style="font-size:.83rem;color:var(--muted);margin:.2rem 0 0"></p>
+      </div>
+      <button class="btn-outline" onclick="document.getElementById('modalGrade').classList.remove('open')">✕ Đóng</button>
     </div>
+    <input type="hidden" id="gradeSubmitId"/>
+
+    <!-- Vùng cuộn -->
+    <div class="hw-modal-body">
+
+      <!-- Tóm tắt điểm realtime -->
+      <div id="gradeScoreSummary" style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px">
+          <div style="font-size:.72rem;opacity:.65;font-weight:600;letter-spacing:.3px;margin-bottom:.2rem">ĐIỂM TỰ CHẤM (máy)</div>
+          <div style="font-size:1.4rem;font-weight:900" id="gradeAutoDisplay">—</div>
+        </div>
+        <div style="font-size:1.5rem;opacity:.4">+</div>
+        <div style="flex:1;min-width:160px">
+          <div style="font-size:.72rem;opacity:.65;font-weight:600;letter-spacing:.3px;margin-bottom:.2rem">ĐIỂM TỰ LUẬN (GV chấm)</div>
+          <div style="font-size:1.4rem;font-weight:900" id="gradeManualDisplay">—</div>
+        </div>
+        <div style="font-size:1.5rem;opacity:.4">=</div>
+        <div style="flex:1;min-width:160px;text-align:right">
+          <div style="font-size:.72rem;opacity:.65;font-weight:600;letter-spacing:.3px;margin-bottom:.2rem">TỔNG ĐIỂM</div>
+          <div style="font-size:2rem;font-weight:900;color:#a5f3fc" id="gradeTotalDisplay">—</div>
+        </div>
+      </div>
+
+      <!-- Câu tự luận -->
+      <div id="gradeManualBlock"></div>
+
+      <!-- Nhận xét chung -->
+      <label style="font-size:.82rem;font-weight:700;color:var(--muted);display:block;margin:.5rem 0 .3rem">💬 Nhận xét chung cho học sinh (tuỳ chọn)</label>
+      <textarea id="gradeFeedback" rows="3" placeholder="Nhận xét, động viên, hướng dẫn thêm..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;resize:vertical;background:var(--card);color:var(--text)"></textarea>
+
+      <!-- Footer sticky -->
+      <div class="hw-modal-footer">
+        <button class="btn-outline" onclick="document.getElementById('modalGrade').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveGrade()">✅ Lưu điểm</button>
+      </div>
+
+    </div><!-- /hw-modal-body -->
   </div>
 </div>
 
@@ -647,12 +854,12 @@ let qCounter = 0;           // ID tạm cho câu hỏi mới
 let doHWId       = null;
 let doHWQList    = [];
 let doHWAnswers  = {};  // { question_id: answer }
+let doHWFlagged  = new Set(); // câu đánh dấu cần xem lại
 
 // Timer state
 let cdInterval    = null;   // setInterval handle
 let cdSecondsLeft = 0;      // giây còn lại
 let cdTotalSecs   = 0;      // tổng giây ban đầu
-let cdPaused      = false;  // đang tạm dừng?
 let cdUsedSecs    = 0;      // số giây đã dùng
 let cdWarned60    = false;  // đã hiện cảnh báo 60s chưa
 
@@ -682,7 +889,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser.role === 'admin') {
     document.getElementById('adminTabs').style.display = 'block';
     document.getElementById('hwHeaderActions').innerHTML =
-      `<button class="btn-primary" onclick="openModalHW()">➕ Giao bài tập mới</button>`;
+      `<button onclick="exportScoresCSV()" style="display:inline-flex;align-items:center;gap:.4rem;background:#10b981;border:none;color:#fff;font-weight:700;font-size:.85rem;padding:.5rem 1rem;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(16,185,129,.4);transition:all .15s" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">⬇ Xuất điểm CSV</button>
+      <button class="btn-primary" onclick="openModalHW()">➕ Giao bài tập mới</button>`;
     document.getElementById('hwSubtitle').textContent = 'Soạn đề, giao bài và chấm điểm';
     await loadClasses();
     await loadAdminData();
@@ -746,6 +954,8 @@ async function loadClasses() {
   (data||[]).forEach(c => { const o=document.createElement('option');o.value=c.name;o.textContent=c.name;sel.appendChild(o); });
 }
 
+let allStudentCodes = {}; // username → student_code
+
 async function loadAdminData() {
   const [hwR,subR] = await Promise.all([
     sb.from('homework').select('*').order('created_at',{ascending:false}),
@@ -753,6 +963,18 @@ async function loadAdminData() {
   ]);
   allHomework    = hwR.data  || [];
   allSubmissions = subR.data || [];
+
+  // Preload questions cho tất cả bài tập đã có bài nộp
+  const hwIds = [...new Set(allSubmissions.map(s=>s.homework_id))];
+  await Promise.all(hwIds.map(id => loadQuestions(id)));
+
+  // Load mã học viên
+  const usernames = [...new Set(allSubmissions.map(s=>s.username))];
+  if (usernames.length) {
+    const { data } = await sb.from('students').select('username,student_code').in('username', usernames);
+    allStudentCodes = {};
+    (data||[]).forEach(r => { allStudentCodes[r.username] = r.student_code||''; });
+  }
 }
 
 async function loadStudentData() {
@@ -772,6 +994,45 @@ async function loadQuestions(hwId) {
   const { data } = await sb.from('homework_questions').select('*').eq('homework_id',hwId).order('order_index');
   allQuestions[hwId] = data || [];
   return allQuestions[hwId];
+}
+
+// Tính breakdown điểm từ cache (sync)
+function calcScoreBreakdown(sub) {
+  const qs = allQuestions[sub.homework_id];
+  if (!qs || !qs.length) return null;
+  const answers = sub.answers || {};
+  const result = { mc:{got:0,max:0}, tf:{got:0,max:0}, mt:{got:0,max:0}, sa:{got:0,max:0} };
+  qs.forEach(q => {
+    if (q.question_type === 'section') return;
+    const pts = parseFloat(q.points) || 1;
+    const a = answers[q.id];
+    const ms = sub.manual_scores?.[q.id];
+    if (q.question_type === 'multiple_choice') {
+      result.mc.max += pts;
+      if (a === q.data.correct) result.mc.got += pts;
+    } else if (q.question_type === 'true_false') {
+      result.tf.max += pts;
+      const stmts = q.data.statements || [];
+      let ok = 0;
+      stmts.forEach((s,i) => { if (a && a[i] === s.answer) ok++; });
+      result.tf.got += pts * (ok / (stmts.length || 1));
+    } else if (q.question_type === 'matching') {
+      result.mt.max += pts;
+      const pairs = q.data.correct_pairs || [];
+      let ok = 0;
+      pairs.forEach(([l,r]) => { if (a && a[l] === r) ok++; });
+      result.mt.got += pts * (ok / (pairs.length || 1));
+    } else if (q.question_type === 'short_answer') {
+      result.sa.max += pts;
+      result.sa.got += ms != null ? ms : 0;
+    }
+  });
+  // Round
+  Object.values(result).forEach(v => {
+    v.got = Math.round(v.got * 100) / 100;
+    v.max = Math.round(v.max * 100) / 100;
+  });
+  return result;
 }
 </script>
 
@@ -962,6 +1223,7 @@ function renderAdminList() {
         <button class="btn-sm btn-success" onclick="viewSubmissionsFor(${hw.id})">📬 Bài nộp (${subC})</button>
         <button class="btn-sm" onclick="previewHW(${hw.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem đề</button>
         <button class="btn-sm" onclick="exportHW(${hw.id})" style="border-color:#0891b2;color:#0e7490">⬇ Xuất đề</button>
+        ${subC?`<button class="btn-sm" onclick="exportScoresByHW(${hw.id})" style="border-color:#10b981;color:#065f46;font-weight:700">📊 Xuất điểm</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -979,16 +1241,33 @@ function renderAdminSubmissions(filterHwId=null) {
   el.innerHTML = Object.entries(hwMap).map(([hwId,items])=>{
     const hw=allHomework.find(h=>h.id==hwId);
     return `<div style="margin-bottom:1.25rem">
-      <div style="font-weight:800;font-size:.93rem;margin-bottom:.6rem;padding:.5rem .85rem;background:var(--primary-light);border-radius:10px;color:var(--primary)">📝 ${esc(hw?.title||'Bài tập #'+hwId)}</div>
-      ${items.map(s=>`
+      <div style="font-weight:800;font-size:.93rem;margin-bottom:.6rem;padding:.5rem .85rem;background:var(--primary-light);border-radius:10px;color:var(--primary);display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+        <span>📝 ${esc(hw?.title||'Bài tập #'+hwId)}</span>
+        <button class="btn-sm" onclick="exportScoresByHW(${hwId})" style="border-color:#10b981;color:#065f46;font-weight:700;flex-shrink:0">📊 Xuất điểm</button>
+      </div>
+      ${items.map(s=>{
+        const bd = calcScoreBreakdown(s);
+        // Tạo chips điểm từng loại
+        const chips = [];
+        if (bd) {
+          if (bd.mc.max)  chips.push(`<span style="display:inline-flex;align-items:center;gap:.22rem;background:#dbeafe;color:#1e40af;border-radius:6px;padding:.15rem .45rem;font-size:.7rem;font-weight:700" title="Trắc nghiệm">🔵 ${bd.mc.got}/${bd.mc.max}</span>`);
+          if (bd.tf.max)  chips.push(`<span style="display:inline-flex;align-items:center;gap:.22rem;background:#d1fae5;color:#065f46;border-radius:6px;padding:.15rem .45rem;font-size:.7rem;font-weight:700" title="Đúng/Sai">✅ ${bd.tf.got}/${bd.tf.max}</span>`);
+          if (bd.mt.max)  chips.push(`<span style="display:inline-flex;align-items:center;gap:.22rem;background:#fef3c7;color:#92400e;border-radius:6px;padding:.15rem .45rem;font-size:.7rem;font-weight:700" title="Ghép đôi">🔗 ${bd.mt.got}/${bd.mt.max}</span>`);
+          if (bd.sa.max)  chips.push(`<span style="display:inline-flex;align-items:center;gap:.22rem;background:${s.status==='graded'?'#ede9fe':'#f3f4f6'};color:${s.status==='graded'?'#5b21b6':'#6b7280'};border-radius:6px;padding:.15rem .45rem;font-size:.7rem;font-weight:700" title="Tự luận">✏️ ${s.status==='graded'?bd.sa.got:'?'}/${bd.sa.max}</span>`);
+        }
+        const grandMax = bd ? (bd.mc.max + bd.tf.max + bd.mt.max + bd.sa.max) : (s.max_score||10);
+        return `
         <div class="hw-card" style="margin-bottom:.5rem">
-          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-            <div style="flex:1">
+          <div style="display:flex;align-items:flex-start;gap:.75rem;flex-wrap:wrap">
+            <div style="flex:1;min-width:0">
               <div style="font-weight:700;font-size:.9rem">${esc(s.student_name||s.username)}</div>
-              <div style="font-size:.77rem;color:var(--muted)">${esc(s.class_name||'')} · Nộp: ${fmtDate(s.submitted_at)}</div>
+              <div style="font-size:.77rem;color:var(--muted);margin-top:.1rem">${esc(s.class_name||'')} · Nộp: ${fmtDate(s.submitted_at)}</div>
+              ${chips.length ? `<div style="display:flex;flex-wrap:wrap;gap:.28rem;margin-top:.45rem">${chips.join('')}</div>` : ''}
             </div>
-            <span class="hw-badge ${s.status==='graded'?'graded':'submitted'}">${getStatusLabel(s.status)}</span>
-            ${s.score!=null?`<span class="score-pill">🏅 ${s.score}/10</span>`:''}
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0">
+              <span class="hw-badge ${s.status==='graded'?'graded':'submitted'}">${getStatusLabel(s.status)}</span>
+              ${s.score!=null ? `<span class="score-pill">🏅 ${s.score}/${grandMax}</span>` : ''}
+            </div>
           </div>
           ${s.note?`<div style="margin-top:.35rem;font-size:.82rem;color:var(--muted);font-style:italic">"${esc(s.note)}"</div>`:''}
           ${s.feedback?`<div style="margin-top:.35rem;font-size:.82rem;background:#f0fdf4;border-left:3px solid var(--hw-green);padding:.35rem .65rem;border-radius:6px;color:#065f46">💬 ${esc(s.feedback)}</div>`:''}
@@ -996,7 +1275,8 @@ function renderAdminSubmissions(filterHwId=null) {
             <button class="btn-sm btn-success" onclick="openGrade(${s.id},'${esc(s.student_name||s.username)}')">✏️ Chấm bài</button>
             <button class="btn-sm" onclick="viewStudentResult(${s.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem bài làm</button>
           </div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
   }).join('');
 }
@@ -1005,6 +1285,278 @@ function viewSubmissionsFor(hwId) {
   adminTab='submissions';
   document.querySelectorAll('#adminTabs .tab-hw button').forEach((b,i)=>b.classList.toggle('active',i===1));
   renderAdminSubmissions(hwId);
+}
+
+// ═══════════════════════════════════════════
+// XUẤT ĐIỂM THEO TỪNG BÀI
+// ═══════════════════════════════════════════
+function exportScoresByHW(hwId) {
+  const hw   = allHomework.find(h=>h.id==hwId);
+  const subs = allSubmissions.filter(s=>s.homework_id==hwId);
+  if (!subs.length) { showToast('Bài này chưa có bài nộp', false); return; }
+
+  const he   = v => String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const date = new Date().toLocaleDateString('vi-VN');
+
+  // Tính grandMax từ câu hỏi
+  const qs     = allQuestions[hwId]||[];
+  const grandMax = qs.filter(q=>q.question_type!=='section')
+    .reduce((s,q)=>s+(parseFloat(q.points)||1),0) || (hw?.total_score||10);
+
+  // Sắp xếp: theo lớp → tên
+  const rows = [...subs].sort((a,b)=>
+    (a.class_name||'').localeCompare(b.class_name||'')||
+    (a.student_name||'').localeCompare(b.student_name||'')
+  );
+
+  // Thống kê
+  const graded   = rows.filter(s=>s.status==='graded').length;
+  const avgScore = rows.filter(s=>s.score!=null).length
+    ? (rows.filter(s=>s.score!=null).reduce((t,s)=>t+s.score,0) / rows.filter(s=>s.score!=null).length).toFixed(2)
+    : '—';
+  const maxScore = rows.filter(s=>s.score!=null).length
+    ? Math.max(...rows.filter(s=>s.score!=null).map(s=>s.score))
+    : '—';
+  const minScore = rows.filter(s=>s.score!=null).length
+    ? Math.min(...rows.filter(s=>s.score!=null).map(s=>s.score))
+    : '—';
+
+  // Build rows
+  const bodyRows = rows.map((s, ri) => {
+    const bd  = calcScoreBreakdown(s);
+    const pct = s.score!=null && grandMax>0 ? s.score/grandMax : null;
+    const [pillBg,pillColor,rank] = pct===null
+      ? ['#f1f5f9','#64748b','—']
+      : pct>=0.8  ? ['#d1fae5','#065f46','Giỏi']
+      : pct>=0.65 ? ['#dbeafe','#1e40af','Khá']
+      : pct>=0.5  ? ['#fef3c7','#92400e','TB']
+      :             ['#fee2e2','#991b1b','Yếu'];
+
+    const scoreTxt = s.score!=null ? `${s.score}/${grandMax}` : `—/${grandMax}`;
+    const code = allStudentCodes[s.username]||'';
+    const statusDot = s.status==='graded'
+      ? '<span style="color:#10b981">● Đã chấm</span>'
+      : '<span style="color:#f59e0b">● Chờ chấm</span>';
+
+    return `<tr style="background:${ri%2===0?'#fff':'#f8fafc'}">
+      <td style="text-align:center;color:#94a3b8;font-size:.8rem">${ri+1}</td>
+      <td style="font-weight:600">${he(s.student_name||s.username)}</td>
+      <td style="font-family:monospace;font-size:.8rem;color:#475569">${he(code)}</td>
+      <td style="font-size:.8rem;color:#64748b">${he(s.class_name||'')}</td>
+      <td style="text-align:center">${bd&&bd.mc.max?`<span style="background:#dbeafe;color:#1e40af;border-radius:6px;padding:.12rem .45rem;font-size:.78rem;font-weight:700">${bd.mc.got}/${bd.mc.max}</span>`:'—'}</td>
+      <td style="text-align:center">${bd&&bd.tf.max?`<span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:.12rem .45rem;font-size:.78rem;font-weight:700">${bd.tf.got}/${bd.tf.max}</span>`:'—'}</td>
+      <td style="text-align:center">${bd&&bd.mt.max?`<span style="background:#fef3c7;color:#92400e;border-radius:6px;padding:.12rem .45rem;font-size:.78rem;font-weight:700">${bd.mt.got}/${bd.mt.max}</span>`:'—'}</td>
+      <td style="text-align:center">${bd&&bd.sa.max?`<span style="background:${s.status==='graded'?'#ede9fe':'#f3f4f6'};color:${s.status==='graded'?'#5b21b6':'#6b7280'};border-radius:6px;padding:.12rem .45rem;font-size:.78rem;font-weight:700">${s.status==='graded'?`${bd.sa.got}/${bd.sa.max}`:`?/${bd.sa.max}`}</span>`:'—'}</td>
+      <td style="text-align:center"><span style="background:${pillBg};color:${pillColor};border-radius:20px;padding:.2rem .7rem;font-weight:900;font-size:.88rem">${scoreTxt}</span></td>
+      <td style="text-align:center"><span style="background:${pillBg};color:${pillColor};border-radius:6px;padding:.18rem .55rem;font-weight:800;font-size:.8rem">${rank}</span></td>
+      <td style="font-size:.75rem;text-align:center">${statusDot}</td>
+      <td style="font-size:.75rem;color:#64748b;text-align:center">${s.submitted_at?new Date(s.submitted_at).toLocaleDateString('vi-VN'):''}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="vi"><head>
+<meta charset="UTF-8"/>
+<title>Điểm — ${he(hw?.title||'Bài tập')} — ${date}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1f5f9;padding:2rem;color:#0f172a}
+  h1{font-size:1.3rem;font-weight:900;color:#1e1b4b;margin-bottom:.2rem}
+  .sub{font-size:.83rem;color:#64748b;margin-bottom:1rem}
+  .stats{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+  .stat{background:#fff;border-radius:12px;padding:.75rem 1.1rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.07);min-width:110px}
+  .stat-val{font-size:1.4rem;font-weight:900;color:#1e1b4b}
+  .stat-lbl{font-size:.72rem;color:#64748b;margin-top:.1rem;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .wrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.09)}
+  th,td{border:1px solid #e2e8f0;padding:.45rem .7rem;text-align:left;vertical-align:middle;white-space:nowrap}
+  thead th{background:#1e1b4b;color:#fff;font-size:.75rem;font-weight:700;letter-spacing:.3px;text-align:center}
+  .legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem;font-size:.75rem;color:#64748b}
+  .legend span{display:flex;align-items:center;gap:.3rem}
+  .btn-print{display:inline-flex;align-items:center;gap:.4rem;background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:.5rem 1.1rem;font-size:.85rem;font-weight:700;cursor:pointer;margin-bottom:1.25rem}
+  .btn-print:hover{background:#4338ca}
+  @media print{body{background:#fff;padding:.5rem}.no-print{display:none}}
+</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨 In / Lưu PDF</button>
+<h1>📊 ${he(hw?.title||'Bài tập')}</h1>
+<div class="sub">Xuất lúc ${date} &nbsp;·&nbsp; ${rows.length} học sinh &nbsp;·&nbsp; Điểm tối đa: ${grandMax}</div>
+<div class="stats">
+  <div class="stat"><div class="stat-val">${rows.length}</div><div class="stat-lbl">Đã nộp</div></div>
+  <div class="stat"><div class="stat-val">${graded}</div><div class="stat-lbl">Đã chấm</div></div>
+  <div class="stat"><div class="stat-val">${avgScore}</div><div class="stat-lbl">Điểm TB</div></div>
+  <div class="stat"><div class="stat-val" style="color:#10b981">${maxScore}</div><div class="stat-lbl">Cao nhất</div></div>
+  <div class="stat"><div class="stat-val" style="color:#ef4444">${minScore}</div><div class="stat-lbl">Thấp nhất</div></div>
+</div>
+<div class="wrap"><table>
+  <thead><tr>
+    <th>#</th><th>Họ tên</th><th>Mã HV</th><th>Lớp</th>
+    <th>🔵 TN</th><th>✅ Đ/S</th><th>🔗 GĐ</th><th>✏️ TL</th>
+    <th>Điểm</th><th>Xếp loại</th><th>Trạng thái</th><th>Ngày nộp</th>
+  </tr></thead>
+  <tbody>${bodyRows}</tbody>
+</table></div>
+<div class="legend">
+  <span><span style="background:#d1fae5;color:#065f46;border-radius:4px;padding:.1rem .4rem;font-weight:700">Giỏi ≥80%</span></span>
+  <span><span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:.1rem .4rem;font-weight:700">Khá 65–79%</span></span>
+  <span><span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:.1rem .4rem;font-weight:700">TB 50–64%</span></span>
+  <span><span style="background:#fee2e2;color:#991b1b;border-radius:4px;padding:.1rem .4rem;font-weight:700">Yếu &lt;50%</span></span>
+  <span>TN=Trắc nghiệm · Đ/S=Đúng/Sai · GĐ=Ghép đôi · TL=Tự luận</span>
+</div>
+</body></html>`;
+
+  const blob = new Blob([html], { type:'text/html;charset=utf-8;' });
+  window.open(URL.createObjectURL(blob), '_blank');
+  showToast(`✅ Xuất điểm ${rows.length} học sinh`);
+}
+
+// ═══════════════════════════════════════════
+// XUẤT BẢNG ĐIỂM (HTML)
+// ═══════════════════════════════════════════
+function exportScoresCSV() {
+  if (!allSubmissions.length) { showToast('Chưa có bài nộp nào', false); return; }
+
+  const hwList = allHomework.filter(h =>
+    allSubmissions.some(s => s.homework_id === h.id)
+  ).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+  // Gom học sinh
+  const studentMap = {};
+  allSubmissions.forEach(s => {
+    if (!studentMap[s.username]) {
+      studentMap[s.username] = {
+        name:  s.student_name||s.username,
+        cls:   s.class_name||'',
+        code:  allStudentCodes[s.username]||'',
+        scores: {}
+      };
+    }
+    const bd = calcScoreBreakdown(s);
+    const grandMax = bd ? (bd.mc.max+bd.tf.max+bd.mt.max+bd.sa.max) : (s.max_score||'');
+    studentMap[s.username].scores[s.homework_id] = {
+      score: s.score != null ? s.score : null,
+      max: grandMax,
+      mc: bd && bd.mc.max ? `${bd.mc.got}/${bd.mc.max}` : '',
+      tf: bd && bd.tf.max ? `${bd.tf.got}/${bd.tf.max}` : '',
+      mt: bd && bd.mt.max ? `${bd.mt.got}/${bd.mt.max}` : '',
+      sa: bd && bd.sa.max ? (s.status==='graded'?`${bd.sa.got}/${bd.sa.max}`:`?/${bd.sa.max}`) : '',
+      status: s.status,
+      submitted: s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('vi-VN') : ''
+    };
+  });
+
+  const students = Object.values(studentMap)
+    .sort((a,b) => a.cls.localeCompare(b.cls)||a.name.localeCompare(b.name));
+
+  const date = new Date().toLocaleDateString('vi-VN');
+  const he = v => String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // ── Build header row ──
+  const thFixed = `<th rowspan="2" style="min-width:160px">Học sinh</th><th rowspan="2">Mã HV</th><th rowspan="2">Lớp</th>`;
+  const thHw = hwList.map(h =>
+    `<th colspan="4" style="background:#312e81;color:#fff;min-width:200px">${he(h.title)}</th>`
+  ).join('');
+  const thTotal = `<th rowspan="2" style="background:#065f46;color:#fff;min-width:80px">Tổng</th>`;
+  const th2 = hwList.map(() =>
+    `<th>Điểm</th><th>TN / ĐS / GĐ</th><th>Tự luận</th><th>Ngày nộp</th>`
+  ).join('');
+
+  // ── Build body rows ──
+  const bodyRows = students.map((st, ri) => {
+    let total = 0, counted = 0, grandMaxAll = 0;
+    const cells = hwList.map(h => {
+      const sc = st.scores[h.id];
+      if (!sc) return `<td colspan="4" style="color:#94a3b8;text-align:center;font-size:.78rem">—</td>`;
+
+      // Score pill
+      const scoreNum = sc.score != null ? sc.score : null;
+      const pct = sc.max > 0 && scoreNum != null ? scoreNum / sc.max : null;
+      const pillBg = pct === null ? '#f1f5f9'
+        : pct >= 0.8 ? '#d1fae5' : pct >= 0.5 ? '#fef3c7' : '#fee2e2';
+      const pillColor = pct === null ? '#64748b'
+        : pct >= 0.8 ? '#065f46' : pct >= 0.5 ? '#92400e' : '#991b1b';
+      const scoreTxt = scoreNum != null ? `${scoreNum}/${sc.max}` : `—/${sc.max}`;
+      const scorePill = `<span style="display:inline-block;background:${pillBg};color:${pillColor};border-radius:20px;padding:.18rem .6rem;font-weight:800;font-size:.82rem">${scoreTxt}</span>`;
+
+      if (scoreNum != null) { total += scoreNum; grandMaxAll += Number(sc.max)||0; counted++; }
+      else grandMaxAll += Number(sc.max)||0;
+
+      // breakdown
+      const breakdown = [sc.mc,sc.tf,sc.mt].filter(Boolean).join(' · ') || '—';
+      const saHtml = sc.sa
+        ? `<span style="background:${sc.status==='graded'?'#ede9fe':'#f3f4f6'};color:${sc.status==='graded'?'#5b21b6':'#6b7280'};border-radius:6px;padding:.1rem .4rem;font-size:.75rem">${sc.sa}</span>`
+        : '<span style="color:#94a3b8">—</span>';
+
+      const statusDot = sc.status==='graded'
+        ? '<span style="color:#10b981;font-size:.7rem">●</span>'
+        : '<span style="color:#f59e0b;font-size:.7rem">●</span>';
+
+      return `<td style="text-align:center">${scorePill}</td>
+              <td style="font-size:.78rem;color:#334155;text-align:center">${breakdown}</td>
+              <td style="text-align:center">${saHtml}</td>
+              <td style="font-size:.75rem;color:#64748b;text-align:center">${statusDot} ${sc.submitted}</td>`;
+    }).join('');
+
+    const totalPct = grandMaxAll > 0 ? total / grandMaxAll : null;
+    const totBg = totalPct===null?'#f1f5f9':totalPct>=0.8?'#d1fae5':totalPct>=0.5?'#fef3c7':'#fee2e2';
+    const totColor = totalPct===null?'#64748b':totalPct>=0.8?'#065f46':totalPct>=0.5?'#92400e':'#991b1b';
+    const totTxt = counted>0 ? `${Math.round(total*100)/100}/${grandMaxAll}` : '—';
+
+    const rowBg = ri%2===0 ? '#fff' : '#f8fafc';
+    return `<tr style="background:${rowBg}">
+      <td style="font-weight:600;padding:.55rem .85rem">${he(st.name)}</td>
+      <td style="font-size:.78rem;color:#64748b;padding:.55rem .75rem;font-family:monospace">${he(st.code)}</td>
+      <td style="font-size:.8rem;color:#64748b;padding:.55rem .75rem">${he(st.cls)}</td>
+      ${cells}
+      <td style="text-align:center;padding:.55rem .75rem">
+        <span style="display:inline-block;background:${totBg};color:${totColor};border-radius:20px;padding:.2rem .7rem;font-weight:900;font-size:.88rem">${totTxt}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="vi"><head>
+<meta charset="UTF-8"/>
+<title>Bảng điểm — ${date}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1f5f9;padding:2rem;color:#0f172a}
+  .wrap{max-width:100%;overflow-x:auto}
+  h1{font-size:1.35rem;font-weight:900;color:#1e1b4b;margin-bottom:.25rem}
+  .meta{font-size:.82rem;color:#64748b;margin-bottom:1.5rem}
+  table{border-collapse:collapse;width:100%;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.09)}
+  th,td{border:1px solid #e2e8f0;padding:.45rem .75rem;text-align:left;vertical-align:middle;white-space:nowrap}
+  thead th{background:#1e1b4b;color:#fff;font-size:.78rem;font-weight:700;letter-spacing:.3px;text-align:center}
+  thead tr:first-child th:first-child,thead tr:first-child th:nth-child(2){background:#0f172a}
+  .legend{display:flex;gap:1.25rem;margin-top:1rem;font-size:.75rem;color:#64748b;flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:.3rem}
+  @media print{body{background:#fff;padding:.5rem} .no-print{display:none}}
+  .btn-print{display:inline-flex;align-items:center;gap:.4rem;background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:.5rem 1.1rem;font-size:.85rem;font-weight:700;cursor:pointer;margin-bottom:1.25rem}
+  .btn-print:hover{background:#4338ca}
+</style>
+</head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨 In / Lưu PDF</button>
+<h1>📊 Bảng điểm Bài Tập</h1>
+<div class="meta">Xuất lúc ${date} &nbsp;·&nbsp; ${students.length} học sinh &nbsp;·&nbsp; ${hwList.length} bài tập</div>
+<div class="wrap">
+<table>
+  <thead>
+    <tr>${thFixed}${thHw}${thTotal}</tr>
+    <tr><th style="display:none"></th><th style="display:none"></th>${th2}</tr>
+  </thead>
+  <tbody>${bodyRows}</tbody>
+</table>
+</div>
+<div class="legend">
+  <span><span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:.1rem .5rem;font-weight:700">≥80%</span> Giỏi</span>
+  <span><span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:.1rem .5rem;font-weight:700">50–79%</span> Trung bình</span>
+  <span><span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:.1rem .5rem;font-weight:700">&lt;50%</span> Yếu</span>
+  <span><span style="color:#10b981">●</span> Đã chấm &nbsp; <span style="color:#f59e0b">●</span> Chờ chấm</span>
+  <span>TN = Trắc nghiệm · ĐS = Đúng/Sai · GĐ = Ghép đôi</span>
+</div>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  showToast(`✅ Đã xuất bảng điểm ${students.length} học sinh`);
 }
 </script>
 
@@ -1071,7 +1623,6 @@ function renderStudentList() {
       <div style="display:flex;gap:.4rem;flex-wrap:wrap">
         ${(!sub||canRetry)?`<button class="btn-primary" onclick="openDoHW(${h.id})">${sub&&canRetry?'🔄 Làm lại':'✏️ Làm bài'}</button>`:''}
         ${sub?`<button class="btn-sm" onclick="openResult(${h.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem kết quả</button>`:''}
-        ${sub?`<button class="btn-sm" onclick="exportHW(${h.id})" style="border-color:#0891b2;color:#0e7490">⬇ Xuất đề</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1135,7 +1686,13 @@ async function openEditHW(hwId) {
   setTimeout(() => renderLatexAll(document.getElementById('modalHW')), 300);
 }
 
-function closeModalHW() { document.getElementById('modalHW').classList.remove('open'); }
+function closeModalHW() {
+  // Nếu đang có câu hỏi → hỏi xác nhận
+  if (editorQuestions.length > 0) {
+    if (!confirm('Bạn có câu hỏi chưa lưu.\nThoát ra sẽ MẤT toàn bộ nội dung đã soạn.\n\nBạn có chắc muốn thoát?')) return;
+  }
+  document.getElementById('modalHW').classList.remove('open');
+}
 
 // ── Helpers số lần làm bài ──────────────────
 function _getMaxAttempts() {
@@ -1213,8 +1770,15 @@ function addQuestion(type) {
   setTimeout(() => {
     const bar = document.getElementById('addQBar');
     const newCard = bar?.previousElementSibling;
-    if (newCard) newCard.scrollIntoView({ behavior:'smooth', block:'center' });
-    else bar?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    const target = newCard || bar;
+    if (!target) return;
+    const body = document.querySelector('#modalHW .hw-modal-body');
+    if (body) {
+      const top = target.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 80;
+      body.scrollTo({ top, behavior: 'smooth' });
+    } else {
+      target.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
   }, 120);
 }
 
@@ -1225,7 +1789,15 @@ function addSection() {
   setTimeout(() => {
     const bar = document.getElementById('addQBar');
     const newCard = bar?.previousElementSibling;
-    if (newCard) newCard.scrollIntoView({ behavior:'smooth', block:'center' });
+    const target = newCard || bar;
+    if (!target) return;
+    const body = document.querySelector('#modalHW .hw-modal-body');
+    if (body) {
+      const top = target.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 80;
+      body.scrollTo({ top, behavior: 'smooth' });
+    } else {
+      target.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
   }, 120);
 }
 
@@ -1345,7 +1917,7 @@ function buildQEditor(q,idx,qNum) {
       <div class="latex-toolbar">${latexToolbar('qtext_wrap_'+q._id)}</div>
     </div>
     <div class="section-title" style="margin-top:.5rem">Xem trước</div>
-    <div class="latex-preview${q.text?'':' empty'}" id="qpreview_${q._id}">${q.text||'(chưa có nội dung)'}</div>
+    <div class="latex-preview${q.text?'':' empty'}" id="qpreview_${q._id}">${q.text ? q.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') : '(chưa có nội dung)'}</div>
 
     <!-- Hình ảnh -->
     <div class="section-title">Hình ảnh minh họa (tuỳ chọn)</div>
@@ -1370,6 +1942,7 @@ function buildQEditor(q,idx,qNum) {
 // ═══ LaTeX toolbar snippet ═══
 function latexToolbar(wrapId) {
   const snippets=[
+    ['↵ Xuống dòng','\n'],
     ['x²','x^{2}'],['x_n','x_{n}'],['√','\\sqrt{}'],['∫','\\int_{}^{}'],
     ['∑','\\sum_{}^{}'],['∞','\\infty'],['±','\\pm'],['×','\\times'],
     ['÷','\\div'],['≤','\\leq'],['≥','\\geq'],['≠','\\neq'],
@@ -1377,9 +1950,14 @@ function latexToolbar(wrapId) {
     ['→','\\to'],['⟺','\\Leftrightarrow'],['⊂','\\subset'],['∈','\\in'],
     ['frac','\\frac{}{}'],['vec','\\vec{}'],['hat','\\hat{}'],['abs','|{}|']
   ];
-  return snippets.map(([lbl,code])=>
-    `<button type="button" class="latex-btn" title="${esc(code)}" onclick="insertLatex('${wrapId}','${code.replace(/'/g,"\\'")}',this.closest('.q-card'))">${esc(lbl)}</button>`
-  ).join('');
+  return snippets.map(([lbl,code])=>{
+    const isNewline = lbl === '↵ Xuống dòng';
+    // Newline dùng data-newline thay vì truyền qua onclick string
+    if (isNewline) {
+      return `<button type="button" class="latex-btn latex-btn-newline" title="Xuống dòng (newline)" data-newline="1" onclick="insertNewline('${wrapId}',this.closest('.q-card'))">↵ Xuống dòng</button>`;
+    }
+    return `<button type="button" class="latex-btn" title="${esc(code)}" onclick="insertLatex('${wrapId}','${code.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}',this.closest('.q-card'))">${esc(lbl)}</button>`;
+  }).join('');
 }
 
 function insertLatex(wrapId,code,qCard) {
@@ -1389,6 +1967,16 @@ function insertLatex(wrapId,code,qCard) {
   const v=ta.value;
   ta.value=v.slice(0,s)+code+v.slice(e);
   ta.selectionStart=ta.selectionEnd=s+code.length;
+  ta.focus();
+  ta.dispatchEvent(new Event('input'));
+}
+
+function insertNewline(wrapId,qCard) {
+  const ta=document.querySelector(`#${wrapId} textarea`);
+  if(!ta)return;
+  const s=ta.selectionStart,e=ta.selectionEnd;
+  ta.value=ta.value.slice(0,s)+'\n'+ta.value.slice(e);
+  ta.selectionStart=ta.selectionEnd=s+1;
   ta.focus();
   ta.dispatchEvent(new Event('input'));
 }
@@ -1657,10 +2245,13 @@ function updateQText(_id, val) {
   const prev = document.getElementById('qpreview_'+_id);
   if (!prev) return;
   prev.classList.toggle('empty', !val);
-  // Dùng innerHTML để MathJax đọc được $...$ (textContent sẽ escape ký tự)
-  // Clear MathJax cache trên element trước khi set nội dung mới
   if (window.MathJax?.typesetClear) MathJax.typesetClear([prev]);
-  prev.innerHTML = val || '<em style="color:var(--muted);font-style:italic;font-size:.85rem">(chưa có nội dung)</em>';
+  // Convert \n → <br> để xuống dòng hiển thị đúng trong preview
+  // Escape HTML trước, rồi đổi \n thành <br>
+  const html = val
+    ? val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')
+    : '<em style="color:var(--muted);font-style:italic;font-size:.85rem">(chưa có nội dung)</em>';
+  prev.innerHTML = html;
   renderLatex(prev);
 }
 function updateImgPreview(_id,url) {
@@ -1847,6 +2438,7 @@ async function openDoHW(hwId) {
   doHWId      = hwId;
   doHWQList   = qs;
   doHWAnswers = {};
+  doHWFlagged = new Set();
 
   // Tiêu đề + lần làm hiện tại
   const attemptLabel = maxAttempts === 0
@@ -1862,13 +2454,103 @@ async function openDoHW(hwId) {
   document.getElementById('doHWErr').textContent   = '';
   document.getElementById('doHWQuestions').innerHTML = buildQDisplay(qs, doHWAnswers, false);
   document.getElementById('modalDoHW').classList.add('open');
+  buildQNavigator(qs);
   setTimeout(() => renderLatexAll(document.getElementById('modalDoHW')), 200);
   startCountdown(hw.time_limit||null, qs.length);
 }
 
 function closeDoHW() {
+  // Nếu đang làm bài (có câu đã trả lời hoặc timer chạy) → hỏi xác nhận
+  const answered = Object.keys(doHWAnswers).filter(k => {
+    const v = doHWAnswers[k];
+    return v !== undefined && v !== null && v !== '';
+  }).length;
+  if (answered > 0 || cdSecondsLeft > 0) {
+    if (!confirm('Bạn chưa nộp bài.\nThoát ra sẽ MẤT toàn bộ câu trả lời.\n\nBạn có chắc muốn thoát?')) return;
+  }
   stopCountdown();
+  doHWFlagged = new Set();
+  const wrap = document.getElementById('qNavWrap');
+  if (wrap) { wrap.style.display = 'none'; wrap.classList.remove('nav-danger'); }
   document.getElementById('modalDoHW').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+// QUESTION NAVIGATOR
+// ═══════════════════════════════════════════
+function buildQNavigator(qs) {
+  const wrap = document.getElementById('qNavWrap');
+  const grid = document.getElementById('qNavGrid');
+  if (!wrap || !grid) return;
+
+  // Chỉ tính câu hỏi thật (bỏ section)
+  const realQs = qs.filter(q => q.question_type !== 'section');
+  if (!realQs.length) { wrap.style.display = 'none'; return; }
+
+  wrap.style.display = '';
+  grid.innerHTML = realQs.map((q, i) =>
+    `<button class="qnav-btn" id="qnav_${q.id}" onclick="qNavScrollTo(${q.id})" title="Câu ${i+1}">${i+1}</button>`
+  ).join('');
+
+  updateQNavigator();
+}
+
+function updateQNavigator() {
+  const realQs = doHWQList.filter(q => q.question_type !== 'section');
+  let answeredCount = 0;
+
+  realQs.forEach((q, i) => {
+    const btn = document.getElementById(`qnav_${q.id}`);
+    if (!btn) return;
+
+    const ans = doHWAnswers[q.id];
+    const isDone = ans !== undefined && ans !== null && ans !== '' &&
+      !(typeof ans === 'object' && Object.keys(ans).length === 0);
+    const isFlagged = doHWFlagged.has(q.id);
+
+    btn.className = 'qnav-btn';
+    if (isDone) { btn.classList.add('answered'); answeredCount++; }
+    if (isFlagged) btn.classList.add('flagged');
+  });
+
+  const progEl = document.getElementById('qNavProgress');
+  if (progEl) {
+    const unanswered = realQs.length - answeredCount;
+    progEl.textContent = `${answeredCount}/${realQs.length} câu`;
+    progEl.style.color = unanswered > 0 ? 'var(--hw-orange)' : 'var(--hw-green)';
+  }
+}
+
+function qNavScrollTo(qId) {
+  const el = document.getElementById(`q_anchor_${qId}`);
+  if (!el) return;
+
+  // Scroll trong vùng .hw-modal-body
+  const body = document.querySelector('#modalDoHW .hw-modal-body');
+  if (body) {
+    // offsetTop của el tương đối với body
+    const elTop = el.getBoundingClientRect().top;
+    const bodyTop = body.getBoundingClientRect().top;
+    const offset = elTop - bodyTop + body.scrollTop - 70; // 70px padding trên
+    body.scrollTo({ top: offset, behavior: 'smooth' });
+  }
+
+  // Highlight nhấp nháy
+  el.style.transition = 'box-shadow .2s';
+  el.style.boxShadow = '0 0 0 3px rgba(99,102,241,.5)';
+  setTimeout(() => { el.style.boxShadow = ''; }, 1200);
+}
+
+function toggleFlag(qId) {
+  const btn = document.getElementById(`flagBtn_${qId}`);
+  if (doHWFlagged.has(qId)) {
+    doHWFlagged.delete(qId);
+    if (btn) { btn.classList.remove('active'); btn.innerHTML = '⚑ Đánh dấu'; }
+  } else {
+    doHWFlagged.add(qId);
+    if (btn) { btn.classList.add('active'); btn.innerHTML = '🚩 Đã đánh dấu'; }
+  }
+  updateQNavigator();
 }
 
 // Build display HTML cho câu hỏi (cả preview lẫn làm bài)
@@ -1903,13 +2585,14 @@ function buildQDisplay(qs, answers, isPreview) {
       ansHtml = `<div style="color:red;font-size:.82rem">Lỗi hiển thị câu hỏi</div>`;
     }
 
-    return `<div class="q-display">
+    return `<div class="q-display" id="q_anchor_${q.id}">
       <div style="display:flex;align-items:flex-start;gap:.65rem;margin-bottom:.75rem">
         <div class="q-num-badge">${qNum}</div>
         <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem">
+          <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap">
             <span class="qtype-badge ${typeClass(q.question_type)}">${typeLabel(q.question_type)}</span>
             <span style="font-size:.75rem;color:var(--muted)">(${q.points||1} điểm)</span>
+            ${!isPreview ? `<button class="qnav-flag-btn" id="flagBtn_${q.id}" onclick="toggleFlag(${q.id})" title="Đánh dấu câu này để xem lại">⚑ Đánh dấu</button>` : ''}
           </div>
           <div class="q-text">${q.question_text}</div>
           ${q.image_url?`<img src="${esc(q.image_url)}" class="q-image" onerror="this.style.display='none'"/>`:''}
@@ -1953,6 +2636,8 @@ function mcSelectAnswer(qId,i) {
     const el=document.getElementById(`mc_disp_${qId}_${idx}`);
     if(el){el.classList.toggle('selected',idx===i);el.querySelector('.ans-circle').style.background=idx===i?'var(--primary)':'';el.querySelector('.ans-circle').style.color=idx===i?'#fff':'';}
   });
+  updateQNavigator();
+  if(typeof updateCountdownUI==='function') updateCountdownUI(doHWQList.filter(q=>q.question_type!=='section').length);
 }
 
 function buildTFDisplay(q, answers, isPreview, idx) {
@@ -1987,6 +2672,8 @@ function tfSelectAnswer(qId,stmtIdx,val) {
   const [trueBtn,falseBtn]=row.querySelectorAll('.tf-item');
   if(trueBtn){trueBtn.classList.toggle('selected-true',val===true);trueBtn.classList.remove('selected-false');}
   if(falseBtn){falseBtn.classList.toggle('selected-false',val===false);falseBtn.classList.remove('selected-true');}
+  updateQNavigator();
+  if(typeof updateCountdownUI==='function') updateCountdownUI(doHWQList.filter(q=>q.question_type!=='section').length);
 }
 
 function buildMatchDisplay(q, answers, isPreview, idx) {
@@ -2056,7 +2743,8 @@ function matchSelectAnswer(qId, leftIdx, rightIdx, selEl) {
   if (!doHWAnswers[qId]) doHWAnswers[qId] = {};
   doHWAnswers[qId][leftIdx] = rightIdx >= 0 ? rightIdx : undefined;
   if (selEl) selEl.style.borderColor = rightIdx >= 0 ? 'var(--primary)' : 'var(--border)';
-  if (typeof updateCountdownUI === 'function') updateCountdownUI(doHWQList.length);
+  updateQNavigator();
+  if (typeof updateCountdownUI === 'function') updateCountdownUI(doHWQList.filter(q=>q.question_type!=='section').length);
 }
 
 function buildSADisplay(q, answers, isPreview, idx) {
@@ -2065,7 +2753,7 @@ function buildSADisplay(q, answers, isPreview, idx) {
   return `<div>
     ${isPreview&&sample?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:.4rem;padding:.5rem .75rem;background:#f0fdf4;border-left:3px solid var(--hw-green);border-radius:0 8px 8px 0">📌 Đáp án mẫu: <span class="q-text">${sample}</span></div>`:''}
     ${!isPreview?`<textarea rows="3" placeholder="Nhập câu trả lời của bạn..."
-      oninput="doHWAnswers[${q.id}]=this.value"
+      oninput="doHWAnswers[${q.id}]=this.value;updateQNavigator()"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;resize:vertical;background:var(--card);color:var(--text);transition:border-color .2s"
       onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
     >${esc(chosen||'')}</textarea>`:''}
@@ -2079,18 +2767,17 @@ async function submitAnswers(autoSubmit=false) {
   const hw = allHomework.find(h=>h.id===doHWId);
   if (!hw) return;
 
-  // Chỉ kiểm tra chưa trả lời khi nộp thủ công
+  // Chỉ nhắc nhở nhẹ khi nộp thủ công, không bắt buộc
   if (!autoSubmit) {
-    let unanswered=[];
-    doHWQList.forEach((q,i)=>{
-      const a=doHWAnswers[q.id];
-      if(a===undefined||a===null||a===''){
-        if(q.question_type!=='short_answer')unanswered.push(i+1);
-      }
-    });
-    if(unanswered.length){
-      document.getElementById('doHWErr').textContent=`Chưa trả lời câu: ${unanswered.join(', ')}`;
-      return;
+    const realQs = doHWQList.filter(q => q.question_type !== 'section');
+    const unanswered = realQs.filter(q => {
+      const a = doHWAnswers[q.id];
+      return a === undefined || a === null || a === '' ||
+        (typeof a === 'object' && Object.keys(a).length === 0);
+    }).length;
+    if (unanswered > 0) {
+      const ok = confirm(`Còn ${unanswered} câu chưa trả lời.\nBạn vẫn muốn nộp bài?`);
+      if (!ok) return;
     }
   }
 
@@ -2448,9 +3135,9 @@ async function openGrade(subId, studentName) {
   if (!sub) return;
   const hw  = allHomework.find(h=>h.id===sub.homework_id);
   const qs  = await loadQuestions(sub.homework_id);
+  const answers = sub.answers||{};
 
-  // Tính lại điểm tự chấm để GV tham khảo
-  const answers   = sub.answers||{};
+  // Tính điểm tự chấm (máy)
   const autoTypes = ['multiple_choice','true_false','matching'];
   let autoScore=0, autoMax=0, manualMax=0;
   qs.forEach(q=>{
@@ -2472,64 +3159,148 @@ async function openGrade(subId, studentName) {
   });
   autoScore=Math.round(autoScore*100)/100;
 
-  // Câu tự luận cần GV chấm
+  // Câu tự luận
   const manualQs = qs.filter(q=>q.question_type==='short_answer');
 
-  // Build nội dung câu tự luận để GV đọc
-  let manualHtml='';
-  if(manualQs.length){
-    manualHtml=`<div style="margin:.75rem 0;border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="padding:.5rem .9rem;background:var(--primary-light);font-size:.8rem;font-weight:700;color:var(--primary)">
-        ✏️ ${manualQs.length} câu tự luận cần chấm (tổng ${manualMax}đ)
-      </div>
-      ${manualQs.map((q,i)=>{
-        const ua=answers[q.id];
-        return `<div style="padding:.65rem .9rem;border-top:1px solid var(--border)">
-          <div style="font-size:.8rem;color:var(--muted);font-weight:700;margin-bottom:.25rem">Câu ${i+1} (${q.points||1}đ): <span style="color:var(--text);font-weight:500">${q.question_text}</span></div>
-          <div style="font-size:.88rem;padding:.4rem .7rem;background:var(--bg);border-radius:8px;border:1px solid var(--border);min-height:2rem">${esc(ua||'(không trả lời)')}</div>
-          ${q.data.sample_answer?`<div style="font-size:.78rem;color:#065f46;margin-top:.25rem;padding:.25rem .6rem;background:#f0fdf4;border-radius:6px">📌 Đáp án mẫu: ${esc(q.data.sample_answer)}</div>`:''}
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
+  // Lưu state để saveGrade dùng
+  window._gradeState = { subId, autoScore, autoMax, manualMax, manualQs };
 
-  document.getElementById('gradeSubmitId').value=subId;
-  document.getElementById('gradeStudentName').innerHTML=
-    `<b>${studentName}</b>
-     <span style="float:right;font-size:.8rem;background:#e0e7ff;color:#3730a3;padding:.15rem .55rem;border-radius:20px;font-weight:700">
-       🤖 Tự chấm: ${autoScore}/${autoMax}đ${manualMax?` | ✏️ Tự luận: ${manualMax}đ chờ GV`:''}
+  // Điền header
+  document.getElementById('gradeSubmitId').value = subId;
+  document.getElementById('gradeStudentName').innerHTML =
+    `<b>${esc(studentName)}</b>
+     <span style="margin-left:.5rem;font-size:.75rem;background:#e0e7ff;color:#3730a3;padding:.12rem .5rem;border-radius:20px;font-weight:700">
+       📝 ${hw?.title||''}
      </span>`;
-  document.getElementById('gradeScore').value = sub.score ?? (manualMax===0 ? autoScore : '');
-  document.getElementById('gradeScore').placeholder = `Tổng: ?/${autoMax+manualMax} — Gợi ý: ${autoScore}+X`;
-  document.getElementById('gradeFeedback').value = sub.feedback||'';
 
-  // Chèn câu tự luận vào modal
-  const existing = document.getElementById('gradeManualBlock');
-  if(existing) existing.remove();
-  if(manualHtml){
-    const div=document.createElement('div');
-    div.id='gradeManualBlock';
-    div.innerHTML=manualHtml;
-    document.getElementById('gradeFeedback').parentNode.insertBefore(div, document.getElementById('gradeFeedback'));
-    setTimeout(()=>renderLatexAll(div),150);
+  // Điền summary bar
+  document.getElementById('gradeAutoDisplay').textContent = `${autoScore} / ${autoMax} đ`;
+  _updateGradeSummary();
+
+  // Build câu tự luận từng câu
+  const block = document.getElementById('gradeManualBlock');
+  block.innerHTML = '';
+  if (manualQs.length) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:1.25rem;display:flex;flex-direction:column;gap:.85rem';
+    wrap.innerHTML = `<div style="font-weight:800;font-size:.88rem;color:var(--text);margin-bottom:-.2rem">
+      ✏️ Câu tự luận cần chấm <span style="color:var(--muted);font-weight:500">(${manualQs.length} câu — tổng ${manualMax}đ)</span>
+    </div>`;
+    manualQs.forEach((q, i) => {
+      const ua = answers[q.id];
+      const pts = parseFloat(q.points)||1;
+      // Lấy điểm đã chấm trước đó nếu có
+      const prevScore = (sub.manual_scores && sub.manual_scores[q.id] != null)
+        ? sub.manual_scores[q.id] : 0;
+      const card = document.createElement('div');
+      card.style.cssText = 'border:1.5px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card)';
+      card.innerHTML = `
+        <!-- Header câu -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;background:var(--bg);border-bottom:1.5px solid var(--border);gap:.75rem;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0">${i+1}</div>
+            <div>
+              <div style="font-size:.8rem;font-weight:700;color:var(--text)" class="q-text">${q.question_text}</div>
+              ${q.data.sample_answer?`<div style="font-size:.73rem;color:#065f46;margin-top:.15rem">📌 Đáp án mẫu: ${esc(q.data.sample_answer)}</div>`:''}
+            </div>
+          </div>
+          <!-- Ô điểm câu này -->
+          <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+            <span style="font-size:.78rem;color:var(--muted);font-weight:600">Điểm</span>
+            <span style="font-size:.75rem;color:var(--muted)">(0–${pts})</span>
+            <input type="number" min="0" max="${pts}" step="0.25"
+              value="${prevScore}"
+              placeholder="—"
+              data-qid="${q.id}" data-max="${pts}"
+              oninput="_updateGradeSummary()"
+              style="width:72px;padding:.35rem .55rem;border:2px solid var(--primary);border-radius:9px;font-size:.95rem;font-weight:800;outline:none;background:var(--card);color:var(--primary);text-align:center"/>
+            <span style="font-size:.78rem;color:var(--muted);font-weight:600">/ ${pts}đ</span>
+          </div>
+        </div>
+        <!-- Bài làm học sinh -->
+        <div style="padding:.75rem 1rem">
+          <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-bottom:.3rem">📝 Bài làm học sinh:</div>
+          <div style="font-size:.92rem;line-height:1.7;padding:.65rem .9rem;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;min-height:3rem;white-space:pre-wrap">${ua ? esc(ua) : '<span style="color:var(--muted);font-style:italic">Không trả lời</span>'}</div>
+        </div>`;
+      wrap.appendChild(card);
+    });
+    block.appendChild(wrap);
+    setTimeout(()=>renderLatexAll(block), 150);
+  } else {
+    block.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.88rem;background:var(--bg);border-radius:12px;margin-bottom:1rem">
+      ✅ Bài này không có câu tự luận — hệ thống đã tự chấm toàn bộ
+    </div>`;
+    _updateGradeSummary();
   }
 
+  document.getElementById('gradeFeedback').value = sub.feedback||'';
   document.getElementById('modalGrade').classList.add('open');
 }
 
-async function saveGrade(){
-  const subId=parseInt(document.getElementById('gradeSubmitId').value);
-  const score=document.getElementById('gradeScore').value;
-  const feedback=document.getElementById('gradeFeedback').value.trim();
-  const{error}=await sb.from('homework_submissions').update({
-    score:score!==''?parseFloat(score):null,
-    feedback:feedback||null,
-    status:'graded',
-    graded_at:new Date().toISOString()
-  }).eq('id',subId);
-  if(error){showToast('Lỗi: '+error.message,false);return;}
+// Cập nhật summary bar realtime
+function _updateGradeSummary() {
+  const st = window._gradeState;
+  if (!st) return;
+
+  // Cộng điểm từng ô tự luận
+  let manualScored = 0;
+  let allFilled = true;
+  document.querySelectorAll('#gradeManualBlock input[data-qid]').forEach(inp => {
+    const v = inp.value.trim();
+    if (v === '' || v === undefined) { allFilled = false; return; }
+    const n = parseFloat(v);
+    const max = parseFloat(inp.dataset.max)||0;
+    if (!isNaN(n)) manualScored += Math.min(n, max);
+  });
+
+  const total = Math.round((st.autoScore + manualScored) * 100) / 100;
+  const grandMax = st.autoMax + st.manualMax;
+
+  document.getElementById('gradeManualDisplay').textContent =
+    st.manualQs.length ? `${Math.round(manualScored*100)/100} / ${st.manualMax} đ` : '— (không có)';
+  document.getElementById('gradeTotalDisplay').textContent =
+    allFilled || st.manualQs.length === 0
+      ? `${total} / ${grandMax} đ`
+      : `${st.autoScore}+? / ${grandMax} đ`;
+
+  // Highlight tổng nếu đủ điểm
+  const el = document.getElementById('gradeTotalDisplay');
+  el.style.color = total >= grandMax * 0.8 ? '#86efac' : total >= grandMax * 0.5 ? '#fde68a' : '#fca5a5';
+}
+
+async function saveGrade() {
+  const st = window._gradeState;
+  const subId = parseInt(document.getElementById('gradeSubmitId').value);
+  const feedback = document.getElementById('gradeFeedback').value.trim();
+
+  // Thu thập điểm từng câu tự luận
+  let manualScored = 0;
+  const manualScores = {};
+  document.querySelectorAll('#gradeManualBlock input[data-qid]').forEach(inp => {
+    const qid = parseInt(inp.dataset.qid);
+    const max  = parseFloat(inp.dataset.max)||0;
+    const v    = parseFloat(inp.value);
+    const pts  = isNaN(v) ? 0 : Math.min(Math.max(v, 0), max);
+    manualScores[qid] = pts;
+    manualScored += pts;
+  });
+
+  const finalScore = st
+    ? Math.round((st.autoScore + manualScored) * 100) / 100
+    : manualScored;
+
+  const { error } = await sb.from('homework_submissions').update({
+    score:        finalScore,
+    manual_scores: Object.keys(manualScores).length ? manualScores : null,
+    feedback:     feedback || null,
+    status:       'graded',
+    graded_at:    new Date().toISOString()
+  }).eq('id', subId);
+
+  if (error) { showToast('Lỗi: ' + error.message, false); return; }
   document.getElementById('modalGrade').classList.remove('open');
-  showToast('Đã lưu chấm bài');
+  showToast('✅ Đã lưu điểm: ' + finalScore + 'đ');
+  window._gradeState = null;
   await loadAdminData();
   renderAdminSubmissions();
 }
@@ -2551,19 +3322,13 @@ function startCountdown(timeLimitMinutes, totalQuestions) {
   cdTotalSecs    = timeLimitMinutes * 60;
   cdSecondsLeft  = cdTotalSecs;
   cdUsedSecs     = 0;
-  cdPaused       = false;
   cdWarned60     = false;
   bar.style.display = 'flex';
   bar.className  = '';
 
-  const pauseBtn = document.getElementById('cdPauseBtn');
-  if (pauseBtn) { pauseBtn.textContent = '⏸ Dừng'; pauseBtn.style.display = 'flex'; }
-
   updateCountdownUI(totalQuestions);
 
   cdInterval = setInterval(() => {
-    if (cdPaused) return;
-
     cdSecondsLeft--;
     cdUsedSecs++;
     updateCountdownUI(totalQuestions);
@@ -2589,32 +3354,14 @@ function startCountdown(timeLimitMinutes, totalQuestions) {
 
 function stopCountdown() {
   if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
-  cdPaused = false;
-}
-
-function togglePauseCountdown() {
-  cdPaused = !cdPaused;
-  const btn = document.getElementById('cdPauseBtn');
-  if (!btn) return;
-  if (cdPaused) {
-    btn.textContent = '▶ Tiếp';
-    btn.style.background = 'rgba(245,158,11,.35)';
-    btn.style.borderColor = 'rgba(245,158,11,.6)';
-    document.getElementById('countdownDisplay').style.opacity = '0.5';
-  } else {
-    btn.textContent = '⏸ Dừng';
-    btn.style.background = 'rgba(255,255,255,.15)';
-    btn.style.borderColor = 'rgba(255,255,255,.25)';
-    document.getElementById('countdownDisplay').style.opacity = '1';
-  }
 }
 
 function updateCountdownUI(totalQuestions) {
   const bar   = document.getElementById('countdownBar');
   const disp  = document.getElementById('countdownDisplay');
   const prog  = document.getElementById('cdProgressBar');
-  const ansEl = document.getElementById('cdAnswered');
   const elapsed = document.getElementById('cdElapsed');
+  const navWrap = document.getElementById('qNavWrap');
   if (!bar || !disp) return;
 
   // Format mm:ss còn lại
@@ -2627,26 +3374,26 @@ function updateCountdownUI(totalQuestions) {
   if (elapsed) {
     const um = String(Math.floor(cdUsedSecs / 60)).padStart(2, '0');
     const us = String(cdUsedSecs % 60).padStart(2, '0');
-    elapsed.textContent = 'Đã dùng: ' + um + ':' + us;
+    elapsed.textContent = um + ':' + us + ' đã dùng';
   }
 
   // Progress bar (thu nhỏ dần)
   const pct = cdTotalSecs > 0 ? (s / cdTotalSecs) * 100 : 0;
-  prog.style.width = pct + '%';
+  if (prog) prog.style.width = pct + '%';
 
-  // Màu cảnh báo theo ngưỡng
+  // Màu cảnh báo theo ngưỡng — áp lên cả countdownBar lẫn qNavWrap
   bar.classList.remove('warning', 'danger');
-  if (s <= 60)                         bar.classList.add('danger');
-  else if (s <= cdTotalSecs * 0.25)    bar.classList.add('warning');
+  if (navWrap) navWrap.classList.remove('nav-danger');
 
-  // Số câu đã trả lời
-  const answered = Object.keys(doHWAnswers).filter(k => {
-    const v = doHWAnswers[k];
-    if (v === undefined || v === null || v === '') return false;
-    if (typeof v === 'object' && Object.keys(v).length === 0) return false;
-    return true;
-  }).length;
-  if (ansEl) ansEl.textContent = answered + '/' + totalQuestions + ' câu';
+  if (s <= 60) {
+    bar.classList.add('danger');
+    if (navWrap) navWrap.classList.add('nav-danger');
+  } else if (s <= cdTotalSecs * 0.25) {
+    bar.classList.add('warning');
+  }
+
+  // Cập nhật số câu
+  updateQNavigator();
 }
 
 // Popup cảnh báo trong modal làm bài
@@ -2708,9 +3455,15 @@ function initDarkMode() {
   });
 }
 
-// Đóng modal khi click overlay
-document.querySelectorAll('.modal-overlay').forEach(el=>{
-  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+// Chỉ đóng modal kết quả và chấm bài khi click overlay (an toàn)
+// Modal làm bài và soạn đề KHÔNG đóng khi click ngoài — phải bấm nút X
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  const safeIds = ['modalDoHW', 'modalHW']; // không đóng khi click ngoài
+  el.addEventListener('click', e => {
+    if (e.target !== el) return;
+    if (safeIds.includes(el.id)) return; // bỏ qua
+    el.classList.remove('open');
+  });
 });
 
 // ═══════════════════════════════════════════
