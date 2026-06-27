@@ -226,6 +226,26 @@
 }
 #toastHW.show { opacity:1;transform:translateX(-50%) translateY(0); }
 .section-title { font-weight:800;font-size:.88rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:.9rem 0 .5rem; }
+/* ═══ SECTION DIVIDER ═══ */
+.q-section-card {
+  background: linear-gradient(135deg,#1e1b4b,#312e81);
+  border-radius:12px;padding:.75rem 1.1rem;
+  display:flex;align-items:center;gap:.75rem;
+  color:#fff;
+}
+.q-section-num {
+  font-size:.72rem;font-weight:800;letter-spacing:.8px;
+  background:rgba(255,255,255,.15);border-radius:6px;
+  padding:.2rem .55rem;flex-shrink:0;text-transform:uppercase;
+}
+.q-section-input {
+  flex:1;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);
+  border-radius:8px;padding:.4rem .75rem;color:#fff;font-size:.92rem;font-weight:700;
+  outline:none;font-family:inherit;
+}
+.q-section-input::placeholder { color:rgba(255,255,255,.45); }
+.q-section-input:focus { border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.15); }
+
 /* ═══ ADD QUESTION BAR ═══ */
 .add-q-bar {
   display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;
@@ -982,8 +1002,7 @@ function renderStudentList() {
       <div style="display:flex;gap:.4rem;flex-wrap:wrap">
         ${!sub?`<button class="btn-primary" onclick="openDoHW(${h.id})">✏️ Làm bài</button>`:''}
         ${sub?`<button class="btn-sm" onclick="openResult(${h.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem kết quả</button>`:''}
-        <button class="btn-sm" onclick="previewHW(${h.id})">📋 Xem đề</button>
-        <button class="btn-sm" onclick="exportHW(${h.id})" style="border-color:#0891b2;color:#0e7490">⬇ Xuất đề</button>
+        ${sub?`<button class="btn-sm" onclick="exportHW(${h.id})" style="border-color:#0891b2;color:#0e7490">⬇ Xuất đề</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1046,14 +1065,22 @@ function addQuestion(type) {
   };
   editorQuestions.push({ _id:++qCounter, type, text:'', image_url:'', data:JSON.parse(JSON.stringify(defaultData[type])), points:1 });
   renderQuestionList();
-  // Scroll xuống câu hỏi vừa thêm (nằm trước thanh nút)
   setTimeout(() => {
-    const ql = document.getElementById('questionList');
     const bar = document.getElementById('addQBar');
-    // Scroll đến câu hỏi mới (element trước thanh nút)
     const newCard = bar?.previousElementSibling;
     if (newCard) newCard.scrollIntoView({ behavior:'smooth', block:'center' });
     else bar?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 120);
+}
+
+// Thêm mục phân chia (section)
+function addSection() {
+  editorQuestions.push({ _id:++qCounter, type:'section', text:'', image_url:'', data:{}, points:0 });
+  renderQuestionList();
+  setTimeout(() => {
+    const bar = document.getElementById('addQBar');
+    const newCard = bar?.previousElementSibling;
+    if (newCard) newCard.scrollIntoView({ behavior:'smooth', block:'center' });
   }, 120);
 }
 
@@ -1071,7 +1098,7 @@ function removeQuestion(_id) {
 // Thanh nút thêm câu hỏi — luôn nằm cuối danh sách
 function buildAddBar() {
   return `<div class="add-q-bar" id="addQBar">
-    <span class="add-q-label">➕ Thêm câu:</span>
+    <span class="add-q-label">➕ Thêm:</span>
     <button class="btn-sm" onclick="addQuestion('multiple_choice')"
       style="border-color:#3b82f6;color:#1d4ed8;background:#eff6ff">
       🔵 Trắc nghiệm
@@ -1088,6 +1115,11 @@ function buildAddBar() {
       style="border-color:#8b5cf6;color:#5b21b6;background:#faf5ff">
       ✏️ Trả lời ngắn
     </button>
+    <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 .1rem"></div>
+    <button class="btn-sm" onclick="addSection()"
+      style="border-color:#64748b;color:#334155;background:#f8fafc">
+      📑 Thêm mục
+    </button>
   </div>`;
 }
 
@@ -1097,9 +1129,13 @@ function renderQuestionList() {
     el.innerHTML = buildAddBar();
     return;
   }
-  el.innerHTML = editorQuestions.map((q,idx)=>buildQEditor(q,idx)).join('')
-    + buildAddBar();  // thanh nút luôn nằm cuối
-  // Hiển thị các lip đã có nội dung (khi edit bài cũ)
+  // Đánh số câu hỏi thật (bỏ qua section)
+  let qNum = 0;
+  el.innerHTML = editorQuestions.map((q,idx) => {
+    if (q.type === 'section') return buildSectionEditor(q, idx);
+    qNum++;
+    return buildQEditor(q, idx, qNum);
+  }).join('') + buildAddBar();
   setTimeout(() => {
     el.querySelectorAll('.lip').forEach(lip => {
       if (lip.textContent.trim()) lip.classList.add('show');
@@ -1108,7 +1144,26 @@ function renderQuestionList() {
   }, 150);
 }
 
-function buildQEditor(q,idx) {
+// Section editor
+function buildSectionEditor(q, idx) {
+  // Tính số thứ tự mục (La Mã)
+  const sectionIdx = editorQuestions.slice(0, idx+1).filter(x=>x.type==='section').length;
+  const romans = ['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+  const roman  = romans[sectionIdx-1] || sectionIdx;
+  return `<div class="q-section-card" id="qcard_${q._id}">
+    <span class="q-section-num">Phần ${roman}</span>
+    <input class="q-section-input" placeholder="Tên mục (VD: Trắc nghiệm nhiều phương án)"
+      value="${esc(q.text)}"
+      oninput="updateQField(${q._id},'text',this.value)"/>
+    <button onclick="removeQuestion(${q._id})"
+      style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:7px;padding:.25rem .5rem;cursor:pointer;font-size:.85rem;flex-shrink:0;transition:all .15s"
+      onmouseover="this.style.background='rgba(239,68,68,.3)'"
+      onmouseout="this.style.background='rgba(255,255,255,.1)'">🗑</button>
+  </div>`;
+}
+
+function buildQEditor(q,idx,qNum) {
+  qNum = qNum || (idx+1);
   const typeNames={multiple_choice:'Trắc nghiệm nhiều phương án',true_false:'Đúng / Sai',matching:'Ghép đôi',short_answer:'Trả lời ngắn'};
   const typeIcons={multiple_choice:'🔵',true_false:'✅',matching:'🔗',short_answer:'✏️'};
   const tClass=typeClass(q.type);
@@ -1122,7 +1177,7 @@ function buildQEditor(q,idx) {
   return `<div class="q-card" id="qcard_${q._id}">
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">
-      <div class="q-card-num">${idx+1}</div>
+      <div class="q-card-num">${qNum}</div>
       <span class="qtype-badge ${tClass}">${typeIcons[q.type]} ${typeNames[q.type]}</span>
       <div style="margin-left:auto;display:flex;gap:.35rem;align-items:center">
         <label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.3rem">
@@ -1470,23 +1525,48 @@ function updateImgPreview(_id,url) {
 }
 
 // Upload ảnh lên Supabase Storage
-async function uploadQImage(_id,input) {
-  const file=input.files[0];
-  if(!file)return;
-  if(file.size>5*1024*1024){showToast('Ảnh tối đa 5MB',false);return;}
-  showToast('Đang tải ảnh...',true);
-  const ext=file.name.split('.').pop();
-  const path=`q_${Date.now()}.${ext}`;
-  const {data,error}=await sb.storage.from('homework-images').upload(path,file,{upsert:true});
-  if(error){showToast('Lỗi tải ảnh: '+error.message,false);return;}
-  const {data:{publicUrl}}=sb.storage.from('homework-images').getPublicUrl(path);
-  updateQField(_id,'image_url',publicUrl);
-  updateImgPreview(_id,publicUrl);
-  // Cập nhật input URL
-  const card=document.getElementById('qcard_'+_id);
-  const urlInput=card?.querySelector('input[type=url]');
-  if(urlInput)urlInput.value=publicUrl;
-  showToast('Tải ảnh thành công');
+async function uploadQImage(_id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { showToast('Ảnh tối đa 5MB', false); return; }
+
+  showToast('Đang xử lý ảnh...', true);
+
+  // Thử upload lên Supabase Storage trước
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `q_${Date.now()}.${ext}`;
+    const { error } = await sb.storage.from('homework-images').upload(path, file, { upsert:true });
+
+    if (!error) {
+      const { data:{ publicUrl } } = sb.storage.from('homework-images').getPublicUrl(path);
+      _applyQImageUrl(_id, publicUrl);
+      showToast('✅ Tải ảnh thành công');
+      return;
+    }
+    // Nếu Storage lỗi → fallback sang Base64
+    console.warn('Storage lỗi, dùng Base64:', error.message);
+  } catch(e) {
+    console.warn('Storage không khả dụng, dùng Base64');
+  }
+
+  // Fallback: chuyển ảnh sang Base64 Data URL (không cần Storage)
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    _applyQImageUrl(_id, dataUrl);
+    showToast('✅ Ảnh đã được nhúng (Base64)');
+  };
+  reader.onerror = () => showToast('Lỗi đọc file ảnh', false);
+  reader.readAsDataURL(file);
+}
+
+function _applyQImageUrl(_id, url) {
+  updateQField(_id, 'image_url', url);
+  updateImgPreview(_id, url);
+  const card = document.getElementById('qcard_'+_id);
+  const urlInput = card?.querySelector('input[type=url]');
+  if (urlInput) urlInput.value = url.startsWith('data:') ? '[Ảnh đã nhúng]' : url;
 }
 </script>
 
@@ -1499,15 +1579,19 @@ async function saveHomework() {
   if(!title){document.getElementById('hwFormErr').textContent='Vui lòng nhập tiêu đề.';return;}
   if(!editorQuestions.length){document.getElementById('hwFormErr').textContent='Vui lòng thêm ít nhất 1 câu hỏi.';return;}
 
-  // Validate questions
+  // Validate questions — bỏ qua section
+  let realQCount = 0;
   for(let i=0;i<editorQuestions.length;i++){
     const q=editorQuestions[i];
-    if(!q.text.trim()){document.getElementById('hwFormErr').textContent=`Câu ${i+1}: Chưa nhập nội dung câu hỏi.`;return;}
+    if(q.type==='section') continue; // mục phân chia — bỏ qua validate
+    realQCount++;
+    if(!q.text.trim()){document.getElementById('hwFormErr').textContent=`Câu ${realQCount}: Chưa nhập nội dung câu hỏi.`;return;}
     if(q.type==='multiple_choice'){
       const filled=q.data.options.filter(o=>o.trim());
-      if(filled.length<2){document.getElementById('hwFormErr').textContent=`Câu ${i+1}: Cần ít nhất 2 phương án.`;return;}
+      if(filled.length<2){document.getElementById('hwFormErr').textContent=`Câu ${realQCount}: Cần ít nhất 2 phương án.`;return;}
     }
   }
+  if(realQCount===0){document.getElementById('hwFormErr').textContent='Vui lòng thêm ít nhất 1 câu hỏi.';return;}
 
   const payload={
     title,
