@@ -449,7 +449,7 @@
             <div style="margin-top:.2rem;padding:.65rem .9rem;background:#fee2e2;border-radius:9px;border-left:3px solid var(--hw-red)">
               <div style="font-weight:700;font-size:.83rem;color:#991b1b;margin-bottom:.3rem">⚠️ Lưu ý quan trọng</div>
               <ul style="font-size:.78rem;color:#7f1d1d;line-height:1.9;padding-left:1.1rem">
-                <li>Mỗi bài chỉ nộp <b>1 lần duy nhất</b> — kiểm tra kỹ trước khi nhấn Nộp bài.</li>
+                <li>Số lần làm bài do giáo viên quy định — xem badge <b>🔁</b> trên mỗi bài.</li>
                 <li>Nếu có <b>đồng hồ đếm ngược</b>, hệ thống sẽ tự nộp khi hết giờ.</li>
                 <li>Bài tập sẽ xuất hiện <b>ngay lập tức</b> khi giáo viên giao — không cần tải lại trang.</li>
                 <li>Sau khi giáo viên chấm điểm, bạn sẽ nhận <b>thông báo ngay</b> trên trang này.</li>
@@ -494,8 +494,40 @@
         <input type="number" id="hwTimeLimit" min="1" max="300" step="1" placeholder="VD: 45"/>
       </div>
       <div>
+        <label>🔁 Số lần làm bài</label>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;font-weight:600;padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--card);transition:all .15s" id="att_once_lbl">
+            <input type="radio" name="hwAttempts" id="att_once" value="1" checked onchange="onAttemptsChange()" style="accent-color:var(--primary)"/> 1 lần
+          </label>
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;font-weight:600;padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--card);transition:all .15s" id="att_many_lbl">
+            <input type="radio" name="hwAttempts" id="att_many" value="0" onchange="onAttemptsChange()" style="accent-color:var(--primary)"/> Không giới hạn
+          </label>
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;font-weight:600;padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--card);transition:all .15s" id="att_custom_lbl">
+            <input type="radio" name="hwAttempts" id="att_custom" value="custom" onchange="onAttemptsChange()" style="accent-color:var(--primary)"/> Tối đa
+            <input type="number" id="hwMaxAttempts" min="2" max="99" step="1" value="3"
+              style="width:52px;padding:.2rem .4rem;border:1.5px solid var(--border);border-radius:7px;font-size:.85rem;outline:none;margin-left:.25rem;background:var(--card);color:var(--text)"
+              onclick="document.getElementById('att_custom').checked=true;onAttemptsChange()"
+              oninput="document.getElementById('att_custom').checked=true;onAttemptsChange()"/>
+            lần
+          </label>
+        </div>
+      </div>
+      <div>
         <label>Mô tả / Hướng dẫn chung</label>
         <input type="text" id="hwDesc" placeholder="Tuỳ chọn..."/>
+      </div>
+      <div>
+        <label>🎯 Tổng điểm bài <span style="color:var(--muted);font-weight:400">(để trống = giữ điểm từng câu)</span></label>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="number" id="hwTotalScore" min="1" max="100" step="0.5" placeholder="VD: 10"
+            style="width:110px;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:9px;font-size:.9rem;outline:none;background:var(--card);color:var(--text)"
+            oninput="onTotalScoreInput()"/>
+          <button type="button" class="btn-sm" onclick="distributeScores()"
+            style="border-color:#6366f1;color:#4338ca;background:#eef2ff;white-space:nowrap">
+            ⚖️ Chia đều cho câu hỏi
+          </button>
+          <span id="hwScorePreview" style="font-size:.78rem;color:var(--muted)"></span>
+        </div>
       </div>
     </div>
 
@@ -835,6 +867,25 @@ function switchAdminTab(tab,btn) {
   document.querySelectorAll('#adminTabs .tab-hw button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   tab==='list'?renderAdminList():renderAdminSubmissions();
+  // Xóa badge khi mở tab bài nộp
+  if (tab==='submissions') _clearSubmissionBadge();
+}
+
+// Badge số bài nộp mới trên tab
+let _newSubCount = 0;
+function _updateSubmissionBadge() {
+  if (adminTab === 'submissions') return; // đang xem rồi
+  _newSubCount++;
+  const btns = document.querySelectorAll('#adminTabs .tab-hw button');
+  if (btns[1]) {
+    btns[1].textContent = '';
+    btns[1].innerHTML = `📬 Bài nộp <span style="background:#ef4444;color:#fff;border-radius:20px;padding:.05rem .45rem;font-size:.72rem;font-weight:800;margin-left:.25rem">${_newSubCount}</span>`;
+  }
+}
+function _clearSubmissionBadge() {
+  _newSubCount = 0;
+  const btns = document.querySelectorAll('#adminTabs .tab-hw button');
+  if (btns[1]) btns[1].textContent = '📬 Bài nộp';
 }
 function switchStudentTab(tab,btn) {
   studentTab=tab;
@@ -973,8 +1024,24 @@ function renderStudentList() {
     return;
   }
   el.innerHTML = hw.map(h=>{
-    const sub=allSubmissions.find(s=>s.homework_id===h.id);
-    const od=isOverdue(h.due_date);
+    const mySubs = allSubmissions.filter(s=>s.homework_id===h.id && s.username===currentUser.username);
+    const sub    = mySubs[mySubs.length-1]; // lần nộp mới nhất
+    const subCount = mySubs.length;
+    const maxAttempts = h.max_attempts ?? 1;
+    const canRetry = maxAttempts===0 || subCount < maxAttempts;
+    const attemptsLeft = maxAttempts===0 ? null : maxAttempts - subCount;
+    const od = isOverdue(h.due_date);
+
+    // Badge số lần
+    let attemptsBadge = '';
+    if (maxAttempts === 0) {
+      attemptsBadge = `<span style="background:#e0f2fe;color:#0369a1;padding:.15rem .55rem;border-radius:20px;font-size:.72rem;font-weight:700">🔁 Không giới hạn${subCount>0?' · đã làm '+subCount:''}  </span>`;
+    } else if (maxAttempts > 1) {
+      const color = attemptsLeft===0?'#fee2e2':'#f0fdf4';
+      const tc    = attemptsLeft===0?'#991b1b':'#15803d';
+      attemptsBadge = `<span style="background:${color};color:${tc};padding:.15rem .55rem;border-radius:20px;font-size:.72rem;font-weight:700">🔁 ${subCount}/${maxAttempts} lần${attemptsLeft>0?' · còn '+attemptsLeft:' · hết lượt'}</span>`;
+    }
+
     return `<div class="hw-card">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.5rem">
         <div style="font-weight:800;font-size:.98rem;flex:1">📝 ${esc(h.title)}</div>
@@ -984,11 +1051,13 @@ function renderStudentList() {
         </div>
       </div>
       ${h.description?`<p style="font-size:.85rem;color:var(--muted);margin-bottom:.4rem">${esc(h.description)}</p>`:''}
-      <div style="display:flex;flex-wrap:wrap;gap:.4rem;font-size:.78rem;color:var(--muted);margin-bottom:.75rem">
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;font-size:.78rem;color:var(--muted);margin-bottom:.6rem">
         ${h.class_name?`<span>🏫 ${esc(h.class_name)}</span>`:''}
         <span class="due-chip${od?' overdue':''}">⏰ ${h.due_date?'Hạn: '+fmtDate(h.due_date):'Không giới hạn'}</span>
-        ${h.time_limit?`<span style="display:inline-flex;align-items:center;gap:.25rem;background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:8px;font-weight:700">⏱ ${h.time_limit} phút</span>`:''}
-        <span>📅 Giao: ${fmtDate(h.created_at)}</span>
+        ${h.time_limit?`<span style="background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:8px;font-weight:700">⏱ ${h.time_limit} phút</span>`:''}
+        ${h.total_score?`<span style="background:#fef9c3;color:#854d0e;padding:.2rem .6rem;border-radius:8px;font-weight:700">🎯 ${h.total_score} điểm</span>`:''}
+        ${attemptsBadge}
+        <span>📅 ${fmtDate(h.created_at)}</span>
       </div>
       ${sub&&sub.score!=null?`<div style="margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem">
         <span class="score-pill">🏅 ${sub.score}/${sub.max_score||10} điểm</span>
@@ -1000,7 +1069,7 @@ function renderStudentList() {
       </div>`:''}
       ${sub&&sub.feedback?`<div style="font-size:.84rem;background:#f0fdf4;border-left:3px solid var(--hw-green);padding:.4rem .75rem;border-radius:8px;color:#065f46;margin-bottom:.5rem">💬 ${esc(sub.feedback)}</div>`:''}
       <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-        ${!sub?`<button class="btn-primary" onclick="openDoHW(${h.id})">✏️ Làm bài</button>`:''}
+        ${(!sub||canRetry)?`<button class="btn-primary" onclick="openDoHW(${h.id})">${sub&&canRetry?'🔄 Làm lại':'✏️ Làm bài'}</button>`:''}
         ${sub?`<button class="btn-sm" onclick="openResult(${h.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem kết quả</button>`:''}
         ${sub?`<button class="btn-sm" onclick="exportHW(${h.id})" style="border-color:#0891b2;color:#0e7490">⬇ Xuất đề</button>`:''}
       </div>
@@ -1020,6 +1089,11 @@ function openModalHW() {
   document.getElementById('hwClass').value='';
   document.getElementById('hwDue').value='';
   document.getElementById('hwTimeLimit').value='';
+  document.getElementById('att_once').checked = true;
+  document.getElementById('hwMaxAttempts').value = '3';
+  onAttemptsChange();
+  document.getElementById('hwTotalScore').value = '';
+  document.getElementById('hwScorePreview').textContent = '';
   document.getElementById('hwFormErr').textContent='';
   document.getElementById('modalHWTitle').textContent='➕ Giao bài tập mới';
   renderQuestionList();
@@ -1035,6 +1109,14 @@ async function openEditHW(hwId) {
   document.getElementById('hwClass').value=hw.class_name||'';
   document.getElementById('hwDue').value=hw.due_date||'';
   document.getElementById('hwTimeLimit').value=hw.time_limit||'';
+  // Fill max_attempts
+  const ma = hw.max_attempts;
+  if (ma === 0) { document.getElementById('att_many').checked=true; }
+  else if (!ma || ma === 1) { document.getElementById('att_once').checked=true; }
+  else { document.getElementById('att_custom').checked=true; document.getElementById('hwMaxAttempts').value=ma; }
+  onAttemptsChange();
+  document.getElementById('hwTotalScore').value = hw.total_score || '';
+  updateScorePreview();
   document.getElementById('hwFormErr').textContent='';
   document.getElementById('modalHWTitle').textContent='✏️ Sửa bài tập';
   // Load questions
@@ -1055,6 +1137,68 @@ async function openEditHW(hwId) {
 
 function closeModalHW() { document.getElementById('modalHW').classList.remove('open'); }
 
+// ── Helpers số lần làm bài ──────────────────
+function _getMaxAttempts() {
+  if (document.getElementById('att_many')?.checked)   return 0;   // 0 = không giới hạn
+  if (document.getElementById('att_custom')?.checked) return parseInt(document.getElementById('hwMaxAttempts').value)||3;
+  return 1; // mặc định 1 lần
+}
+
+function onAttemptsChange() {
+  // Highlight label đang chọn
+  ['att_once','att_many','att_custom'].forEach(id => {
+    const lbl = document.getElementById(id+'_lbl');
+    const inp = document.getElementById(id);
+    if (!lbl||!inp) return;
+    if (inp.checked) {
+      lbl.style.borderColor='var(--primary)';
+      lbl.style.background='var(--primary-light)';
+      lbl.style.color='var(--primary)';
+    } else {
+      lbl.style.borderColor='var(--border)';
+      lbl.style.background='var(--card)';
+      lbl.style.color='var(--text)';
+    }
+  });
+  // Disable/enable input số lần custom
+  const customInput = document.getElementById('hwMaxAttempts');
+  if (customInput) customInput.disabled = !document.getElementById('att_custom')?.checked;
+}
+
+// ── Tổng điểm & chia đều ─────────────────────────────────
+function onTotalScoreInput() {
+  updateScorePreview();
+}
+
+function updateScorePreview() {
+  const total = parseFloat(document.getElementById('hwTotalScore')?.value);
+  const preview = document.getElementById('hwScorePreview');
+  if (!preview) return;
+  const realQs = editorQuestions.filter(q=>q.type!=='section');
+  if (!total || !realQs.length) {
+    preview.textContent = realQs.length ? `${realQs.length} câu` : '';
+    return;
+  }
+  const perQ = Math.round((total / realQs.length) * 100) / 100;
+  preview.textContent = `→ ${realQs.length} câu × ${perQ}đ`;
+}
+
+function distributeScores() {
+  const total = parseFloat(document.getElementById('hwTotalScore')?.value);
+  const realQs = editorQuestions.filter(q=>q.type!=='section');
+  if (!total) { showToast('Nhập tổng điểm trước', false); return; }
+  if (!realQs.length) { showToast('Chưa có câu hỏi nào', false); return; }
+  const perQ = Math.round((total / realQs.length) * 100) / 100;
+  // Gán điểm đều cho tất cả câu
+  realQs.forEach(q => { q.points = perQ; });
+  // Câu cuối cùng nhận phần dư để tổng chính xác
+  const sumFirst = Math.round(perQ * (realQs.length-1) * 100) / 100;
+  realQs[realQs.length-1].points = Math.round((total - sumFirst) * 100) / 100;
+  renderQuestionList();
+  updateScorePreview();
+  showToast(`✅ Đã chia đều: ${realQs.length} câu × ${perQ}đ = ${total}đ`);
+}
+
 // Thêm câu hỏi mới vào editor
 function addQuestion(type) {
   const defaultData = {
@@ -1065,6 +1209,7 @@ function addQuestion(type) {
   };
   editorQuestions.push({ _id:++qCounter, type, text:'', image_url:'', data:JSON.parse(JSON.stringify(defaultData[type])), points:1 });
   renderQuestionList();
+  updateScorePreview();
   setTimeout(() => {
     const bar = document.getElementById('addQBar');
     const newCard = bar?.previousElementSibling;
@@ -1087,6 +1232,7 @@ function addSection() {
 function removeQuestion(_id) {
   editorQuestions=editorQuestions.filter(q=>q._id!==_id);
   renderQuestionList();
+  updateScorePreview();
 }
 </script>
 
@@ -1599,6 +1745,8 @@ async function saveHomework() {
     class_name:document.getElementById('hwClass').value||null,
     due_date:document.getElementById('hwDue').value||null,
     time_limit:parseInt(document.getElementById('hwTimeLimit').value)||null,
+    max_attempts: _getMaxAttempts(),
+    total_score:  parseFloat(document.getElementById('hwTotalScore').value)||null,
     created_by:currentUser.username
   };
   const editId=document.getElementById('hwEditId').value;
@@ -1667,21 +1815,46 @@ async function previewHW(hwId) {
 // LÀM BÀI (học sinh)
 // ═══════════════════════════════════════════
 async function openDoHW(hwId) {
-  const hw=allHomework.find(h=>h.id===hwId);
-  if(!hw)return;
-  const qs=await loadQuestions(hwId);
-  if(!qs.length){showToast('Bài tập chưa có câu hỏi',false);return;}
-  doHWId=hwId;
-  doHWQList=qs;
-  doHWAnswers={};
-  document.getElementById('doHWTitle').textContent=hw.title;
-  document.getElementById('doHWDesc').textContent=hw.description||'';
-  document.getElementById('doHWNoteText').value='';
-  document.getElementById('doHWErr').textContent='';
-  document.getElementById('doHWQuestions').innerHTML=buildQDisplay(qs,doHWAnswers,false);
+  const hw = allHomework.find(h=>h.id===hwId);
+  if (!hw) return;
+
+  // ── Kiểm tra số lần làm ─────────────────────────────────
+  const maxAttempts = hw.max_attempts ?? 1; // null/undefined → 1 lần
+  const myPrevSubs  = allSubmissions.filter(s => s.homework_id===hwId && s.username===currentUser.username);
+  const attemptsDone = myPrevSubs.length;
+
+  if (maxAttempts === 1 && attemptsDone >= 1) {
+    showToast('Bài này chỉ được làm 1 lần. Xem lại kết quả bên tab Đã nộp.', false);
+    return;
+  }
+  if (maxAttempts > 1 && attemptsDone >= maxAttempts) {
+    showToast(`Bạn đã làm ${attemptsDone}/${maxAttempts} lần — không còn lượt nữa.`, false);
+    return;
+  }
+  // maxAttempts === 0 → không giới hạn, cho qua
+
+  const qs = await loadQuestions(hwId);
+  if (!qs.length) { showToast('Bài tập chưa có câu hỏi', false); return; }
+
+  doHWId      = hwId;
+  doHWQList   = qs;
+  doHWAnswers = {};
+
+  // Tiêu đề + lần làm hiện tại
+  const attemptLabel = maxAttempts === 0
+    ? `Lần ${attemptsDone+1}`
+    : maxAttempts === 1
+      ? ''
+      : `Lần ${attemptsDone+1}/${maxAttempts}`;
+
+  document.getElementById('doHWTitle').textContent = hw.title;
+  document.getElementById('doHWDesc').textContent  =
+    (hw.description||'') + (attemptLabel ? `  •  ${attemptLabel}` : '');
+  document.getElementById('doHWNoteText').value    = '';
+  document.getElementById('doHWErr').textContent   = '';
+  document.getElementById('doHWQuestions').innerHTML = buildQDisplay(qs, doHWAnswers, false);
   document.getElementById('modalDoHW').classList.add('open');
   setTimeout(() => renderLatexAll(document.getElementById('modalDoHW')), 200);
-  // Khởi động đếm ngược nếu bài tập có time_limit
   startCountdown(hw.time_limit||null, qs.length);
 }
 
@@ -1937,7 +2110,9 @@ async function submitAnswers(autoSubmit=false) {
   const finalMax    = totalMax;
   const finalStatus = hasShortAnswer ? 'submitted' : 'graded';
 
-  const {error}=await sb.from('homework_submissions').upsert({
+  const hw = allHomework.find(h=>h.id===doHWId);
+  const maxAttempts = hw?.max_attempts ?? 1;
+  const subPayload = {
     homework_id:  doHWId,
     username:     currentUser.username,
     student_name: currentUser.full_name || currentUser.username,
@@ -1945,11 +2120,20 @@ async function submitAnswers(autoSubmit=false) {
     answers:      doHWAnswers,
     note:         document.getElementById('doHWNoteText').value.trim() || null,
     status:       finalStatus,
-    score:        hasShortAnswer ? null : finalScore,   // GV sẽ cập nhật nếu có câu tự luận
+    score:        hasShortAnswer ? null : finalScore,
     max_score:    finalMax,
     time_used:    cdUsedSecs > 0 ? cdUsedSecs : null,
     submitted_at: new Date().toISOString()
-  }, {onConflict:'homework_id,username'});
+  };
+
+  let error;
+  if (maxAttempts === 1) {
+    // 1 lần: upsert (cập nhật nếu đã có)
+    ({ error } = await sb.from('homework_submissions').upsert(subPayload, {onConflict:'homework_id,username'}));
+  } else {
+    // Nhiều lần / không giới hạn: luôn insert mới
+    ({ error } = await sb.from('homework_submissions').insert(subPayload));
+  }
 
   if (error) { document.getElementById('doHWErr').textContent='Lỗi: '+error.message; return; }
 
@@ -2547,15 +2731,29 @@ function initRealtime() {
       const { eventType, new: nw } = payload;
 
       if (currentUser.role === 'admin') {
-        // Admin nhận thông báo có bài nộp mới
         if (eventType === 'INSERT') {
+          // Thêm vào đầu danh sách
           allSubmissions = [nw, ...allSubmissions.filter(s=>s.id!==nw.id)];
-          if (adminTab === 'submissions') renderAdminSubmissions();
-          showRealtimeNotify('📬 Bài nộp mới', `${nw.student_name||nw.username} vừa nộp bài`);
         } else if (eventType === 'UPDATE') {
           const idx = allSubmissions.findIndex(s=>s.id===nw.id);
           if (idx>=0) allSubmissions[idx]=nw; else allSubmissions.unshift(nw);
-          if (adminTab === 'submissions') renderAdminSubmissions();
+        } else if (eventType === 'DELETE') {
+          allSubmissions = allSubmissions.filter(s=>s.id!==payload.old?.id);
+        }
+
+        // Luôn cập nhật badge trên tab + card danh sách
+        _updateSubmissionBadge();
+
+        // Re-render tab đang active
+        if (adminTab === 'submissions') renderAdminSubmissions();
+        else renderAdminList(); // cập nhật số "Đã nộp" trên từng card
+
+        if (eventType === 'INSERT') {
+          const hwTitle = allHomework.find(h=>h.id===nw.homework_id)?.title || '';
+          showRealtimeNotify(
+            '📬 Bài nộp mới',
+            `${nw.student_name||nw.username} vừa nộp${hwTitle?' — '+hwTitle:''}`
+          );
         }
       } else {
         // Học sinh: cập nhật khi GV chấm điểm

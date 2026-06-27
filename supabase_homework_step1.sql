@@ -63,3 +63,9 @@ create policy "Public Access homework-images" on storage.objects
   for all
   using  (bucket_id = 'homework-images')
   with check (bucket_id = 'homework-images');
+
+-- ── Migration thêm cột mới (chạy nếu bảng đã tồn tại) ──────
+alter table homework add column if not exists max_attempts  int          default 1;
+-- 1 = 1 lần, 0 = không giới hạn, N = tối đa N lần
+alter table homework add column if not exists total_score   numeric(6,2) default null;
+-- null = giữ điểm từng câu, số = tổng điểm bài (dùng để chia đều)
