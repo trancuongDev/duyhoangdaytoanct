@@ -484,6 +484,18 @@
   .hw-modal { padding:1.25rem; }
   .tab-hw button { font-size:.75rem;padding:.45rem .2rem; }
 }
+
+/* ═══ SCROLLBAR ĐẸP ═══ */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(99,102,241,.35); border-radius:99px; transition:background .2s; }
+::-webkit-scrollbar-thumb:hover { background:rgba(99,102,241,.65); }
+::-webkit-scrollbar-corner { background:transparent; }
+
+/* Modal scroll */
+.hw-modal::-webkit-scrollbar-thumb,
+.hw-modal-fullscreen .hw-modal-body::-webkit-scrollbar-thumb,
+#modalGuide > div::-webkit-scrollbar-thumb { background:rgba(99,102,241,.4); border-radius:99px; }
 </style>
 
 <div id="toastHW"></div>
@@ -536,6 +548,12 @@
     <div class="topbar-right">
       <button id="darkBtn" title="Chế độ tối"
         style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s">🌙</button>
+      <!-- Nút hướng dẫn -->
+      <button onclick="document.getElementById('modalGuide').classList.add('open')" title="Hướng dẫn"
+        style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;color:#fff;height:34px;padding:0 .85rem;border-radius:10px;cursor:pointer;font-size:.78rem;font-weight:700;display:flex;align-items:center;gap:.35rem;transition:all .2s;white-space:nowrap;box-shadow:0 2px 8px rgba(99,102,241,.35)"
+        onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
+        📖 Hướng dẫn
+      </button>
       <!-- Realtime indicator -->
       <div title="Kết nối Realtime" style="display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--muted);font-weight:600">
         <span id="rtDot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;flex-shrink:0"></span>
@@ -576,112 +594,7 @@
         <button onclick="switchStudentTab('all',this)">📋 Tất cả</button>
       </div>
 
-      <!-- HƯỚNG DẪN HỌC VIÊN -->
-      <div id="studentGuide" style="margin-bottom:1.25rem">
-
-        <!-- Accordion toggle -->
-        <button onclick="toggleGuide()" id="guideToggleBtn"
-          style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;background:linear-gradient(135deg,#1e1b4b,#312e81);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:.88rem;font-weight:700;transition:border-radius .2s">
-          <span style="display:flex;align-items:center;gap:.5rem">
-            <span style="font-size:1rem">📖</span> Hướng dẫn sử dụng trang Bài Tập
-          </span>
-          <span id="guideChevron" style="transition:transform .25s;font-size:.85rem">▼</span>
-        </button>
-
-        <!-- Nội dung hướng dẫn -->
-        <div id="guideContent" style="display:none;background:var(--card);border:1.5px solid var(--border);border-top:none;border-radius:0 0 12px 12px;overflow:hidden">
-
-          <!-- Quick stats bar -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1.5px solid var(--border)">
-            <div style="padding:.75rem 1rem;text-align:center;border-right:1px solid var(--border)">
-              <div style="font-size:1.4rem;font-weight:900;color:var(--primary)" id="guideStatPending">—</div>
-              <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:.1rem">Chưa nộp</div>
-            </div>
-            <div style="padding:.75rem 1rem;text-align:center;border-right:1px solid var(--border)">
-              <div style="font-size:1.4rem;font-weight:900;color:var(--hw-green)" id="guideStatDone">—</div>
-              <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:.1rem">Đã nộp</div>
-            </div>
-            <div style="padding:.75rem 1rem;text-align:center">
-              <div style="font-size:1.4rem;font-weight:900;color:var(--hw-orange)" id="guideStatGraded">—</div>
-              <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:.1rem">Đã chấm</div>
-            </div>
-          </div>
-
-          <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.55rem">
-
-            <!-- Các bước -->
-            <div style="font-weight:800;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Các bước làm bài</div>
-
-            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:var(--primary-light);border-radius:10px;border-left:3px solid var(--primary)">
-              <div style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">1</div>
-              <div>
-                <div style="font-weight:700;font-size:.86rem">Xem bài trong tab <b>📌 Chưa nộp</b></div>
-                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Bài tập xuất hiện tự động khi giáo viên giao — không cần tải lại trang.</div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:#e0f2fe;border-radius:10px;border-left:3px solid #0ea5e9">
-              <div style="width:22px;height:22px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">2</div>
-              <div>
-                <div style="font-weight:700;font-size:.86rem">Nhấn <b>✏️ Làm bài</b> — làm toàn màn hình</div>
-                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Thanh điều hướng dưới cùng hiện số câu đã làm. Đánh dấu câu cần xem lại bằng nút <b>⚑</b>.</div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:#d1fae5;border-radius:10px;border-left:3px solid var(--hw-green)">
-              <div style="width:22px;height:22px;border-radius:50%;background:var(--hw-green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">3</div>
-              <div>
-                <div style="font-weight:700;font-size:.86rem">Nhấn <b>📤 Nộp bài</b> — có điểm ngay</div>
-                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Trắc nghiệm, Đúng/Sai, Ghép hợp và Trả lời ngắn <b>⚡ tự chấm</b> chấm điểm tức thì. Câu không có đáp án mẫu chờ GV chấm thêm.</div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:.65rem;align-items:flex-start;padding:.6rem .85rem;background:#fef3c7;border-radius:10px;border-left:3px solid var(--hw-orange)">
-              <div style="width:22px;height:22px;border-radius:50%;background:var(--hw-orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;margin-top:.1rem">4</div>
-              <div>
-                <div style="font-weight:700;font-size:.86rem">Xem kết quả & đối chiếu đáp án</div>
-                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">Nhấn <b>👁 Xem kết quả</b> — thấy từng câu đúng/sai, đáp án đúng, nhận xét GV. Nếu được làm nhiều lần, chọn xem lại từng lần.</div>
-              </div>
-            </div>
-
-            <div style="border-top:1.5px dashed var(--border);margin:.1rem 0"></div>
-
-            <!-- Loại câu -->
-            <div style="font-weight:800;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Các loại câu hỏi</div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem">
-              <div style="padding:.55rem .75rem;border:1.5px solid #bfdbfe;border-radius:9px;background:#eff6ff">
-                <div style="font-weight:700;font-size:.8rem;color:#1d4ed8;margin-bottom:.15rem">🔵 Trắc nghiệm</div>
-                <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Chọn <b>1 đáp án</b> trong A, B, C, D.</div>
-              </div>
-              <div style="padding:.55rem .75rem;border:1.5px solid #bbf7d0;border-radius:9px;background:#f0fdf4">
-                <div style="font-weight:700;font-size:.8rem;color:#15803d;margin-bottom:.15rem">✅ Đúng / Sai</div>
-                <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Chọn <b>Đúng/Sai</b> cho từng mệnh đề.</div>
-              </div>
-              <div style="padding:.55rem .75rem;border:1.5px solid #fde68a;border-radius:9px;background:#fffbeb">
-                <div style="font-weight:700;font-size:.8rem;color:#b45309;margin-bottom:.15rem">🔗 Ghép hợp</div>
-                <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Nối Cột 1 với Cột 2 qua dropdown.</div>
-              </div>
-              <div style="padding:.55rem .75rem;border:1.5px solid #e9d5ff;border-radius:9px;background:#faf5ff">
-                <div style="font-weight:700;font-size:.8rem;color:#7c3aed;margin-bottom:.15rem">✏️ Trả lời ngắn</div>
-                <div style="font-size:.75rem;color:var(--muted);line-height:1.5"><b>⚡ Tự chấm</b> nếu GV đặt đáp án số. Ngược lại GV chấm tay.</div>
-              </div>
-            </div>
-
-            <!-- Lưu ý -->
-            <div style="padding:.6rem .85rem;background:#fee2e2;border-radius:9px;border-left:3px solid var(--hw-red)">
-              <div style="font-weight:700;font-size:.8rem;color:#991b1b;margin-bottom:.25rem">⚠️ Lưu ý</div>
-              <ul style="font-size:.76rem;color:#7f1d1d;line-height:1.85;padding-left:1rem;margin:0">
-                <li>Số lần làm do GV quy định — xem badge <b>🔁</b> trên mỗi bài.</li>
-                <li>Nếu có <b>đồng hồ đếm ngược</b>, hệ thống tự nộp khi hết giờ.</li>
-                <li>Câu <b>⚡ tự chấm</b> — nhập đúng số, không thêm chữ hay đơn vị.</li>
-                <li>Sau khi GV chấm xong, bạn nhận <b>thông báo ngay</b> không cần tải lại.</li>
-              </ul>
-            </div>
-
-          </div>
-        </div>
-      </div>
+      <!-- HƯỚNG DẪN HỌC VIÊN — đã chuyển lên topbar (nút 📖) -->
     </div>
 
     <div id="hwContent">
@@ -1113,6 +1026,14 @@ function renderSidebarNav() {
       <span class="slink-icon">${icon}</span><span class="slink-label">${label}</span>
     </a>`
   ).join('');
+
+  // Thêm nút Hướng dẫn cho học sinh
+  if (currentUser.role !== 'admin') {
+    nav.innerHTML += `
+      <a href="#" class="slink" onclick="document.getElementById('modalGuide').classList.add('open');document.getElementById('sidebarBackdrop').classList.remove('open');document.getElementById('sidebar').classList.remove('open');return false;" data-label="Hướng dẫn">
+        <span class="slink-icon">📖</span><span class="slink-label">Hướng dẫn</span>
+      </a>`;
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1372,7 +1293,7 @@ function switchStudentTab(tab,btn) {
 }
 
 // ── Accordion hướng dẫn ───────────────────
-let _guideOpen = false;
+let _guideOpen = true;
 function toggleGuide() {
   _guideOpen = !_guideOpen;
   const content  = document.getElementById('guideContent');
@@ -5225,6 +5146,162 @@ async function exportHW(hwId) {
   showToast('✅ Đã tải file — mở bằng trình duyệt rồi Ctrl+P để lưu PDF');
 }
 </script>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: HƯỚNG DẪN SỬ DỤNG
+     ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalGuide" onclick="if(event.target===this)this.classList.remove('open')" style="align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--card);width:100%;max-width:560px;max-height:90dvh;overflow-y:auto;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.3);display:flex;flex-direction:column;animation:cfPop .22s cubic-bezier(.34,1.56,.64,1)">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;background:linear-gradient(135deg,#1e1b4b,#312e81);color:#fff;flex-shrink:0;border-radius:20px 20px 0 0">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:1.2rem">📖</span>
+        <div>
+          <div style="font-weight:900;font-size:.95rem">Hướng dẫn sử dụng</div>
+          <div style="font-size:.7rem;opacity:.65">DHDT LMS — Trang Bài Tập</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('modalGuide').classList.remove('open')"
+        style="background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <!-- Nội dung -->
+    <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.75rem;flex:1">
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem" id="guideStatRow">
+        <div style="padding:.65rem .5rem;text-align:center;background:var(--primary-light);border-radius:10px;border:1.5px solid var(--border)">
+          <div style="font-size:1.3rem;font-weight:900;color:var(--primary)" id="guideStatPending">—</div>
+          <div style="font-size:.68rem;color:var(--muted);font-weight:600;margin-top:.1rem">Chưa nộp</div>
+        </div>
+        <div style="padding:.65rem .5rem;text-align:center;background:#f0fdf4;border-radius:10px;border:1.5px solid #bbf7d0">
+          <div style="font-size:1.3rem;font-weight:900;color:var(--hw-green)" id="guideStatDone">—</div>
+          <div style="font-size:.68rem;color:var(--muted);font-weight:600;margin-top:.1rem">Đã nộp</div>
+        </div>
+        <div style="padding:.65rem .5rem;text-align:center;background:#fffbeb;border-radius:10px;border:1.5px solid #fde68a">
+          <div style="font-size:1.3rem;font-weight:900;color:var(--hw-orange)" id="guideStatGraded">—</div>
+          <div style="font-size:.68rem;color:var(--muted);font-weight:600;margin-top:.1rem">Đã chấm</div>
+        </div>
+      </div>
+
+      <!-- Các bước -->
+      <div style="font-weight:800;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Các bước làm bài</div>
+
+      <div style="display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .85rem;background:var(--primary-light);border-radius:10px;border-left:3px solid var(--primary)">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0">1</div>
+        <div><div style="font-weight:700;font-size:.84rem">Xem bài trong tab <b>📌 Chưa nộp</b></div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:.1rem">Bài tập xuất hiện tự động khi giáo viên giao.</div></div>
+      </div>
+      <div style="display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .85rem;background:#e0f2fe;border-radius:10px;border-left:3px solid #0ea5e9">
+        <div style="width:22px;height:22px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0">2</div>
+        <div><div style="font-weight:700;font-size:.84rem">Nhấn <b>✏️ Làm bài</b> — toàn màn hình</div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:.1rem">Thanh dưới cùng hiện tiến độ. Dùng <b>⚑</b> để đánh dấu câu xem lại.</div></div>
+      </div>
+      <div style="display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .85rem;background:#d1fae5;border-radius:10px;border-left:3px solid var(--hw-green)">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--hw-green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0">3</div>
+        <div><div style="font-weight:700;font-size:.84rem">Nhấn <b>📤 Nộp bài</b> — có điểm ngay</div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:.1rem">TN, ĐS, Ghép hợp tự chấm tức thì. Tự luận chờ GV chấm.</div></div>
+      </div>
+      <div style="display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .85rem;background:#fef3c7;border-radius:10px;border-left:3px solid var(--hw-orange)">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--hw-orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0">4</div>
+        <div><div style="font-weight:700;font-size:.84rem">Nhấn <b>👁 Xem kết quả</b></div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:.1rem">Thấy từng câu đúng/sai, đáp án đúng, nhận xét GV.</div></div>
+      </div>
+
+      <div style="border-top:1.5px dashed var(--border);margin:.1rem 0"></div>
+
+      <!-- Các loại câu hỏi -->
+      <div style="font-weight:800;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">📝 Các loại câu hỏi</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem">
+        <div style="padding:.55rem .75rem;border:1.5px solid #bfdbfe;border-radius:9px;background:#eff6ff">
+          <div style="font-weight:700;font-size:.8rem;color:#1d4ed8;margin-bottom:.15rem">🔵 Trắc nghiệm</div>
+          <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Chọn <b>1 đáp án</b> trong A, B, C, D.</div>
+        </div>
+        <div style="padding:.55rem .75rem;border:1.5px solid #bbf7d0;border-radius:9px;background:#f0fdf4">
+          <div style="font-weight:700;font-size:.8rem;color:#15803d;margin-bottom:.15rem">✅ Đúng / Sai</div>
+          <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Chọn <b>Đúng/Sai</b> cho từng mệnh đề.</div>
+        </div>
+        <div style="padding:.55rem .75rem;border:1.5px solid #fde68a;border-radius:9px;background:#fffbeb">
+          <div style="font-weight:700;font-size:.8rem;color:#b45309;margin-bottom:.15rem">🔗 Ghép hợp</div>
+          <div style="font-size:.75rem;color:var(--muted);line-height:1.5">Nối Cột 1 với Cột 2 qua dropdown.</div>
+        </div>
+        <div style="padding:.55rem .75rem;border:1.5px solid #e9d5ff;border-radius:9px;background:#faf5ff">
+          <div style="font-weight:700;font-size:.8rem;color:#7c3aed;margin-bottom:.15rem">✏️ Trả lời ngắn</div>
+          <div style="font-size:.75rem;color:var(--muted);line-height:1.5"><b>⚡ Tự chấm</b> nếu GV đặt đáp án số. Ngược lại GV chấm tay.</div>
+        </div>
+      </div>
+
+      <div style="border-top:1.5px dashed var(--border);margin:.1rem 0"></div>
+
+      <!-- Cách tính điểm -->
+      <div style="font-weight:800;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">📊 Cách tính điểm từng loại câu</div>
+
+      <div style="border:1.5px solid #bfdbfe;border-radius:10px;overflow:hidden">
+        <div style="padding:.4rem .8rem;background:#dbeafe;font-weight:800;font-size:.77rem;color:#1e40af;display:flex;justify-content:space-between">🔵 Trắc nghiệm <span style="font-weight:500;opacity:.7">Chọn 1 đáp án</span></div>
+        <div style="padding:.5rem .85rem;font-size:.76rem;color:var(--text);line-height:1.75">
+          <div>✅ <b>Chọn đúng</b> → <b style="color:#15803d">full điểm</b> của câu</div>
+          <div>❌ <b>Chọn sai / bỏ trống</b> → <b style="color:#991b1b">0 điểm</b></div>
+        </div>
+      </div>
+
+      <div style="border:1.5px solid #bbf7d0;border-radius:10px;overflow:hidden">
+        <div style="padding:.4rem .8rem;background:#dcfce7;font-weight:800;font-size:.77rem;color:#15803d;display:flex;justify-content:space-between">✅ Đúng / Sai <span style="font-weight:500;opacity:.7">Chọn Đúng/Sai từng mệnh đề</span></div>
+        <div style="padding:.5rem .85rem;font-size:.76rem;color:var(--text);line-height:1.75">
+          <div style="padding:.3rem .6rem;background:#dcfce7;border-radius:7px;font-weight:800;color:#15803d;text-align:center;font-size:.78rem">Điểm = Điểm câu × (Số tiểu mục đúng ÷ Tổng số tiểu mục)</div>
+          <div style="margin-top:.35rem;font-size:.72rem;color:var(--muted)">
+            <div>• Câu <b>2đ — 4 tiểu mục</b> — đúng 3 → 2 × 3/4 = <b style="color:#15803d">1.5đ</b></div>
+            <div>• Câu <b>3đ — 4 tiểu mục</b> — đúng 4 → 3 × 4/4 = <b style="color:#15803d">3đ</b></div>
+            <div>• Câu <b>2đ — 4 tiểu mục</b> — đúng 1 → 2 × 1/4 = <b style="color:#ca8a04">0.5đ</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1.5px solid #fde68a;border-radius:10px;overflow:hidden">
+        <div style="padding:.4rem .8rem;background:#fef9c3;font-weight:800;font-size:.77rem;color:#b45309;display:flex;justify-content:space-between">🔗 Ghép hợp <span style="font-weight:500;opacity:.7">Nối cột trái với cột phải</span></div>
+        <div style="padding:.5rem .85rem;font-size:.76rem;color:var(--text);line-height:1.75">
+          <div style="padding:.3rem .6rem;background:#fef9c3;border-radius:7px;font-weight:800;color:#b45309;text-align:center;font-size:.78rem">Điểm = Điểm câu × (Số cặp đúng ÷ Tổng số cặp)</div>
+          <div style="margin-top:.35rem;font-size:.72rem;color:var(--muted)">
+            <div>• Câu <b>2đ — 4 cặp</b> — đúng 3 → 2 × 3/4 = <b style="color:#15803d">1.5đ</b></div>
+            <div>• Câu <b>4đ — 6 cặp</b> — đúng 4 → 4 × 4/6 ≈ <b style="color:#15803d">2.67đ</b></div>
+            <div>• Câu <b>3đ — 5 cặp</b> — đúng 5 → 3 × 5/5 = <b style="color:#15803d">3đ</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1.5px solid #e9d5ff;border-radius:10px;overflow:hidden">
+        <div style="padding:.4rem .8rem;background:#f3e8ff;font-weight:800;font-size:.77rem;color:#7c3aed;display:flex;justify-content:space-between">✏️ Trả lời ngắn <span style="font-weight:500;opacity:.7">Nhập số hoặc đoạn văn</span></div>
+        <div style="padding:.5rem .85rem;font-size:.76rem;color:var(--text);line-height:1.75">
+          <div><b>⚡ Tự chấm (câu số):</b></div>
+          <div style="padding-left:.75rem">
+            <div>• Nhập <b>đúng</b> → <b style="color:#15803d">full điểm</b></div>
+            <div>• Nhập <b>sai / bỏ trống</b> → <b style="color:#991b1b">0 điểm</b></div>
+            <div style="color:var(--muted);font-size:.71rem">Chấp nhận: số thập phân, phân số (1/2), số âm (-3)</div>
+          </div>
+          <div style="margin-top:.35rem"><b>✏️ GV chấm tay (câu văn):</b></div>
+          <div style="padding-left:.75rem;color:var(--muted)">GV đọc và cho điểm từ <b>0</b> đến <b>full điểm</b> câu.</div>
+        </div>
+      </div>
+
+      <!-- Lưu ý -->
+      <div style="padding:.6rem .85rem;background:#fee2e2;border-radius:9px;border-left:3px solid var(--hw-red)">
+        <div style="font-weight:700;font-size:.78rem;color:#991b1b;margin-bottom:.25rem">⚠️ Lưu ý quan trọng</div>
+        <ul style="font-size:.75rem;color:#7f1d1d;line-height:1.85;padding-left:1rem;margin:0">
+          <li>Số lần làm do GV quy định — xem badge <b>🔁</b> trên mỗi bài.</li>
+          <li>Nếu có <b>đồng hồ đếm ngược</b>, hệ thống tự nộp khi hết giờ.</li>
+          <li>Câu <b>⚡ tự chấm</b> — nhập đúng số, không thêm chữ hay đơn vị.</li>
+          <li>Sau khi GV chấm xong, bạn nhận <b>thông báo ngay</b> không cần tải lại.</li>
+        </ul>
+      </div>
+
+      <!-- Bản quyền -->
+      <div style="text-align:center;padding:.75rem 0 .25rem;font-size:.68rem;color:var(--muted);border-top:1px dashed var(--border)">
+        © DHDT LMS · Bản quyền sở hữu trí tuệ · Phát triển &amp; điều hành bởi <b>Tr. Cường</b>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
