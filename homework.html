@@ -837,7 +837,7 @@
         </div>
         <div style="font-size:1.5rem;opacity:.4">=</div>
         <div style="flex:1;min-width:160px;text-align:right">
-          <div style="font-size:.72rem;opacity:.65;font-weight:600;letter-spacing:.3px;margin-bottom:.2rem">TỔNG ĐIỂM</div>
+          <div style="font-size:.72rem;opacity:.65;font-weight:600;letter-spacing:.3px;margin-bottom:.2rem">ĐIỂM /10</div>
           <div style="font-size:2rem;font-weight:900;color:#a5f3fc" id="gradeTotalDisplay">—</div>
         </div>
       </div>
@@ -1339,10 +1339,12 @@ function renderAdminList() {
     const gradC = allSubmissions.filter(s=>s.homework_id===hw.id&&s.status==='graded').length;
     const od    = isOverdue(hw.due_date);
     const isDraft = hw.is_draft === true;
-    return `<div class="hw-card" style="${isDraft?'border-color:#f59e0b;opacity:.92':''}">
+    const isLocked = hw.is_locked === true;
+    return `<div class="hw-card" style="${isDraft?'border-color:#f59e0b;opacity:.92':isLocked?'border-color:#ef4444;opacity:.9':''}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.5rem">
         <div style="font-weight:800;font-size:.98rem;flex:1;display:flex;align-items:center;gap:.5rem">
           ${isDraft?`<span style="background:#fef3c7;color:#92400e;font-size:.7rem;font-weight:800;padding:.15rem .5rem;border-radius:6px;border:1.5px solid #f59e0b;flex-shrink:0">NHÁP</span>`:''}
+          ${isLocked?`<span style="background:#fee2e2;color:#991b1b;font-size:.7rem;font-weight:800;padding:.15rem .5rem;border-radius:6px;border:1.5px solid #ef4444;flex-shrink:0">🔒 KHÓA</span>`:''}
           ${esc(hw.title)}
         </div>
         <div style="display:flex;gap:.35rem;flex-shrink:0;flex-wrap:wrap">
@@ -1373,7 +1375,6 @@ function renderAdminList() {
         return `<div style="display:inline-flex;align-items:center;gap:.4rem;background:${bg};color:${col};border-radius:20px;padding:.22rem .75rem;font-size:.74rem;font-weight:800;margin-bottom:.65rem;border:1.5px solid ${col}22">
           ${icon} Cao nhất: <b>${scaled}/10</b>
           <span style="opacity:.7;font-weight:600">· ${esc(top.student_name)}</span>
-          <span style="opacity:.5;font-size:.68rem">(${top.score}/${top.max_score} điểm thô)</span>
         </div>`;
       })()}
       <div style="display:flex;gap:.4rem;flex-wrap:wrap">
@@ -1387,6 +1388,10 @@ function renderAdminList() {
         <button class="btn-sm" onclick="previewHW(${hw.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem đề</button>
         <button class="btn-sm" onclick="exportHW(${hw.id})" style="border-color:#0891b2;color:#0e7490">⬇ Xuất đề</button>
         ${subC&&!isDraft?`<button class="btn-sm" onclick="exportScoresByHW(${hw.id})" style="border-color:#10b981;color:#065f46;font-weight:700">📊 Xuất điểm</button>`:''}
+        ${!isDraft?`<button class="btn-sm" onclick="toggleLockHW(${hw.id})"
+          style="border-color:${hw.is_locked?'#10b981':'#ef4444'};color:${hw.is_locked?'#065f46':'#991b1b'};font-weight:700">
+          ${hw.is_locked?'🔓 Mở khóa':'🔒 Khóa bài'}
+        </button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1479,7 +1484,7 @@ function renderAdminSubmissions(filterHwId=null) {
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0">
               <span class="hw-badge ${s.status==='graded'?'graded':'submitted'}">${getStatusLabel(s.status)}</span>
-              ${s.score!=null ? `<span class="score-pill">🏅 ${s.score}/${grandMax}</span>` : ''}
+              ${s.score!=null ? `<span class="score-pill">🏅 ${roundScore(s.max_score>0?s.score/s.max_score*10:s.score)}/10</span>` : ''}
             </div>
           </div>
           ${s.note?`<div style="margin-top:.35rem;font-size:.82rem;color:var(--muted);font-style:italic">"${esc(s.note)}"</div>`:''}
@@ -1942,8 +1947,10 @@ function exportScoresByHW(hwId) {
 
   // Tính grandMax từ câu hỏi
   const qs     = allQuestions[hwId]||[];
-  const grandMax = qs.filter(q=>q.question_type!=='section')
-    .reduce((s,q)=>s+(parseFloat(q.points)||1),0) || (hw?.total_score||10);
+  const grandMax = roundScore(
+    qs.filter(q=>q.question_type!=='section')
+      .reduce((s,q)=>s+(parseFloat(q.points)||1),0) || (hw?.total_score||10)
+  );
 
   // Sắp xếp: theo lớp → tên
   const rows = [...subs].sort((a,b)=>
@@ -1953,15 +1960,12 @@ function exportScoresByHW(hwId) {
 
   // Thống kê
   const graded   = rows.filter(s=>s.status==='graded').length;
-  const avgScore = rows.filter(s=>s.score!=null).length
-    ? (rows.filter(s=>s.score!=null).reduce((t,s)=>t+s.score,0) / rows.filter(s=>s.score!=null).length).toFixed(2)
+  const scoredRows = rows.filter(s=>s.score!=null);
+  const avgScore = scoredRows.length
+    ? roundScore(scoredRows.reduce((t,s)=>t+(grandMax>0?s.score/grandMax*10:s.score),0) / scoredRows.length)
     : '—';
-  const maxScore = rows.filter(s=>s.score!=null).length
-    ? Math.max(...rows.filter(s=>s.score!=null).map(s=>s.score))
-    : '—';
-  const minScore = rows.filter(s=>s.score!=null).length
-    ? Math.min(...rows.filter(s=>s.score!=null).map(s=>s.score))
-    : '—';
+  const maxScore = scoredRows.length ? roundScore(Math.max(...scoredRows.map(s=>grandMax>0?s.score/grandMax*10:s.score))) : '—';
+  const minScore = scoredRows.length ? roundScore(Math.min(...scoredRows.map(s=>grandMax>0?s.score/grandMax*10:s.score))) : '—';
 
   // Build rows
   const bodyRows = rows.map((s, ri) => {
@@ -1974,7 +1978,9 @@ function exportScoresByHW(hwId) {
       : pct>=0.5  ? ['#fef3c7','#92400e','TB']
       :             ['#fee2e2','#991b1b','Yếu'];
 
-    const scoreTxt = s.score!=null ? `${s.score}/${grandMax}` : `—/${grandMax}`;
+    const scoreTxt = s.score!=null
+      ? `${roundScore(grandMax>0?s.score/grandMax*10:s.score)}/10`
+      : `—/10`;
     const code = allStudentCodes[s.username]||'';
     const statusDot = s.status==='graded'
       ? '<span style="color:#10b981">● Đã chấm</span>'
@@ -2020,7 +2026,7 @@ function exportScoresByHW(hwId) {
 </style></head><body>
 <button class="btn-print no-print" onclick="window.print()">🖨 In / Lưu PDF</button>
 <h1>📊 ${he(hw?.title||'Bài tập')}</h1>
-<div class="sub">Xuất lúc ${date} &nbsp;·&nbsp; ${rows.length} học sinh &nbsp;·&nbsp; Điểm tối đa: ${grandMax}</div>
+<div class="sub">Xuất lúc ${date} &nbsp;·&nbsp; ${rows.length} học sinh &nbsp;·&nbsp; Thang điểm: 10</div>
 <div class="stats">
   <div class="stat"><div class="stat-val">${rows.length}</div><div class="stat-lbl">Đã nộp</div></div>
   <div class="stat"><div class="stat-val">${graded}</div><div class="stat-lbl">Đã chấm</div></div>
@@ -2072,9 +2078,9 @@ function exportScoresCSV() {
       };
     }
     const bd = calcScoreBreakdown(s);
-    const grandMax = bd ? (bd.mc.max+bd.tf.max+bd.mt.max+bd.sa.max) : (s.max_score||'');
+    const grandMax = roundScore(bd ? (bd.mc.max+bd.tf.max+bd.mt.max+bd.sa.max) : (s.max_score||0));
     studentMap[s.username].scores[s.homework_id] = {
-      score: s.score != null ? s.score : null,
+      score: s.score != null ? roundScore(s.score) : null,
       max: grandMax,
       mc: bd && bd.mc.max ? `${bd.mc.got}/${bd.mc.max}` : '',
       tf: bd && bd.tf.max ? `${bd.tf.got}/${bd.tf.max}` : '',
@@ -2115,7 +2121,9 @@ function exportScoresCSV() {
         : pct >= 0.8 ? '#d1fae5' : pct >= 0.5 ? '#fef3c7' : '#fee2e2';
       const pillColor = pct === null ? '#64748b'
         : pct >= 0.8 ? '#065f46' : pct >= 0.5 ? '#92400e' : '#991b1b';
-      const scoreTxt = scoreNum != null ? `${scoreNum}/${sc.max}` : `—/${sc.max}`;
+      const scoreTxt = scoreNum != null
+        ? `${roundScore(sc.max>0?scoreNum/sc.max*10:scoreNum)}/10`
+        : `—/10`;
       const scorePill = `<span style="display:inline-block;background:${pillBg};color:${pillColor};border-radius:20px;padding:.18rem .6rem;font-weight:800;font-size:.82rem">${scoreTxt}</span>`;
 
       if (scoreNum != null) { total += scoreNum; grandMaxAll += Number(sc.max)||0; counted++; }
@@ -2140,7 +2148,7 @@ function exportScoresCSV() {
     const totalPct = grandMaxAll > 0 ? total / grandMaxAll : null;
     const totBg = totalPct===null?'#f1f5f9':totalPct>=0.8?'#d1fae5':totalPct>=0.5?'#fef3c7':'#fee2e2';
     const totColor = totalPct===null?'#64748b':totalPct>=0.8?'#065f46':totalPct>=0.5?'#92400e':'#991b1b';
-    const totTxt = counted>0 ? `${Math.round(total*100)/100}/${grandMaxAll}` : '—';
+    const totTxt = counted>0 ? `${roundScore(grandMaxAll>0?total/grandMaxAll*10:total)}/10` : '—';
 
     const rowBg = ri%2===0 ? '#fff' : '#f8fafc';
     return `<tr style="background:${rowBg}">
@@ -2276,7 +2284,7 @@ function renderStudentList() {
         </div>`;
       })()}
       ${sub&&sub.score!=null?`<div style="margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem">
-        <span class="score-pill">🏅 ${sub.score}/${sub.max_score||10} điểm</span>
+        <span class="score-pill">🏅 ${roundScore(sub.max_score>0?sub.score/sub.max_score*10:sub.score)}/10</span>
         ${sub.time_used?`<span style="background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:20px;font-size:.75rem;font-weight:700">⏱ ${Math.floor(sub.time_used/60)}p${sub.time_used%60}s</span>`:''}
       </div>`:''}
       ${sub&&sub.score==null&&sub.status==='submitted'?`<div style="margin-bottom:.5rem">
@@ -2285,7 +2293,10 @@ function renderStudentList() {
       </div>`:''}
       ${sub&&sub.feedback?`<div style="font-size:.84rem;background:#f0fdf4;border-left:3px solid var(--hw-green);padding:.4rem .75rem;border-radius:8px;color:#065f46;margin-bottom:.5rem">💬 ${esc(sub.feedback)}</div>`:''}
       <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-        ${(!sub||canRetry)?`<button class="btn-primary" onclick="openDoHW(${h.id})">${sub&&canRetry?'🔄 Làm lại':'✏️ Làm bài'}</button>`:''}
+        ${h.is_locked
+          ? `<span style="display:inline-flex;align-items:center;gap:.35rem;background:#fee2e2;color:#991b1b;border-radius:8px;padding:.4rem .85rem;font-size:.84rem;font-weight:700">🔒 Bài đã bị khóa</span>`
+          : (!sub||canRetry)?`<button class="btn-primary" onclick="openDoHW(${h.id})">${sub&&canRetry?'🔄 Làm lại':'✏️ Làm bài'}</button>`:''
+        }
         ${sub?`<button class="btn-sm" onclick="openResult(${h.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem kết quả</button>`:''}
       </div>
     </div>`;
@@ -3172,6 +3183,14 @@ function saFilterNumeric(el) {
   if (el.value !== v) { const pos=el.selectionStart; el.value=v; el.setSelectionRange(pos,pos); }
 }
 
+// Làm tròn điểm — xử lý floating point (2.9999999 → 3, 1.0000001 → 1)
+// Làm tròn đến 2 chữ số thập phân, sau đó nếu gần số nguyên thì về nguyên
+function roundScore(x) {
+  const r2 = Math.round(x * 100) / 100;   // làm tròn 2 chữ số thập phân
+  const ri = Math.round(r2);               // số nguyên gần nhất
+  return Math.abs(r2 - ri) < 0.005 ? ri : r2; // nếu cách số nguyên < 0.005 thì về nguyên
+}
+
 // Normalize số để so sánh: "1/2" → 0.5, "-3" → -3, "2.5" → 2.5
 function _normNumber(s) {
   const t = (s||'').toString().trim();
@@ -3395,6 +3414,30 @@ async function publishHW(id) {
   renderAdminList();
 }
 
+async function toggleLockHW(id) {
+  const hw = allHomework.find(h=>h.id===id);
+  if (!hw) return;
+  const locking = !hw.is_locked;
+  const ok = await showConfirm({
+    icon: locking ? '🔒' : '🔓',
+    title: locking ? 'Khóa bài tập?' : 'Mở khóa bài tập?',
+    msg: locking
+      ? `Học sinh sẽ KHÔNG thể làm bài "${hw.title}" nữa cho đến khi mở khóa.`
+      : `Học sinh có thể làm bài "${hw.title}" trở lại.`,
+    okText: locking ? '🔒 Khóa' : '🔓 Mở khóa',
+    okColor: locking ? '#ef4444' : '#10b981',
+    cancelText: 'Hủy',
+    iconBg: locking ? '#fee2e2' : '#d1fae5',
+    accent: locking ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#10b981,#059669)'
+  });
+  if (!ok) return;
+  const { error } = await sb.from('homework').update({ is_locked: locking }).eq('id', id);
+  if (error) { showToast('Lỗi: '+error.message, false); return; }
+  showToast(locking ? '🔒 Đã khóa bài — học sinh không thể làm thêm' : '🔓 Đã mở khóa bài');
+  await loadAdminData();
+  renderAdminList();
+}
+
 async function deleteHW(id) {
   const ok = await showConfirm({
     icon: '🗑️',
@@ -3519,6 +3562,10 @@ async function previewHW(hwId) {
 async function openDoHW(hwId) {
   const hw = allHomework.find(h=>h.id===hwId);
   if (!hw) return;
+  if (hw.is_locked) {
+    showToast('🔒 Bài này đã bị khóa — không thể làm bài', false);
+    return;
+  }
 
   // ── Kiểm tra số lần làm ─────────────────────────────────
   // Dùng null-safe: nếu cột max_attempts chưa có trong DB thì mặc định = 1
@@ -4014,7 +4061,7 @@ async function submitAnswers(autoSubmit=false) {
     }
   });
 
-  autoScore = Math.round(autoScore * 100) / 100;
+  autoScore = roundScore(autoScore);
   const hasShortAnswer = manualMax > 0; // SA cần GV chấm tay
 
   // Tính kết quả SA auto-grade để lưu vào manual_scores (GV có thể override)
@@ -4080,18 +4127,15 @@ async function submitAnswers(autoSubmit=false) {
   // Toast thông báo rõ điểm ngay
   const autoSAScore = Object.values(initialManualScores).reduce((s,v)=>s+v, 0);
   const autoSAMax   = doHWQList.filter(q=>q.question_type==='short_answer'&&q.data.auto_grade&&q.data.accepted_answers?.length).reduce((s,q)=>s+(parseFloat(q.points)||1),0);
+  const sc10 = finalMax > 0 ? roundScore(finalScore / finalMax * 10) : finalScore;
   if (!hasShortAnswer && autoSAMax === 0) {
-    // Toàn bộ tự chấm (MC/TF/Match)
-    showToast(`✅ Điểm: ${finalScore}/${finalMax}`);
+    showToast(`✅ Điểm: ${sc10}/10`);
   } else if (hasShortAnswer && autoSAMax === 0) {
-    // Có SA manual, không có SA auto
-    showToast(`📤 Đã nộp! Điểm tạm: ${finalScore}/${finalMax} — Câu tự luận chờ GV chấm`);
+    showToast(`📤 Đã nộp! Điểm tạm: ${sc10}/10 — Câu tự luận chờ GV chấm`);
   } else if (!hasShortAnswer && autoSAMax > 0) {
-    // Có SA auto-grade, không có SA manual
-    showToast(`✅ Điểm: ${finalScore}/${finalMax} — Hệ thống tự chấm tất cả`);
+    showToast(`✅ Điểm: ${sc10}/10 — Hệ thống tự chấm tất cả`);
   } else {
-    // Hỗn hợp
-    showToast(`📤 Điểm tạm: ${finalScore}/${finalMax} — Câu tự luận chờ GV kiểm tra`);
+    showToast(`📤 Điểm tạm: ${sc10}/10 — Câu tự luận chờ GV kiểm tra`);
   }
   await loadStudentData();
   renderStudentList();
@@ -4138,7 +4182,7 @@ async function openResult(hwId, attemptNum=null) {
           background:${isActive?'var(--primary-light)':'var(--card)'};
           color:${isActive?'var(--primary)':'var(--muted)'}">
           <span style="font-size:.78rem;font-weight:700">Lần ${att}</span>
-          <span style="font-size:.82rem;font-weight:900;color:${col}">${s.score!=null?s.score+'đ':'—'}</span>
+          <span style="font-size:.82rem;font-weight:900;color:${col}">${s.score!=null?roundScore(s.max_score>0?s.score/s.max_score*10:s.score)+'/10':'—'}</span>
           <span style="font-size:.65rem;color:var(--muted)">${s.submitted_at?new Date(s.submitted_at).toLocaleDateString('vi-VN'):''}</span>
         </button>`;
     }).join('');
@@ -4185,7 +4229,7 @@ async function openResult(hwId, attemptNum=null) {
       autoScoreCalc+=pts*(ok/(pairs.length||1));
     }
   });
-  autoScoreCalc=Math.round(autoScoreCalc*100)/100;
+  autoScoreCalc=roundScore(autoScoreCalc);
 
   // Xếp loại (dùng điểm cuối cùng nếu GV đã chấm, không thì dùng điểm tự chấm)
   const displayScore = sub.score!=null ? sub.score : autoScoreCalc;
@@ -4211,11 +4255,13 @@ async function openResult(hwId, attemptNum=null) {
     return{icon:'📝',label:'Cần cố gắng',color:'#ef4444'};
   })();
 
+  const scaled10Final = finalMax > 0 ? roundScore(finalScore / finalMax * 10) : finalScore;
+
   const scoreDisplay = sub.score != null
     ? `<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
         <div style="text-align:center;min-width:72px">
-          <div style="font-size:2.5rem;font-weight:900;line-height:1">${sub.score}</div>
-          <div style="font-size:.75rem;opacity:.6">/ ${finalMax} điểm</div>
+          <div style="font-size:2.5rem;font-weight:900;line-height:1">${scaled10Final}</div>
+          <div style="font-size:.75rem;opacity:.6">/ 10 điểm</div>
         </div>
         <div style="flex:1;min-width:140px">
           <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem">
@@ -4448,7 +4494,7 @@ async function viewStudentResult(subId) {
     ? (Math.floor(sub.time_used/60)+'p '+( sub.time_used%60)+'s') : null;
   const scoreHtml = `<div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem;align-items:center">
     ${sub.score!=null
-      ? `<span class="score-pill" style="font-size:.9rem">🏅 ${sub.score} / ${sub.max_score||10}</span>`
+      ? `<span class="score-pill" style="font-size:.9rem">🏅 ${roundScore(sub.max_score>0?sub.score/sub.max_score*10:sub.score)}/10</span>`
       : '<span style="background:#fef3c7;color:#92400e;padding:.25rem .75rem;border-radius:20px;font-size:.82rem;font-weight:700">⏳ Chưa chấm</span>'
     }
     ${timeStr?`<span style="background:#ede9fe;color:#5b21b6;padding:.25rem .7rem;border-radius:20px;font-size:.8rem;font-weight:700">⏱ ${timeStr}</span>`:''}
@@ -4572,7 +4618,7 @@ async function openGrade(subId, studentName) {
       manualMax+=pts;
     }
   });
-  autoScore=Math.round(autoScore*100)/100;
+  autoScore=roundScore(autoScore);
 
   // Câu tự luận
   const manualQs = qs.filter(q=>q.question_type==='short_answer');
@@ -4590,7 +4636,7 @@ async function openGrade(subId, studentName) {
        📝 ${hw?.title||''}
      </span>`;
 
-  // Điền summary bar
+  // Điền summary bar — điểm thô để GV dễ theo dõi, tổng cuối quy đổi /10
   document.getElementById('gradeAutoDisplay').textContent = `${autoScore} / ${autoMax} đ`;
   _updateGradeSummary();
 
@@ -4749,19 +4795,20 @@ function _updateGradeSummary() {
     if (!isNaN(n)) manualScored += Math.min(n, max);
   });
 
-  const total = Math.round((st.autoScore + manualScored) * 100) / 100;
+  const total = roundScore(st.autoScore + manualScored);
   const grandMax = st.autoMax + st.manualMax;
+  const totalScaled = grandMax > 0 ? roundScore(total / grandMax * 10) : total;
 
   document.getElementById('gradeManualDisplay').textContent =
-    st.manualQs.length ? `${Math.round(manualScored*100)/100} / ${st.manualMax} đ` : '— (không có)';
+    st.manualQs.length ? `${roundScore(manualScored)} / ${st.manualMax} đ` : '— (không có)';
   document.getElementById('gradeTotalDisplay').textContent =
     allFilled || st.manualQs.length === 0
-      ? `${total} / ${grandMax} đ`
-      : `${st.autoScore}+? / ${grandMax} đ`;
+      ? `${totalScaled} / 10`
+      : `? / 10`;
 
-  // Highlight tổng nếu đủ điểm
+  // Highlight tổng
   const el = document.getElementById('gradeTotalDisplay');
-  el.style.color = total >= grandMax * 0.8 ? '#86efac' : total >= grandMax * 0.5 ? '#fde68a' : '#fca5a5';
+  el.style.color = totalScaled >= 8 ? '#86efac' : totalScaled >= 5 ? '#fde68a' : '#fca5a5';
 }
 
 async function saveGrade() {
@@ -4782,8 +4829,8 @@ async function saveGrade() {
   });
 
   const finalScore = st
-    ? Math.round((st.autoScore + manualScored) * 100) / 100
-    : manualScored;
+    ? roundScore(st.autoScore + manualScored)
+    : roundScore(manualScored);
 
   const { error } = await sb.from('homework_submissions').update({
     score:        finalScore,
@@ -4795,7 +4842,9 @@ async function saveGrade() {
 
   if (error) { showToast('Lỗi: ' + error.message, false); return; }
   document.getElementById('modalGrade').classList.remove('open');
-  showToast('✅ Đã lưu điểm: ' + finalScore + 'đ');
+  const sc10saved = st && st.autoMax+st.manualMax > 0
+    ? roundScore(finalScore / (st.autoMax+st.manualMax) * 10) : finalScore;
+  showToast('✅ Đã lưu điểm: ' + sc10saved + '/10');
   window._gradeState = null;
   await loadAdminData();
   renderAdminSubmissions();
@@ -4996,11 +5045,19 @@ function initRealtime() {
         } else if (eventType === 'UPDATE') {
           // Khi GV publish nháp → học sinh nhận thông báo
           const wasPublished = !nw?.is_draft && payload.old?.is_draft === true;
+          const wasLocked    = nw?.is_locked && !payload.old?.is_locked;
+          const wasUnlocked  = !nw?.is_locked && payload.old?.is_locked === true;
           await loadStudentData();
           renderStudentList();
           updateGuideStats();
           if (wasPublished && relevant) {
             showRealtimeNotify('📝 Bài tập mới', nw?.title || 'Giáo viên vừa giao bài mới!');
+          }
+          if (wasLocked && relevant) {
+            showRealtimeNotify('🔒 Bài đã bị khóa', `"${nw?.title||''}" — Không thể làm bài nữa`);
+          }
+          if (wasUnlocked && relevant) {
+            showRealtimeNotify('🔓 Bài đã mở khóa', `"${nw?.title||''}" — Bạn có thể làm bài trở lại`);
           }
         } else if (eventType === 'DELETE') {
           await loadStudentData();
