@@ -40,7 +40,6 @@
       <a href="#" class="slink" data-page="security" data-label="Cảnh báo"><span class="slink-icon">🚨</span><span class="slink-label">Nhật ký cảnh báo <span id="alertNavBadge" class="nav-badge" style="display:none"></span></span></a>
       <a href="#" class="slink" data-page="devices" data-label="Thiết bị"><span class="slink-icon">📱</span><span class="slink-label">Cảnh báo thiết bị</span></a>
       <a href="#" class="slink" data-page="access-stats" data-label="Thống kê"><span class="slink-icon">📈</span><span class="slink-label">Thống kê truy cập</span></a>
-      <a href="#" class="slink" data-page="competition" data-label="Thi đua"><span class="slink-icon">🏆</span><span class="slink-label">Thi đua học viên</span></a>
       <a href="#" class="slink" data-page="login-history" data-label="Đăng nhập"><span class="slink-icon">🕐</span><span class="slink-label">Lịch sử đăng nhập</span></a>
       <a href="#" class="slink" data-page="announcements" data-label="Thông báo"><span class="slink-icon">📢</span><span class="slink-label">Thông báo</span></a>
       <a href="homework.html" class="slink" data-label="Bài Tập"><span class="slink-icon">📝</span><span class="slink-label">Bài Tập</span></a>
@@ -476,40 +475,6 @@
           <div class="empty-state" id="emptyAnn">Chưa có thông báo nào.</div>
         </div>
       </div>
-    </section>
-
-    <!-- PAGE: THI ĐUA HỌC VIÊN -->
-    <section class="page" id="pageCompetition">
-      <div class="page-header">
-        <h1 class="page-title">🏆 Thi đua học viên</h1>
-        <button class="btn-outline" id="refreshCompetitionBtn">🔄 Làm mới</button>
-      </div>
-      <div class="stat-grid" style="margin-bottom:1rem">
-        <div class="stat-card purple"><div class="stat-icon">👨‍🎓</div><div><div class="stat-num" id="compStatStudents">0</div><div class="stat-label">Học viên có dữ liệu</div></div></div>
-        <div class="stat-card blue"><div class="stat-icon">🥇</div><div><div class="stat-num" id="compStatTop1">—</div><div class="stat-label">Top 1 hiện tại</div></div></div>
-        <div class="stat-card green"><div class="stat-icon">🎖️</div><div><div class="stat-num" id="compStatAvgBadges">0</div><div class="stat-label">TB huy chương / học viên</div></div></div>
-        <div class="stat-card orange"><div class="stat-icon">⚡</div><div><div class="stat-num" id="compStatTopPoints">0</div><div class="stat-label">Điểm cao nhất</div></div></div>
-      </div>
-      <div class="filter-bar">
-        <input type="text" id="competitionSearch" placeholder="Tìm theo tên hoặc username..."/>
-      </div>
-      <div style="overflow:auto">
-        <table class="data-table" id="competitionTable">
-          <thead>
-            <tr>
-              <th>Top</th>
-              <th>Học viên</th>
-              <th>Lớp</th>
-              <th>Điểm</th>
-              <th>Streak</th>
-              <th>Huy chương</th>
-              <th>Huy chương đã mở</th>
-            </tr>
-          </thead>
-          <tbody id="competitionBody"></tbody>
-        </table>
-      </div>
-      <div class="empty-state" id="emptyCompetition" style="display:none">Chưa có dữ liệu thi đua.</div>
     </section>
 
     <!-- PAGE: HỒ SƠ -->

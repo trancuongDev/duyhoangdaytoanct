@@ -71,54 +71,6 @@
     setTimeout(() => { document.getElementById('monitorNotice').style.display = 'none'; }, 5000);
   </script>
 
-  <!-- POPUP QUÀ ĐIỂM HẰNG NGÀY -->
-  <div id="dailyRewardOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99997;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)">
-    <div id="dailyRewardBox" style="background:#fff;border-radius:24px;max-width:360px;width:100%;text-align:center;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.4);animation:drPop .4s cubic-bezier(.34,1.56,.64,1) both">
-      <!-- Header gradient -->
-      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:1.75rem 1.5rem 1.25rem;position:relative;overflow:hidden">
-        <div style="position:absolute;top:-20px;left:-20px;width:100px;height:100px;background:rgba(255,255,255,.1);border-radius:50%"></div>
-        <div style="position:absolute;bottom:-30px;right:-10px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%"></div>
-        <div style="position:relative;z-index:1">
-          <div id="drCoinAnim" style="font-size:3.5rem;margin-bottom:.4rem;animation:drBounce 1s ease infinite">🎁</div>
-          <div style="color:#fff;font-weight:900;font-size:1.2rem;letter-spacing:-.3px">Quà điểm hằng ngày</div>
-          <div style="color:rgba(255,255,255,.8);font-size:.8rem;margin-top:.2rem">Đăng nhập mỗi ngày để nhận điểm!</div>
-        </div>
-      </div>
-      <!-- Body -->
-      <div style="padding:1.5rem">
-        <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:16px;padding:1.25rem;margin-bottom:1rem">
-          <div style="font-size:.78rem;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Điểm nhận được hôm nay</div>
-          <div id="drPoints" style="font-size:3rem;font-weight:900;color:#d97706;line-height:1">+10</div>
-          <div style="font-size:.78rem;color:#b45309;margin-top:.2rem">điểm thi đua</div>
-        </div>
-        <!-- Streak -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:1rem">
-          <span id="drStreakFire" style="font-size:1.3rem">🔥</span>
-          <div>
-            <span id="drStreakNum" style="font-weight:900;font-size:1.1rem;color:#ef4444">1</span>
-            <span style="font-size:.85rem;color:#64748b;font-weight:600"> ngày liên tiếp</span>
-          </div>
-        </div>
-        <!-- Streak bar -->
-        <div style="background:#f1f5f9;border-radius:20px;height:8px;margin-bottom:1.25rem;overflow:hidden">
-          <div id="drStreakBar" style="height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:20px;transition:width .6s ease;width:0%"></div>
-        </div>
-        <!-- Bonus info -->
-        <div id="drBonusInfo" style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:.65rem .9rem;font-size:.8rem;color:#166534;margin-bottom:1.25rem;display:none">
-          🎉 <b>Bonus streak!</b> Đăng nhập liên tiếp nhiều ngày nhận thêm điểm.
-        </div>
-        <button id="drClaimBtn" style="width:100%;padding:.85rem;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(245,158,11,.4);transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-          🎁 Nhận quà ngay!
-        </button>
-        <div style="font-size:.75rem;color:#94a3b8;margin-top:.75rem">Quà reset lúc 00:00 mỗi ngày</div>
-      </div>
-    </div>
-  </div>
-  <style>
-    @keyframes drPop { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
-    @keyframes drBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-  </style>
-
       <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
 
   <!-- SIDEBAR -->
@@ -149,9 +101,6 @@
       </a>
       <a href="#" class="slink" data-page="profile" data-label="Hồ sơ">
         <span class="slink-icon">👤</span><span class="slink-label">Hồ sơ</span>
-      </a>
-      <a href="#" class="slink" data-page="profile" data-label="Huy chương">
-        <span class="slink-icon">🏆</span><span class="slink-label">Huy chương</span>
       </a>
     </nav>
     <a href="index.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất">
@@ -472,7 +421,7 @@
     <section class="page" id="pageProfile">
 
       <!-- Header banner -->
-      <div class="profile-hero" style="background:radial-gradient(circle at top left,#4f46e5,#0f172a);border-radius:22px;padding:1.7rem 1.7rem 2.1rem;margin-bottom:0;position:relative;overflow:hidden;color:#fff;box-shadow:0 18px 40px rgba(15,23,42,.7)">
+      <div class="profile-hero" style="background:radial-gradient(circle at top left,#4f46e5,#0f172a);border-radius:22px;padding:1.7rem 1.7rem 2.1rem;margin-bottom:1.25rem;position:relative;overflow:hidden;color:#fff;box-shadow:0 18px 40px rgba(15,23,42,.7)">
         <div style="position:absolute;top:-60px;right:-40px;width:220px;height:220px;background:rgba(129,140,248,.18);border-radius:50%"></div>
         <div style="position:absolute;bottom:-40px;left:-40px;width:180px;height:180px;background:rgba(56,189,248,.14);border-radius:50%"></div>
         <div style="position:absolute;top:18%;left:52%;width:80px;height:80px;background:rgba(248,250,252,.04);border-radius:50%;backdrop-filter:blur(10px)"></div>
@@ -488,27 +437,6 @@
               <span id="profileClass" style="background:rgba(129,140,248,.3);color:#e0e7ff;font-size:.76rem;font-weight:650;padding:.2rem .65rem;border-radius:999px;border:1px solid rgba(129,140,248,.7);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
             </div>
             <div id="profileCode" style="font-family:monospace;font-size:.78rem;color:rgba(226,232,240,.75);margin-top:.4rem">—</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="profile-overview" style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid #334155;border-top:none;border-radius:0 0 16px 16px;padding:1rem 1rem .9rem;margin-bottom:1.25rem;box-shadow:0 8px 24px rgba(15,23,42,.35)">
-        <div class="profile-overview-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.55rem">
-          <div class="po-card po-blue" style="background:rgba(99,102,241,.14);border:1px solid rgba(129,140,248,.35);border-radius:12px;padding:.65rem .75rem">
-            <div class="po-label" style="font-size:.68rem;color:rgba(199,210,254,.95);font-weight:700;letter-spacing:.2px">TỔNG ĐIỂM</div>
-            <div id="profileQuickPoints" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0</div>
-          </div>
-          <div class="po-card po-green" style="background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.35);border-radius:12px;padding:.65rem .75rem">
-            <div class="po-label" style="font-size:.68rem;color:#bbf7d0;font-weight:700;letter-spacing:.2px">GIỜ HỌC</div>
-            <div id="profileQuickHours" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0.0h</div>
-          </div>
-          <div class="po-card po-orange" style="background:rgba(249,115,22,.14);border:1px solid rgba(251,146,60,.4);border-radius:12px;padding:.65rem .75rem">
-            <div class="po-label" style="font-size:.68rem;color:#fed7aa;font-weight:700;letter-spacing:.2px">STREAK (THÁNG)</div>
-            <div id="profileQuickStreak" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0 ngày</div>
-          </div>
-          <div class="po-card po-cyan" style="background:rgba(6,182,212,.12);border:1px solid rgba(103,232,249,.35);border-radius:12px;padding:.65rem .75rem">
-            <div class="po-label" style="font-size:.68rem;color:#a5f3fc;font-weight:700;letter-spacing:.2px">HUY CHƯƠNG</div>
-            <div id="profileQuickBadges" class="po-value" style="font-size:1.15rem;font-weight:900;color:#fff;margin-top:.15rem">0/0</div>
           </div>
         </div>
       </div>
@@ -544,34 +472,6 @@
           </div>
 
         </div>
-      </div>
-
-      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:1.15rem;box-shadow:var(--shadow);margin-bottom:1.25rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.8rem">
-          <div style="font-weight:800;font-size:.95rem;color:var(--text)">🏆 TẤT CẢ HUY CHƯƠNG</div>
-          <div id="profileAchievementSummary" style="font-size:.8rem;color:var(--muted)">Đang tải...</div>
-        </div>
-        <div id="profilePointRules" style="font-size:.78rem;color:var(--muted);background:linear-gradient(135deg,#f8fafc,#eef2ff);border:1.5px solid #c7d2fe;border-radius:12px;padding:.7rem .8rem;margin-bottom:.75rem;box-shadow:0 6px 16px rgba(99,102,241,.08)">Quy định tính điểm: Đang tải...</div>
-        <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1.5px solid #fdba74;border-radius:12px;padding:.75rem .85rem;margin-bottom:.75rem;box-shadow:0 6px 14px rgba(249,115,22,.12)">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem">
-            <div style="font-size:.84rem;font-weight:900;color:#9a3412">🔥 Streak lửa</div>
-            <div id="profileStreakValue" style="font-size:.92rem;font-weight:900;color:#c2410c">0 ngày</div>
-          </div>
-          <div id="profileStreakStatus" style="font-size:.74rem;color:#7c2d12;margin-top:.25rem">Bắt đầu lại chuỗi học hôm nay để lên streak!</div>
-          <div style="height:8px;background:rgba(194,65,12,.14);border-radius:999px;overflow:hidden;margin-top:.5rem">
-            <div id="profileStreakBar" style="height:100%;width:0%;background:linear-gradient(90deg,#fb923c,#f97316,#ea580c);border-radius:999px;transition:width .35s"></div>
-          </div>
-        </div>
-        <div id="profileAchievementsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.65rem"></div>
-      </div>
-
-      <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:16px;border:1px solid rgba(99,102,241,.35);padding:1.1rem;box-shadow:0 10px 28px rgba(30,27,75,.35);margin-bottom:1.25rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.7rem">
-          <div style="font-weight:900;font-size:.95rem;color:#fff">🥇 BẢNG XẾP HẠNG THI ĐUA</div>
-          <div id="profileLeaderboardSummary" style="font-size:.78rem;color:rgba(255,255,255,.75)">Đang tải...</div>
-        </div>
-        <div style="font-size:.76rem;color:rgba(255,255,255,.65);margin-bottom:.65rem">Xếp hạng theo điểm tổng hợp trong lớp (Top 10)</div>
-        <div id="profileLeaderboardList" style="display:flex;flex-direction:column;gap:.5rem"></div>
       </div>
 
     </section>

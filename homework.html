@@ -3337,12 +3337,12 @@ async function saveHomework(isDraft=false) {
   if (editId) {
     // Lấy ID các câu hiện có trong DB
     const existingIds = new Set(
-      editorQuestions.filter(q => q.dbId).map(q => q.dbId)
+      editorQuestions.filter(q => q.dbId).map(q => Number(q.dbId))
     );
     // Xóa câu đã bị GV xóa khỏi editor (không còn trong danh sách)
     const { data: oldQs } = await sb.from('homework_questions')
       .select('id').eq('homework_id', hwId);
-    const toDelete = (oldQs||[]).map(q=>q.id).filter(id => !existingIds.has(id));
+    const toDelete = (oldQs||[]).map(q=>q.id).filter(id => !existingIds.has(Number(id)));
     if (toDelete.length) {
       await sb.from('homework_questions').delete().in('id', toDelete);
     }
@@ -3367,8 +3367,12 @@ async function saveHomework(isDraft=false) {
         // Câu mới — insert
         const { data: ins, error: iErr } = await sb.from('homework_questions')
           .insert(row).select().single();
-        if (iErr) { document.getElementById('hwFormErr').textContent='Lỗi thêm câu hỏi: '+iErr.message; return; }
-        q.dbId = ins.id; // cập nhật lại dbId
+        if (iErr) {
+          console.error('Lỗi insert câu mới:', iErr, row);
+          document.getElementById('hwFormErr').textContent='Lỗi thêm câu hỏi: '+iErr.message;
+          return;
+        }
+        if (ins) q.dbId = ins.id;
       }
     }
   } else {
@@ -3531,8 +3535,56 @@ async function previewHW(hwId) {
       }
     }
 
+    // ── Nội dung câu hỏi ──
+    let bodyHtml = '';
+    if (q.question_type === 'multiple_choice') {
+      const opts = q.data.options || [];
+      bodyHtml = `<div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.35rem">
+        ${opts.map((o,i) => {
+          const t   = typeof o === 'string' ? o : (o.text || '');
+          const img = typeof o === 'string' ? '' : (o.img || '');
+          const isC = i === q.data.correct;
+          return `<div style="display:flex;align-items:flex-start;gap:.5rem;padding:.4rem .7rem;border-radius:8px;background:${isC?'#d1fae5':'var(--bg)'};border:1.5px solid ${isC?'#10b981':'var(--border)'}">
+            <b style="color:${isC?'#065f46':'var(--muted)'};min-width:1.4rem">${String.fromCharCode(65+i)}.</b>
+            <div><span style="color:${isC?'#065f46':'var(--text)'}" class="q-text">${t}</span>
+            ${img?`<img src="${img}" style="max-height:100px;max-width:100%;display:block;margin-top:.3rem;border-radius:6px" onerror="this.style.display='none'"/>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    } else if (q.question_type === 'true_false') {
+      const stmts = q.data.statements || [];
+      bodyHtml = `<div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.35rem">
+        ${stmts.map((s,i) => `
+          <div style="display:flex;align-items:flex-start;gap:.5rem;padding:.4rem .7rem;border-radius:8px;border:1.5px solid var(--border);background:var(--bg)">
+            <span style="color:var(--muted);font-weight:700;min-width:1.4rem">${i+1}.</span>
+            <div style="flex:1">
+              <div class="q-text" style="font-size:.88rem">${s.text}</div>
+              ${s.img?`<img src="${s.img}" style="max-height:100px;max-width:100%;display:block;margin-top:.3rem;border-radius:6px" onerror="this.style.display='none'"/>`:''}
+            </div>
+            <span style="background:${s.answer?'#d1fae5':'#fee2e2'};color:${s.answer?'#065f46':'#991b1b'};border-radius:6px;padding:.15rem .5rem;font-size:.78rem;font-weight:800;flex-shrink:0">${s.answer?'Đúng':'Sai'}</span>
+          </div>`).join('')}
+      </div>`;
+    } else if (q.question_type === 'matching') {
+      const left = q.data.left || [], right = q.data.right || [];
+      const pairs = q.data.correct_pairs || [];
+      const map = {}; pairs.forEach(([l,r])=>{ map[l]=r; });
+      bodyHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.35rem">
+        <div>
+          <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:.3rem">CỘT 1</div>
+          ${left.map((l,i)=>`<div style="padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;margin-bottom:.25rem;font-size:.85rem">${i+1}. ${l}</div>`).join('')}
+        </div>
+        <div>
+          <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:.3rem">CỘT 2</div>
+          ${right.map((r,i)=>`<div style="padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;margin-bottom:.25rem;font-size:.85rem">${String.fromCharCode(65+i)}. ${r}</div>`).join('')}
+        </div>
+      </div>`;
+    } else if (q.question_type === 'short_answer') {
+      bodyHtml = `<div style="border:1.5px dashed var(--border);border-radius:8px;padding:.5rem .8rem;color:var(--muted);font-size:.85rem;font-style:italic;margin-top:.35rem">Trả lời: ___________</div>`;
+    }
+
     return `<div class="q-display" style="border-color:var(--border)">
-      <div style="display:flex;align-items:flex-start;gap:.65rem;margin-bottom:.75rem">
+      <div style="display:flex;align-items:flex-start;gap:.65rem;margin-bottom:.5rem">
         <div class="q-num-badge">${qNum}</div>
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap">
@@ -3543,11 +3595,7 @@ async function previewHW(hwId) {
           ${q.image_url?`<img src="${q.image_url}" class="q-image" onerror="this.style.display='none'"/>`:''}
         </div>
       </div>
-      <div>${buildQDisplay([q], null, true)
-        .replace(/<div class="q-display"[^>]*>/,'')
-        .replace(/<\/div>\s*$/,'')
-        .replace(/^[\s\S]*?<div class="q-num-badge">[\s\S]*?<\/div>\s*<\/div>/,'')
-      }</div>
+      ${bodyHtml}
       ${answerBadge}
     </div>`;
   }).join('');

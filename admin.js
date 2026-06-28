@@ -38,133 +38,6 @@ async function decryptUrl(enc) {
   } catch { return enc; }
 }
 
-// ---- Thi đua học viên (điểm/huy chương/top) ----
-const POINTS_PER_LESSON_VIEW = 20;
-const POINTS_PER_ACCESS_LOG = 5;
-const POINTS_PER_ACTIVE_DAY = 10;
-
-function _toDateKey(ts) {
-  const d = new Date(ts);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-function _calcCurrentStreak(dateKeys) {
-  if (!dateKeys.length) return 0;
-  const set = new Set(dateKeys);
-  const now = new Date(); now.setHours(0,0,0,0);
-  const today = _toDateKey(now.toISOString());
-  const y = new Date(now); y.setDate(y.getDate() - 1);
-  const yKey = _toDateKey(y.toISOString());
-  if (!set.has(today) && !set.has(yKey)) return 0;
-  let streak = 0;
-  const cur = set.has(today) ? now : y;
-  while (true) {
-    const k = _toDateKey(cur.toISOString());
-    if (!set.has(k)) break;
-    streak++;
-    cur.setDate(cur.getDate() - 1);
-  }
-  return streak;
-}
-
-function _buildCompetitionStats({ loginLogs = [], accessLogs = [], lessonViews = [] }) {
-  const allDateKeys = [...new Set([
-    ...loginLogs.map(x => _toDateKey(x.logged_in_at)),
-    ...accessLogs.map(x => _toDateKey(x.accessed_at)),
-    ...lessonViews.map(x => _toDateKey(x.viewed_at)),
-  ].filter(Boolean))].sort();
-  const loginDays = allDateKeys.length;
-  const streak = _calcCurrentStreak(allDateKeys);
-
-  const accessTimes = accessLogs
-    .map(x => new Date(x.accessed_at).getTime())
-    .filter(x => !Number.isNaN(x))
-    .sort((a, b) => a - b);
-  let totalMinutes = 0;
-  let longestSessionMinutes = 0;
-  const perDayMinutes = {};
-  let sessionStart = null;
-  let prev = null;
-  for (const t of accessTimes) {
-    if (sessionStart === null) { sessionStart = t; prev = t; continue; }
-    const gapMin = (t - prev) / 60000;
-    if (gapMin <= 20) prev = t;
-    else {
-      const mins = Math.max(6, (prev - sessionStart) / 60000 + 6);
-      totalMinutes += mins;
-      longestSessionMinutes = Math.max(longestSessionMinutes, mins);
-      const dayKey = _toDateKey(new Date(sessionStart).toISOString());
-      perDayMinutes[dayKey] = (perDayMinutes[dayKey] || 0) + mins;
-      sessionStart = t; prev = t;
-    }
-  }
-  if (sessionStart !== null && prev !== null) {
-    const mins = Math.max(6, (prev - sessionStart) / 60000 + 6);
-    totalMinutes += mins;
-    longestSessionMinutes = Math.max(longestSessionMinutes, mins);
-    const dayKey = _toDateKey(new Date(sessionStart).toISOString());
-    perDayMinutes[dayKey] = (perDayMinutes[dayKey] || 0) + mins;
-  }
-  const studyHours = totalMinutes / 60;
-  const maxDayHours = Math.max(0, ...Object.values(perDayMinutes).map(m => m / 60));
-
-  const allTimeSamples = [
-    ...loginLogs.map(x => new Date(x.logged_in_at)).filter(x => !Number.isNaN(x.getTime())),
-    ...accessLogs.map(x => new Date(x.accessed_at)).filter(x => !Number.isNaN(x.getTime())),
-  ];
-  const hasLateNight = allTimeSamples.some(d => d.getHours() >= 23);
-  const hasEarlyBird = allTimeSamples.some(d => d.getHours() < 6);
-
-  const points = Math.round(
-    (lessonViews.length * POINTS_PER_LESSON_VIEW) +
-    (accessLogs.length * POINTS_PER_ACCESS_LOG) +
-    (loginDays * POINTS_PER_ACTIVE_DAY)
-  );
-
-  // Helper tính % tiến độ (0–100)
-  const _pct = (cur, max) => Math.min(100, Math.round((cur / max) * 100));
-
-  const defs = [
-    { n:'Mầm non 🌱',          ok: points >= 50,                pct: _pct(points, 50),                cur: `${Math.round(points)}/50 điểm` },
-    { n:'Khởi đầu 🚀',         ok: studyHours >= 1,             pct: _pct(studyHours, 1),             cur: `${studyHours.toFixed(1)}/1 giờ` },
-    { n:'Chăm chỉ 📘',         ok: studyHours >= 5,             pct: _pct(studyHours, 5),             cur: `${studyHours.toFixed(1)}/5 giờ` },
-    { n:'Siêng năng ✨',        ok: loginDays >= 7,              pct: _pct(loginDays, 7),              cur: `${loginDays}/7 ngày` },
-    { n:'Bắt đầu bùng 🔥',     ok: streak >= 3,                 pct: _pct(streak, 3),                 cur: `${streak}/3 ngày` },
-    { n:'Tuần lửa 🔥🔥',       ok: streak >= 7,                 pct: _pct(streak, 7),                 cur: `${streak}/7 ngày` },
-    { n:'Núi lửa 🌋',          ok: streak >= 14,                pct: _pct(streak, 14),                cur: `${streak}/14 ngày` },
-    { n:'Cháy máy ☄️',         ok: streak >= 30,                pct: _pct(streak, 30),                cur: `${streak}/30 ngày` },
-    { n:'Hỏa thần 👑',         ok: streak >= 100,               pct: _pct(streak, 100),               cur: `${streak}/100 ngày` },
-    { n:'Khởi động ⏱️',        ok: studyHours >= 10,            pct: _pct(studyHours, 10),            cur: `${studyHours.toFixed(1)}/10 giờ` },
-    { n:'Chăm học 📚',         ok: studyHours >= 50,            pct: _pct(studyHours, 50),            cur: `${studyHours.toFixed(1)}/50 giờ` },
-    { n:'Học bá 🎓',           ok: studyHours >= 100,           pct: _pct(studyHours, 100),           cur: `${studyHours.toFixed(1)}/100 giờ` },
-    { n:'Máy cày 🤖',          ok: studyHours >= 250,           pct: _pct(studyHours, 250),           cur: `${studyHours.toFixed(1)}/250 giờ` },
-    { n:'Quái vật học tập ☠️', ok: studyHours >= 500,           pct: _pct(studyHours, 500),           cur: `${studyHours.toFixed(1)}/500 giờ` },
-    { n:'Học sinh giỏi ⭐',    ok: points >= 200,               pct: _pct(points, 200),               cur: `${Math.round(points)}/200 điểm` },
-    { n:'Xuất sắc 🌟',         ok: points >= 500,               pct: _pct(points, 500),               cur: `${Math.round(points)}/500 điểm` },
-    { n:'Kim cương 💎',        ok: points >= 1000,              pct: _pct(points, 1000),              cur: `${Math.round(points)}/1.000 điểm` },
-    { n:'Cao thủ 🏆',          ok: points >= 3000,              pct: _pct(points, 3000),              cur: `${Math.round(points)}/3.000 điểm` },
-    { n:'Vô địch 👑',          ok: points >= 5000,              pct: _pct(points, 5000),              cur: `${Math.round(points)}/5.000 điểm` },
-    { n:'Huyền thoại 🔥',      ok: points >= 10000,             pct: _pct(points, 10000),             cur: `${Math.round(points)}/10.000 điểm` },
-    { n:'Cú đêm 🌙',           ok: hasLateNight,                pct: hasLateNight ? 100 : 0,          cur: hasLateNight ? 'Đã đạt' : 'Chưa đạt' },
-    { n:'Dậy sớm ☀️',          ok: hasEarlyBird,                pct: hasEarlyBird ? 100 : 0,          cur: hasEarlyBird ? 'Đã đạt' : 'Chưa đạt' },
-    { n:'Chuyên cần 📅',       ok: streak >= 14,                pct: _pct(streak, 14),                cur: `${streak}/14 ngày` },
-    { n:'Bền bỉ 💪',           ok: longestSessionMinutes >= 180,pct: _pct(longestSessionMinutes, 180),cur: `${Math.round(longestSessionMinutes)}/180 phút` },
-    { n:'Tăng tốc ⚡',         ok: maxDayHours >= 5,            pct: _pct(maxDayHours, 5),            cur: `${maxDayHours.toFixed(1)}/5 giờ` },
-    { n:'Thành viên VIP 💠',   ok: streak >= 30,                pct: _pct(streak, 30),                cur: `${streak}/30 ngày` },
-    { n:'Bá chủ BXH 🥇',      ok: false,                       pct: 0,                               cur: 'Chưa hỗ trợ' },
-  ];
-  const unlockedNow = defs.filter(x => x.ok).length;
-  const totalNow = defs.length;
-  const percent = Math.round((unlockedNow / totalNow) * 100);
-  defs.push(
-    { n:'Huyền thoại LMS 👑', ok: percent >= 70,              pct: _pct(percent, 70),               cur: `${percent}/70%` },
-    { n:'Truyền thuyết 📜',   ok: unlockedNow === totalNow,   pct: _pct(unlockedNow, totalNow + 2), cur: `${unlockedNow}/${totalNow + 2} huy hiệu` }
-  );
-  const unlocked = defs.filter(x => x.ok);
-  return { points, streak, studyHours, loginDays, unlockedCount: unlocked.length, unlockedBadges: unlocked.map(x => x.n), allDefs: defs };
-}
-
 // ---- Kiểm tra trùng Gmail / SĐT ----
 async function checkDuplicate(username, phone, excludeId=null) {
   const warnings = [];
@@ -454,7 +327,6 @@ function showPage(name) {
   }
   if (name === 'devices')        renderDeviceAlerts();
   if (name === 'access-stats')   renderAccessStats();
-  if (name === 'competition')    renderCompetitionStats();
   if (name === 'login-history')  renderLoginHistory();
   if (name === 'announcements')  { populateClassFilters(); renderAnnouncements(); }
   if (name === 'classes')        renderClasses();
@@ -466,10 +338,7 @@ document.querySelectorAll('.slink[data-page]').forEach(l => {
 document.querySelectorAll('[data-goto]').forEach(l => {
   l.addEventListener('click', e => { e.preventDefault(); showPage(l.dataset.goto); });
 });
-document.getElementById('refreshCompetitionBtn')?.addEventListener('click', () => renderCompetitionStats());
-document.getElementById('competitionSearch')?.addEventListener('input', () => {
-  if (document.getElementById('pageCompetition')?.classList.contains('active')) renderCompetitionStats();
-});
+
 
 // ---- Class filters ----
 async function getClasses() {
@@ -2977,7 +2846,7 @@ document.getElementById('clearAlertsBtn').addEventListener('click', async ()=>{
 });
 
 // ---- Init ----
-const _validPages = ['overview','lessons','lesson-groups','create-student','students','classes','security','devices','access-stats','competition','login-history','announcements','schedule','profile'];
+const _validPages = ['overview','lessons','lesson-groups','create-student','students','classes','security','devices','access-stats','login-history','announcements','schedule','profile'];
 const _savedPage = sessionStorage.getItem('dh_page');
 populateClassFilters().then(() => {
   showPage(_validPages.includes(_savedPage) ? _savedPage : 'overview');
@@ -3327,127 +3196,6 @@ db.channel('realtime-access-logs')
 // ============================================================
 // THỐNG KÊ TRUY CẬP
 // ============================================================
-async function renderCompetitionStats() {
-  const body = document.getElementById('competitionBody');
-  const empty = document.getElementById('emptyCompetition');
-  if (!body || !empty) return;
-
-  body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Đang tải dữ liệu thi đua...</td></tr>';
-  empty.style.display = 'none';
-  try {
-    const { data: students } = await db
-      .from('students')
-      .select('username,full_name,class_name,active')
-      .eq('active', true)
-      .order('full_name')
-      .limit(10000);
-    const list = (students || []).filter(s => !!s.username);
-    const usernames = list.map(s => s.username);
-    if (!usernames.length) {
-      body.innerHTML = '';
-      empty.style.display = 'block';
-      return;
-    }
-    const [{ data: lg }, { data: ac }, { data: lv }] = await Promise.all([
-      db.from('login_logs').select('username,logged_in_at').in('username', usernames).order('logged_in_at', { ascending: true }).limit(100000),
-      db.from('access_logs').select('username,accessed_at').in('username', usernames).order('accessed_at', { ascending: true }).limit(200000),
-      db.from('lesson_views').select('username,viewed_at').in('username', usernames).order('viewed_at', { ascending: true }).limit(200000),
-    ]);
-
-    const bucket = {};
-    usernames.forEach(u => { bucket[u] = { loginLogs: [], accessLogs: [], lessonViews: [] }; });
-    (lg || []).forEach(x => { if (bucket[x.username]) bucket[x.username].loginLogs.push(x); });
-    (ac || []).forEach(x => { if (bucket[x.username]) bucket[x.username].accessLogs.push(x); });
-    (lv || []).forEach(x => { if (bucket[x.username]) bucket[x.username].lessonViews.push(x); });
-
-    let rows = list.map(s => {
-      const logs = bucket[s.username] || { loginLogs: [], accessLogs: [], lessonViews: [] };
-      const st = _buildCompetitionStats(logs);
-      return {
-        username: s.username,
-        name: s.full_name || s.username,
-        className: s.class_name || '—',
-        points: st.points,
-        streak: st.streak,
-        studyHours: st.studyHours,
-        loginDays: st.loginDays,
-        unlockedCount: st.unlockedCount,
-        unlockedBadges: st.unlockedBadges,
-        allDefs: st.allDefs,
-      };
-    }).sort((a, b) => b.points - a.points || b.streak - a.streak || b.unlockedCount - a.unlockedCount || a.name.localeCompare(b.name));
-
-    const q = (document.getElementById('competitionSearch')?.value || '').trim().toLowerCase();
-    if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q) || r.username.toLowerCase().includes(q));
-
-    if (!rows.length) {
-      body.innerHTML = '';
-      empty.style.display = 'block';
-      return;
-    }
-    empty.style.display = 'none';
-
-    const top1 = rows[0];
-    document.getElementById('compStatStudents').textContent = String(rows.length);
-    document.getElementById('compStatTop1').textContent = top1 ? (top1.name.length > 12 ? top1.name.slice(0, 12) + '…' : top1.name) : '—';
-    document.getElementById('compStatTopPoints').textContent = String(Math.round(top1?.points || 0));
-    const avgBadges = rows.reduce((s, r) => s + r.unlockedCount, 0) / Math.max(1, rows.length);
-    document.getElementById('compStatAvgBadges').textContent = avgBadges.toFixed(1);
-
-    body.innerHTML = rows.slice(0, 200).map((r, i) => {
-      const top = i + 1;
-      const medal = top === 1 ? '🥇' : top === 2 ? '🥈' : top === 3 ? '🥉' : `#${top}`;
-      const badgesText = r.unlockedBadges.length
-        ? r.unlockedBadges.slice(0, 3).join(', ') + (r.unlockedBadges.length > 3 ? ` +${r.unlockedBadges.length - 3}` : '')
-        : '—';
-
-      // Progress bar streak (max 30 ngày để hiển thị)
-      const streakPct = Math.min(100, Math.round((r.streak / 30) * 100));
-      const streakColor = r.streak >= 30 ? '#22c55e' : r.streak >= 7 ? '#f59e0b' : '#6366f1';
-
-      // Progress bar điểm (max 1000 để hiển thị)
-      const pointsPct = Math.min(100, Math.round((r.points / 1000) * 100));
-      const pointsColor = r.points >= 1000 ? '#22c55e' : r.points >= 200 ? '#f59e0b' : '#6366f1';
-
-      // Badge % mở khóa
-      const badgePct = r.allDefs ? Math.round((r.unlockedCount / r.allDefs.length) * 100) : 0;
-
-      return `
-        <tr>
-          <td><b>${medal}</b></td>
-          <td>
-            <div style="font-weight:700">${r.name}</div>
-            <div style="font-size:.78rem;color:var(--muted)">${r.username}</div>
-          </td>
-          <td>${r.className}</td>
-          <td>
-            <div style="font-weight:700;margin-bottom:.25rem">${Math.round(r.points)}</div>
-            <div style="height:5px;background:#e2e8f0;border-radius:999px;width:80px">
-              <div style="height:100%;width:${pointsPct}%;background:${pointsColor};border-radius:999px;transition:width .4s"></div>
-            </div>
-            <div style="font-size:.68rem;color:var(--muted);margin-top:.15rem">${pointsPct}% / 1k</div>
-          </td>
-          <td>
-            <div style="font-weight:700;margin-bottom:.25rem">${r.streak} ngày</div>
-            <div style="height:5px;background:#e2e8f0;border-radius:999px;width:80px">
-              <div style="height:100%;width:${streakPct}%;background:${streakColor};border-radius:999px;transition:width .4s"></div>
-            </div>
-            <div style="font-size:.68rem;color:var(--muted);margin-top:.15rem">${streakPct}% / 30 ngày</div>
-          </td>
-          <td>
-            <b>${r.unlockedCount}</b>
-            <span style="font-size:.75rem;color:var(--muted)"> / ${r.allDefs ? r.allDefs.length : '—'}</span>
-            <div style="font-size:.68rem;color:var(--muted)">${badgePct}% mở khóa</div>
-          </td>
-          <td style="max-width:360px;white-space:normal;font-size:.8rem">${badgesText}</td>
-        </tr>
-      `;
-    }).join('');
-  } catch (e) {
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Không tải được dữ liệu thi đua.</td></tr>';
-  }
-}
-
 async function renderAccessStats() {
   const cls    = document.getElementById('accessFilterClass').value;
   const type   = document.getElementById('accessFilterType').value;
