@@ -1492,6 +1492,7 @@ function renderAdminSubmissions(filterHwId=null) {
           <div style="display:flex;gap:.4rem;margin-top:.6rem;flex-wrap:wrap">
             <button class="btn-sm btn-success" onclick="openGrade(${s.id},'${esc(s.student_name||s.username)}')">${s.status==='graded'?'🔍 Dò lại / Chấm lại':'✏️ Chấm bài'}</button>
             <button class="btn-sm" onclick="viewStudentResult(${s.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem bài làm</button>
+            <button class="btn-sm" onclick="deleteSubmission(${s.id},'${esc(s.student_name||s.username)}')" style="border-color:#ef4444;color:#991b1b">🗑 Xóa bài</button>
           </div>
         </div>`;
       }).join('')}
@@ -4846,6 +4847,25 @@ async function saveGrade() {
     ? roundScore(finalScore / (st.autoMax+st.manualMax) * 10) : finalScore;
   showToast('✅ Đã lưu điểm: ' + sc10saved + '/10');
   window._gradeState = null;
+  await loadAdminData();
+  renderAdminSubmissions();
+}
+
+async function deleteSubmission(subId, studentName) {
+  const sub = allSubmissions.find(s=>s.id===subId);
+  const hw  = sub ? allHomework.find(h=>h.id===sub.homework_id) : null;
+  const ok  = await showConfirm({
+    icon: '🗑️',
+    title: 'Xóa bài làm?',
+    msg: `Xóa bài nộp của <b>${studentName}</b>${hw?` — "${hw.title}"`:''} sẽ cho phép học sinh làm lại.\nHành động này không thể hoàn tác.`,
+    okText: '🗑 Xóa bài',
+    okColor: '#ef4444',
+    cancelText: 'Hủy'
+  });
+  if (!ok) return;
+  const { error } = await sb.from('homework_submissions').delete().eq('id', subId);
+  if (error) { showToast('Lỗi: '+error.message, false); return; }
+  showToast(`🗑 Đã xóa bài làm của ${studentName}`);
   await loadAdminData();
   renderAdminSubmissions();
 }
