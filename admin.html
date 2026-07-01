@@ -47,7 +47,6 @@
       <a href="#" class="slink" data-page="profile" data-label="Hồ sơ"><span class="slink-icon">�</span><span class="slink-label">Hồ sơ</span></a>/
     </nav>
     <a href="index.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất"><span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span></a>
-    <a href="https://thienshin12112008-cloud.github.io/htql.1.1.2/index.html" target="_blank" class="slink" style="margin:.4rem .75rem" data-label="Trang đăng nhập"><span class="slink-icon">🔗</span><span class="slink-label">Trang đăng nhập</span></a>
     <a href="#" class="slink" id="maintenanceSideBtn" style="margin:.4rem .75rem" data-label="Bảo trì"><span class="slink-icon">🔧</span><span class="slink-label">Chế độ bảo trì</span></a>
     <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.3.0</div>
     <div class="sidebar-mini-reopen">
@@ -377,6 +376,7 @@
             <option value="doc">Tài liệu</option>
           </select>
           <button class="btn-outline" id="exportAccessBtn">⬇ Tải CSV</button>
+          <button class="btn-outline btn-danger" id="clearAccessBtn">🗑 Xóa tất cả</button>
         </div>
       </div>
 
@@ -501,41 +501,174 @@
       </div>
     </section>
 
-    <!-- PAGE: LỊCH HỌC -->
+    <!-- PAGE: LỊCH HỌC V2 -->
     <section class="page" id="pageSchedule">
       <div class="page-header">
         <h1 class="page-title">📅 Lịch học</h1>
-        <button class="btn-primary" id="openAddScheduleBtn">➕ Thêm lịch học</button>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <select id="scheduleFilterClass" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;font-size:.88rem;background:var(--card)"><option value="">Tất cả lớp</option></select>
+          <button class="btn-primary" id="openAddScheduleBtn">➕ Thêm lịch</button>
+        </div>
       </div>
-      <div class="filter-bar">
-        <select id="scheduleFilterClass"><option value="">Tất cả lớp</option></select>
+
+      <!-- Điều hướng tuần -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;background:var(--card);border-radius:14px;padding:.65rem 1rem;border:1.5px solid var(--border)">
+        <button id="schedPrevWeek" style="background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:.4rem .85rem;cursor:pointer;font-size:.9rem;font-weight:700;color:var(--text)">‹ Tuần trước</button>
+        <div style="text-align:center">
+          <div id="schedWeekLabel" style="font-weight:800;font-size:.95rem;color:var(--text)"></div>
+          <div id="schedWeekRange" style="font-size:.75rem;color:var(--muted);margin-top:.15rem"></div>
+        </div>
+        <button id="schedNextWeek" style="background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:.4rem .85rem;cursor:pointer;font-size:.9rem;font-weight:700;color:var(--text)">Tuần sau ›</button>
       </div>
-      <div id="scheduleGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:.5rem"></div>
-      <div class="empty-state" id="emptySchedule">Chưa có lịch học nào.</div>
+
+      <!-- Lưu ý nhắc lịch -->
+      <div id="schedSundayAlert" style="display:none;background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid #f59e0b;border-radius:12px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#78350f;display:flex;align-items:center;gap:.6rem">
+        <span style="font-size:1.3rem">⚠️</span>
+        <span>Hôm nay là <b>Chủ Nhật</b> — hãy lên lịch cho tuần tới để học viên chuẩn bị!</span>
+      </div>
+
+      <!-- Bảng lịch 7 ngày -->
+      <div id="schedWeekGrid" style="overflow-x:auto">
+        <div id="schedWeekTable" style="min-width:800px"></div>
+      </div>
+      <div class="empty-state" id="emptySchedule" style="display:none">Tuần này chưa có lịch nào.</div>
     </section>
 
-  <!-- MODAL: Thêm lịch học -->
+  <!-- MODAL: Thêm / Sửa slot lịch -->
   <div class="modal-overlay" id="addScheduleModal">
-    <div class="modal" style="max-width:480px">
-      <h2>📅 Thêm lịch học</h2>
-      <label>Tiêu đề</label>
-      <input type="text" id="scheduleTitle" placeholder="VD: Lịch học tuần 1..."/>
-      <label>Lớp <span class="muted">(để trống = tất cả)</span></label>
-      <select id="scheduleClass" style="position:relative;z-index:9999"><option value="">-- Tất cả lớp --</option></select>
-      <label>Hình ảnh lịch học</label>
-      <div id="scheduleDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--bg)" onclick="document.getElementById('scheduleFileInput').click()">
-        <div style="font-size:2rem;margin-bottom:.5rem">🖼️</div>
-        <div style="font-size:.88rem;color:var(--muted)">Bấm để chọn ảnh hoặc kéo thả vào đây</div>
-        <div id="scheduleFileInfo" style="margin-top:.5rem;font-size:.82rem;color:var(--primary);font-weight:600"></div>
+    <div class="modal" style="max-width:500px;padding:0;overflow:hidden;border-radius:22px">
+
+      <!-- Header gradient -->
+      <div style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);padding:1.4rem 1.75rem 1.2rem;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-20px;left:20%;width:80px;height:80px;background:rgba(255,255,255,.06);border-radius:50%"></div>
+        <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div id="schedModalTitle" style="font-size:1.1rem;font-weight:900;color:#fff;letter-spacing:-.3px">📅 Thêm buổi học</div>
+            <div id="schedModalSubtitle" style="font-size:.78rem;color:rgba(255,255,255,.65);margin-top:.2rem">Điền thông tin buổi học mới</div>
+          </div>
+          <button id="schedCancelBtn" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">✕</button>
+        </div>
       </div>
-      <input type="file" id="scheduleFileInput" accept="image/*" hidden/>
-      <div id="schedulePreview" style="display:none;margin-top:.75rem"><img id="schedulePreviewImg" style="width:100%;border-radius:10px;max-height:300px;object-fit:contain"/></div>
-      <div id="scheduleError" class="error-msg"></div>
-      <div class="modal-actions">
-        <button class="btn-outline" id="scheduleCancelBtn">Hủy</button>
-        <button class="btn-primary" id="scheduleSaveBtn">💾 Lưu</button>
+
+      <!-- Body -->
+      <div style="padding:1.4rem 1.75rem;display:flex;flex-direction:column;gap:1rem;max-height:70vh;overflow-y:auto">
+
+        <!-- Ngày + Lớp -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.4px">📆 Ngày học</div>
+            <input type="date" id="schedSlotDate" style="width:100%;padding:.65rem .85rem;border:1.5px solid var(--border);border-radius:11px;outline:none;font-size:.9rem;background:var(--bg);transition:border-color .2s;box-sizing:border-box"
+              onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)'"/>
+          </div>
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.4px">🏫 Lớp</div>
+            <select id="schedSlotClass" style="width:100%;padding:.65rem .85rem;border:1.5px solid var(--border);border-radius:11px;outline:none;font-size:.9rem;background:var(--bg);transition:border-color .2s"
+              onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)'">
+              <option value="">Tất cả lớp</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Buổi học -->
+        <div>
+          <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.4px">⏰ Buổi học</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem" id="schedSessionGroup">
+            <label class="sched-session-btn" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.7rem .5rem;border:2px solid var(--border);border-radius:13px;cursor:pointer;transition:all .2s;text-align:center">
+              <input type="radio" name="schedSession" value="sáng" style="display:none"/>
+              <span style="font-size:1.4rem">☀️</span>
+              <span style="font-size:.82rem;font-weight:700">Sáng</span>
+            </label>
+            <label class="sched-session-btn" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.7rem .5rem;border:2px solid var(--border);border-radius:13px;cursor:pointer;transition:all .2s;text-align:center">
+              <input type="radio" name="schedSession" value="chiều" style="display:none"/>
+              <span style="font-size:1.4rem">🌤</span>
+              <span style="font-size:.82rem;font-weight:700">Chiều</span>
+            </label>
+            <label class="sched-session-btn" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.7rem .5rem;border:2px solid var(--border);border-radius:13px;cursor:pointer;transition:all .2s;text-align:center">
+              <input type="radio" name="schedSession" value="tối" style="display:none"/>
+              <span style="font-size:1.4rem">🌙</span>
+              <span style="font-size:.82rem;font-weight:700">Tối</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Giờ -->
+        <div style="background:var(--bg);border-radius:14px;padding:1rem 1.1rem">
+          <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.4px">🕐 Thời gian</div>
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:.5rem;align-items:center">
+            <!-- Bắt đầu -->
+            <div>
+              <div style="font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:.35rem;text-align:center">Bắt đầu</div>
+              <input type="text" id="schedStartTime" value="08:00" placeholder="VD: 08:00"
+                style="width:100%;padding:.65rem .5rem;border:1.5px solid var(--border);border-radius:9px;outline:none;font-size:.95rem;background:var(--card);text-align:center;box-sizing:border-box;font-weight:700"
+                onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)';_updateTimeSummary()"/>
+              <div id="schedStartPreview" style="font-size:.72rem;color:#6366f1;font-weight:600;margin-top:.3rem;text-align:center;min-height:1rem"></div>
+            </div>
+            <!-- Mũi tên -->
+            <div style="font-size:1.2rem;color:var(--muted);padding:0 .25rem;margin-top:-.5rem">→</div>
+            <!-- Kết thúc -->
+            <div>
+              <div style="font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:.35rem;text-align:center">Kết thúc</div>
+              <input type="text" id="schedEndTime" value="10:00" placeholder="VD: 10:00"
+                style="width:100%;padding:.65rem .5rem;border:1.5px solid var(--border);border-radius:9px;outline:none;font-size:.95rem;background:var(--card);text-align:center;box-sizing:border-box;font-weight:700"
+                onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)';_updateTimeSummary()"/>
+              <div id="schedEndPreview" style="font-size:.72rem;color:#6366f1;font-weight:600;margin-top:.3rem;text-align:center;min-height:1rem"></div>
+            </div>
+          </div>
+          <!-- Thanh tóm tắt thời gian -->
+          <div id="schedTimeSummary" style="margin-top:.75rem;text-align:center;font-size:.8rem;font-weight:700;color:#4f46e5;background:rgba(99,102,241,.08);border-radius:8px;padding:.4rem .75rem"></div>
+        </div>
+
+        <!-- Input ẩn KHÔNG CÒN CẦN - dùng trực tiếp schedStartTime/schedEndTime -->
+
+        <!-- Nội dung -->
+        <div>
+          <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.4px">📖 Nội dung buổi học <span style="color:var(--danger)">*</span></div>
+          <input type="text" id="schedSubject" placeholder="VD: Đại số — Hàm số bậc hai..."
+            style="width:100%;padding:.75rem .9rem;border:1.5px solid var(--border);border-radius:11px;outline:none;font-size:.9rem;background:var(--bg);box-sizing:border-box;transition:border-color .2s"
+            onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)'"/>
+        </div>
+
+        <!-- Ghi chú -->
+        <div>
+          <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.4px">💬 Ghi chú <span style="font-weight:400;text-transform:none;font-size:.72rem">(tuỳ chọn)</span></div>
+          <input type="text" id="schedNotes" placeholder="VD: Chuẩn bị bút chì, thước kẻ..."
+            style="width:100%;padding:.75rem .9rem;border:1.5px solid var(--border);border-radius:11px;outline:none;font-size:.9rem;background:var(--bg);box-sizing:border-box;transition:border-color .2s"
+            onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)'"/>
+        </div>
+
+        <!-- Zalo tip -->
+        <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1.5px solid #6ee7b7;border-radius:11px;padding:.65rem 1rem;font-size:.82rem;color:#065f46;display:flex;align-items:center;gap:.6rem">
+          <span style="font-size:1.1rem;flex-shrink:0">💬</span>
+          <span>Link học sẽ được gửi qua <b>nhóm Zalo</b> của lớp trước giờ học.</span>
+        </div>
+
+        <div id="schedSlotError" class="error-msg"></div>
+      </div>
+
+      <!-- Footer actions -->
+      <div style="padding:1rem 1.75rem 1.4rem;display:flex;gap:.75rem;border-top:1px solid var(--border);background:var(--card)">
+        <button class="btn-outline" id="schedCancelBtnFooter" style="flex:1;justify-content:center">Hủy</button>
+        <button class="btn-primary" id="schedSaveBtn" style="flex:2;justify-content:center;font-size:.95rem">💾 Lưu lịch học</button>
       </div>
     </div>
+  </div>
+
+  <style>
+    /* Session button active state */
+    .sched-session-btn:has(input:checked) {
+      border-color: #6366f1 !important;
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+    /* Fallback cho browser không hỗ trợ :has() */
+    .sched-session-btn.active {
+      border-color: #6366f1 !important;
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+    #addScheduleModal .modal { gap: 0; padding: 0; }
+  </style>
   </div>
 
   <!-- MODAL: Thông tin tài khoản vừa tạo -->
@@ -862,6 +995,33 @@
         <button id="confirmCancelBtn" class="btn-outline">Hủy</button>
         <button id="confirmOkBtn" class="btn-primary btn-danger">Xóa</button>
       </div>
+    </div>
+  </div>
+
+  <!-- TOAST: Nhắc Chủ Nhật cập nhật lịch -->
+  <div id="sundayScheduleToast" style="display:none;position:fixed;top:1rem;right:1rem;z-index:9999;max-width:360px;background:linear-gradient(135deg,#1e1b4b,#4338ca);color:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden;animation:slideInRight .4s cubic-bezier(.34,1.56,.64,1)">
+    <style>@keyframes slideInRight{from{opacity:0;transform:translateX(120%)}to{opacity:1;transform:translateX(0)}}</style>
+    <div style="padding:1rem 1.1rem 1rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem">
+        <div style="display:flex;align-items:center;gap:.65rem">
+          <div style="width:40px;height:40px;background:rgba(255,255,255,.15);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">📅</div>
+          <div>
+            <div style="font-weight:800;font-size:.92rem;letter-spacing:-.2px">Nhắc lịch học tuần sau</div>
+            <div style="font-size:.76rem;opacity:.7;margin-top:.15rem">Hôm nay Chủ Nhật</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('sundayScheduleToast').style.display='none'" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.85rem;flex-shrink:0;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      <div style="margin-top:.75rem;font-size:.83rem;line-height:1.6;opacity:.9">
+        Học viên đang chờ lịch học tuần tới. Hãy vào <b>📅 Lịch học</b> để cập nhật ngay!
+      </div>
+      <button onclick="showPage('schedule');document.getElementById('sundayScheduleToast').style.display='none'" style="margin-top:.75rem;width:100%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;padding:.5rem;font-size:.85rem;font-weight:700;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.2)'">
+        → Vào trang Lịch học
+      </button>
+    </div>
+    <!-- Progress bar tự động ẩn sau 15s -->
+    <div style="height:3px;background:rgba(255,255,255,.15)">
+      <div id="sundayToastProgress" style="height:100%;background:rgba(255,255,255,.6);width:100%;transition:width 15s linear"></div>
     </div>
   </div>
 

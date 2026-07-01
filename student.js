@@ -1619,79 +1619,238 @@ function showNewLessonToast(lessonName) {
 }
 
 // ============================================================
-// LỊCH HỌC
+// LỊCH HỌC V2 — Theo tuần, màu sắc theo trạng thái giờ học
 // ============================================================
-async function renderStudentSchedule() {
-  let query = db.from('schedules').select('*').order('created_at', { ascending: false });
-  if (myClasses.length === 1) query = query.or(`class_name.eq.${myClasses[0]},class_name.is.null`);
-  else if (myClasses.length > 1) query = query.or(`class_name.in.(${myClasses.join(',')}),class_name.is.null`);
-  const { data: list } = await query;
-  const grid = document.getElementById('sScheduleGrid');
-  grid.innerHTML = '';
-  document.getElementById('sEmptySchedule').style.display = (list||[]).length ? 'none' : 'block';
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.75rem';
-  (list||[]).forEach(s => {
-    const card = document.createElement('div');
-    card.style.cssText = 'background:var(--card);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);border:1.5px solid var(--border);cursor:pointer;transition:transform .15s';
-    card.innerHTML = `
-      <div style="position:relative;padding-bottom:75%;overflow:hidden">
-        <img src="${s.image_url}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"/>
-      </div>
-      <div style="padding:.5rem .75rem">
-        <div style="font-weight:700;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.title}</div>
-        ${s.class_name ? `<span class="class-tag" style="font-size:.68rem">${s.class_name}</span>` : ''}
-      </div>`;
-    card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-2px)');
-    card.addEventListener('mouseleave', () => card.style.transform = '');
-    card.addEventListener('click', () => {
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out';
-      overlay.innerHTML = `
-        <img src="${s.image_url}" style="max-width:100%;max-height:100%;border-radius:10px;object-fit:contain"/>
-        <button id="rotateBtn" style="position:fixed;bottom:1.5rem;right:1.5rem;background:rgba(255,255,255,.2);border:none;color:#fff;width:48px;height:48px;border-radius:50%;font-size:1.3rem;cursor:pointer;z-index:10000" title="Xoay ngang">🔄</button>
-        <button style="position:fixed;top:1rem;right:1rem;background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;z-index:10000" id="closeOverlay">✕</button>`;
-      let rotated = false;
-      overlay.querySelector('#rotateBtn').addEventListener('click', e => {
-        e.stopPropagation();
-        rotated = !rotated;
-        const img = overlay.querySelector('img');
-        if (rotated) {
-          img.style.transform = 'rotate(90deg)';
-          img.style.maxWidth = '100vh';
-          img.style.maxHeight = '100vw';
-          img.style.width = 'auto';
-          img.style.height = 'auto';
-        } else {
-          img.style.transform = '';
-          img.style.maxWidth = '100%';
-          img.style.maxHeight = '100%';
-        }
-      });
-      overlay.querySelector('#closeOverlay').addEventListener('click', e => { e.stopPropagation(); overlay.remove(); });
-      overlay.addEventListener('click', () => overlay.remove());
-      document.body.appendChild(overlay);
-    });
-    grid.appendChild(card);
-  });
+
+const _S_DAY_LABELS = ['','','T2','T3','T4','T5','T6','T7','CN'];
+const _S_SESSION_ICON = { 'sáng':'☀️','chiều':'🌤','tối':'🌙' };
+
+function _sGetMonday(d) {
+  // Dùng local date để tránh UTC offset
+  const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = dt.getDay(); // 0=CN,1=T2...
+  const diff = day === 0 ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  return dt;
+}
+function _sAddDays(d, n) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+function _sToDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _sFmtDateVN(d) { return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; }
+
+let _sCurrentWeekStart = _sGetMonday(new Date());
+
+// ---- Tính trạng thái slot ----
+// returns: 'upcoming3h' | 'live' | 'done' | 'normal'
+function _sSlotStatus(slot) {
+  const now = new Date();
+  // Lấy ngày thực của slot
+  const ws = new Date(slot.week_start + 'T00:00:00');
+  const slotDate = _sAddDays(ws, slot.day_of_week - 2);
+  const [sh,sm] = slot.start_time.split(':').map(Number);
+  const [eh,em] = slot.end_time.split(':').map(Number);
+  const startDt = new Date(slotDate); startDt.setHours(sh,sm,0,0);
+  const endDt   = new Date(slotDate); endDt.setHours(eh,em,0,0);
+  const diffMs  = startDt - now;
+
+  if (now >= startDt && now <= endDt) return 'live';
+  if (now > endDt) return 'done';
+  if (diffMs > 0 && diffMs <= 3 * 3600 * 1000) return 'upcoming3h';
+  return 'normal';
 }
 
-function openScheduleViewer(s) {
-  let modal = document.getElementById('scheduleViewerModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'scheduleViewerModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem';
-    modal.innerHTML = `
-      <div style="width:100%;max-width:700px;position:relative">
-        <button id="closeScheduleViewer" style="position:absolute;top:-40px;right:0;background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem">✕</button>
-        <div id="scheduleViewerTitle" style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:.75rem;text-align:center"></div>
-        <img id="scheduleViewerImg" style="width:100%;border-radius:14px;max-height:80vh;object-fit:contain"/>
-      </div>`;
-    document.body.appendChild(modal);
-    document.getElementById('closeScheduleViewer').addEventListener('click', () => { modal.style.display = 'none'; });
-    modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+// ---- Màu theo trạng thái ----
+function _sSlotStyle(status) {
+  switch(status) {
+    case 'live':       return { bg:'#fee2e2', border:'#ef4444', text:'#991b1b',  badge:'🔴 Đang học',  badgeBg:'#ef4444' };
+    case 'upcoming3h': return { bg:'#fef3c7', border:'#f59e0b', text:'#78350f',  badge:'⏰ Sắp học',   badgeBg:'#f59e0b' };
+    case 'done':       return { bg:'#f1f5f9', border:'#cbd5e1', text:'#94a3b8',  badge:'✅ Xong',       badgeBg:'#94a3b8' };
+    default:           return { bg:'var(--card)', border:'var(--border)', text:'var(--text)', badge:null, badgeBg:null };
   }
-  document.getElementById('scheduleViewerTitle').textContent = s.title;
-  document.getElementById('scheduleViewerImg').src = s.image_url;
-  modal.style.display = 'flex';
+}
+
+// ---- Render lịch học học sinh ----
+async function renderStudentSchedule() {
+  const ws = _sToDateStr(_sCurrentWeekStart);
+
+  // Label tuần
+  const now = _sGetMonday(new Date());
+  const diff = Math.round((_sCurrentWeekStart - now) / 86400000 / 7);
+  const wlEl = document.getElementById('sWeekLabel');
+  const wrEl = document.getElementById('sWeekRange');
+  if (wlEl) wlEl.textContent = diff === 0 ? '📅 Tuần này' : diff === 1 ? '📅 Tuần sau' : diff === -1 ? '📅 Tuần trước' : `📅 Tuần ${diff > 0 ? '+'+diff : diff}`;
+  if (wrEl) wrEl.textContent = `${_sFmtDateVN(_sCurrentWeekStart)} – ${_sFmtDateVN(_sAddDays(_sCurrentWeekStart,6))}`;
+
+  // Query theo lớp học viên
+  let query = db.from('schedule_slots').select('*')
+    .eq('week_start', ws)
+    .order('day_of_week').order('start_time');
+
+  if (myClasses.length > 0) {
+    const classFilters = myClasses.map(c => `class_name.eq.${c}`).join(',');
+    query = query.or(`${classFilters},class_name.is.null`);
+  }
+
+  const { data: slots } = await query;
+  const list = slots || [];
+
+  const container = document.getElementById('sScheduleTable');
+  const emptyEl   = document.getElementById('sEmptySchedule');
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // Group theo ngày
+  const byDay = {};
+  for (let i=2; i<=8; i++) byDay[i] = [];
+  list.forEach(s => { if (byDay[s.day_of_week]) byDay[s.day_of_week].push(s); });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const DAY_FULL = ['','','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ Nhật'];
+
+  let html = '<div style="display:flex;flex-direction:column;gap:1rem">';
+  for (let dow=2; dow<=8; dow++) {
+    const daySlots = byDay[dow];
+    if (!daySlots.length) continue; // Bỏ qua ngày không có lịch
+
+    const dayDate = _sAddDays(_sCurrentWeekStart, dow - 2);
+    const isToday = dayDate.toDateString() === today.toDateString();
+    const isSun   = dow === 8;
+
+    const headerBg     = isToday ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : isSun ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#1e1b4b,#312e81)';
+    const dateLabel    = _sFmtDateVN(dayDate);
+    const todayBadge   = isToday ? `<span style="background:rgba(255,255,255,.25);color:#fff;font-size:.68rem;font-weight:800;padding:.15rem .55rem;border-radius:20px;margin-left:.5rem">Hôm nay</span>` : '';
+
+    html += `
+      <div style="border-radius:18px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1.5px solid ${isToday?'#6366f1':isSun?'#f59e0b':'var(--border)'}">
+        <!-- Header ngày -->
+        <div style="background:${headerBg};padding:.75rem 1.1rem;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <div style="width:36px;height:36px;background:rgba(255,255,255,.18);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;color:#fff">${dow===8?'CN':String(dow-1)}</div>
+            <div>
+              <div style="font-weight:800;font-size:.95rem;color:#fff">${DAY_FULL[dow]}${todayBadge}</div>
+              <div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-top:.05rem">📆 ${dateLabel}</div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);color:#fff;font-size:.75rem;font-weight:800;padding:.25rem .7rem;border-radius:20px">${daySlots.length} buổi</div>
+        </div>
+        <!-- Slots -->
+        <div style="background:var(--bg);padding:.75rem;display:flex;flex-direction:column;gap:.6rem">
+          ${daySlots.map(s => _sSlotCard(s)).join('')}
+        </div>
+      </div>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ---- Render card slot ----
+function _sSlotCard(s) {
+  const icon = _S_SESSION_ICON[s.session] || '📅';
+
+  // Tính trạng thái — parse an toàn không phụ thuộc timezone
+  const now = new Date();
+  // Tách week_start thành y/m/d rồi tính ngày của slot
+  const [wy, wm, wd] = s.week_start.split('-').map(Number);
+  const weekMonday = new Date(wy, wm - 1, wd); // local date, không bị timezone
+  const slotDayOffset = s.day_of_week - 2; // T2=0, T3=1, ..., CN=6
+  const slotD = new Date(wy, wm - 1, wd + slotDayOffset);
+  const [sh, sm] = s.start_time.slice(0, 5).split(':').map(Number);
+  const [eh, em] = s.end_time.slice(0, 5).split(':').map(Number);
+  const startDt = new Date(slotD.getFullYear(), slotD.getMonth(), slotD.getDate(), sh, sm, 0);
+  const endDt   = new Date(slotD.getFullYear(), slotD.getMonth(), slotD.getDate(), eh, em, 0);
+
+  let status = 'upcoming'; // chưa tới
+  if (now >= startDt && now <= endDt) status = 'live';    // đang học
+  else if (now > endDt)               status = 'done';    // hết giờ
+
+  const styles = {
+    upcoming: {
+      accent: '#10b981', bg: 'linear-gradient(135deg,#f0fdf4,#dcfce7)',
+      border: '#86efac', text: 'var(--text)', opacity: '1',
+      badge: null
+    },
+    live: {
+      accent: '#ef4444', bg: 'linear-gradient(135deg,#fff1f2,#fee2e2)',
+      border: '#fca5a5', text: '#991b1b', opacity: '1',
+      badge: `<span style="display:flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:800;color:#fff;background:#ef4444;padding:.18rem .65rem;border-radius:20px">
+        <span style="width:7px;height:7px;background:#fff;border-radius:50%;animation:monitorBlink 1s ease-in-out infinite;flex-shrink:0"></span>Đang học
+      </span>`
+    },
+    done: {
+      accent: '#94a3b8', bg: 'linear-gradient(135deg,#f8fafc,#f1f5f9)',
+      border: '#e2e8f0', text: '#94a3b8', opacity: '.55',
+      badge: `<span style="font-size:.7rem;font-weight:700;color:#94a3b8;background:#f1f5f9;border:1px solid #e2e8f0;padding:.18rem .6rem;border-radius:20px">✅ Đã xong</span>`
+    }
+  };
+  const c = styles[status];
+
+  return `
+    <div style="background:${c.bg};border-radius:16px;border:1.5px solid ${c.border};overflow:hidden;transition:transform .18s,box-shadow .18s;box-shadow:0 2px 10px rgba(0,0,0,.05);opacity:${c.opacity}">
+      <div style="display:flex">
+        <div style="width:4px;background:${c.accent};flex-shrink:0"></div>
+        <div style="flex:1;padding:.8rem 1rem">
+
+          <!-- Buổi + badge trạng thái -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
+            <span style="font-size:.76rem;font-weight:700;color:${c.accent};background:${c.accent}22;padding:.18rem .6rem;border-radius:20px">
+              ${icon} ${s.session.charAt(0).toUpperCase()+s.session.slice(1)}
+            </span>
+            ${c.badge || ''}
+          </div>
+
+          <!-- Nội dung -->
+          <div style="font-weight:800;font-size:.93rem;color:${c.text};line-height:1.35;margin-bottom:.4rem">${s.subject}</div>
+
+          <!-- Giờ -->
+          <div style="display:flex;align-items:center;gap:.4rem;font-size:.81rem;font-weight:700;color:${c.accent}">
+            <span style="background:${c.accent}18;border-radius:8px;padding:.18rem .5rem">⏰ ${s.start_time.slice(0,5)}</span>
+            <span style="color:var(--muted)">→</span>
+            <span style="background:${c.accent}18;border-radius:8px;padding:.18rem .5rem">${s.end_time.slice(0,5)}</span>
+          </div>
+
+          <!-- Lớp + ghi chú -->
+          ${s.class_name || s.notes ? `
+          <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center">
+            ${s.class_name ? `<span style="font-size:.69rem;font-weight:700;background:#eef2ff;color:#4f46e5;padding:.12rem .45rem;border-radius:7px">🏫 ${s.class_name}</span>` : ''}
+            ${s.notes ? `<span style="font-size:.71rem;color:var(--muted);font-style:italic">📌 ${s.notes}</span>` : ''}
+          </div>` : ''}
+
+          <!-- Zalo — ẩn khi đã xong -->
+          ${status !== 'done' ? `
+          <div style="margin-top:.55rem;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #6ee7b7;border-radius:9px;padding:.38rem .7rem;font-size:.75rem;font-weight:700;color:#065f46;display:flex;align-items:center;gap:.4rem">
+            💬 Link học gửi qua <b>nhóm Zalo</b>
+          </div>` : ''}
+
+        </div>
+      </div>
+    </div>`;
+}
+
+// ---- Auto-refresh mỗi phút để cập nhật slot đã xong ----
+setInterval(() => {
+  if (currentSection === 'schedule') renderStudentSchedule();
+}, 60000);
+
+// ---- Điều hướng tuần ----
+document.getElementById('sPrevWeek')?.addEventListener('click', () => {
+  _sCurrentWeekStart = _sAddDays(_sCurrentWeekStart, -7);
+  renderStudentSchedule();
+});
+document.getElementById('sNextWeek')?.addEventListener('click', () => {
+  _sCurrentWeekStart = _sAddDays(_sCurrentWeekStart, 7);
+  renderStudentSchedule();
+});
+
+function openScheduleViewer(s) {
+  // legacy — không dùng nữa nhưng giữ để không lỗi nếu còn ref cũ
 }

@@ -350,7 +350,7 @@
           <div style="background:#fff;border-radius:8px;padding:.6rem .9rem;margin-top:.6rem;border:1px solid var(--primary-light,#e0e7ff);font-size:.82rem;color:var(--primary)">
             <div style="font-weight:700;margin-bottom:.35rem">📌 Mẫu nhắn tin (4 tin riêng):</div>
             <div style="display:flex;flex-direction:column;gap:.25rem;font-family:monospace">
-              <span><b>Tin 1:</b> xin cấp tài khoản học tập trên web kèm theo lớp đã đăng ký</span>
+              <span><b>Tin 1:</b> xin cấp tài khoản học tập trên web</span>
               <span><b>Tin 2:</b> Tên lớp (VD: vsat 6)</span>
               <span><b>Tin 3:</b> Số điện thoại</span>
               <span><b>Tin 4:</b> Gmail</span>
@@ -408,13 +408,47 @@
       </div>
     </section>
 
-    <!-- LỊCH HỌC -->
+    <!-- LỊCH HỌC V2 -->
     <section class="page" id="pageSchedule">
-      <div class="page-header">
-        <h1 class="page-title">📅 Lịch học</h1>
+
+      <!-- Hero banner -->
+      <div style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:18px;padding:1.1rem 1.4rem;margin-bottom:1rem;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+        <div>
+          <div style="font-size:1.1rem;font-weight:900;letter-spacing:-.3px">📅 Lịch học</div>
+          <div style="font-size:.78rem;opacity:.65;margin-top:.15rem">Lịch học theo từng tuần của lớp bạn</div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;font-size:.72rem;font-weight:700">
+          <span style="display:flex;align-items:center;gap:.3rem;background:rgba(16,185,129,.25);border:1px solid rgba(16,185,129,.4);padding:.2rem .6rem;border-radius:20px;color:#6ee7b7">🟢 Chưa học</span>
+          <span style="display:flex;align-items:center;gap:.3rem;background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.4);padding:.2rem .6rem;border-radius:20px;color:#fca5a5">🔴 Đang học</span>
+          <span style="display:flex;align-items:center;gap:.3rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);padding:.2rem .6rem;border-radius:20px;color:rgba(255,255,255,.5)">⬜ Đã xong</span>
+        </div>
       </div>
-      <div id="sScheduleGrid" style="display:flex;flex-direction:column;gap:1rem"></div>
-      <div class="empty-state" id="sEmptySchedule">Chưa có lịch học nào.</div>
+
+      <!-- Điều hướng tuần -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;background:var(--card);border-radius:14px;padding:.6rem .85rem;border:1.5px solid var(--border);box-shadow:var(--shadow)">
+        <button id="sPrevWeek" style="background:var(--primary-light);border:none;border-radius:9px;padding:.45rem .85rem;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--primary);transition:background .15s" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='var(--primary-light)'">‹ Trước</button>
+        <div style="text-align:center">
+          <div id="sWeekLabel" style="font-weight:800;font-size:.92rem;color:var(--text)"></div>
+          <div id="sWeekRange" style="font-size:.72rem;color:var(--muted);margin-top:.1rem"></div>
+        </div>
+        <button id="sNextWeek" style="background:var(--primary-light);border:none;border-radius:9px;padding:.45rem .85rem;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--primary);transition:background .15s" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='var(--primary-light)'">Sau ›</button>
+      </div>
+
+      <!-- Danh sách lịch theo ngày -->
+      <div id="sScheduleGrid">
+        <div id="sScheduleTable"></div>
+      </div>
+      <div class="empty-state" id="sEmptySchedule" style="display:none">
+        <div style="font-size:2.5rem;margin-bottom:.75rem">📭</div>
+        <div style="font-weight:700;font-size:.95rem">Tuần này chưa có lịch học</div>
+        <div style="font-size:.82rem;color:var(--muted);margin-top:.35rem">Giáo viên sẽ cập nhật lịch sớm nhất có thể</div>
+      </div>
+
+      <!-- Nhắc link Zalo -->
+      <div style="margin-top:1.25rem;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1.5px solid #6ee7b7;border-radius:14px;padding:.85rem 1.1rem;font-size:.83rem;color:#065f46;display:flex;align-items:center;gap:.7rem">
+        <span style="font-size:1.4rem;flex-shrink:0">💬</span>
+        <span>Link học sẽ được gửi qua <b>nhóm Zalo</b> của lớp trước giờ học. Vui lòng để ý thông báo!</span>
+      </div>
     </section>
 
     <!-- HỒ SƠ -->

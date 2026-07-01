@@ -362,7 +362,7 @@ async function populateClassFilters() {
     const cur = el.value; el.innerHTML = filterOpts; el.value = cur;
   });
   const lcs = document.getElementById('lClassSelect'); if (lcs) { const cur=lcs.value; lcs.innerHTML=modalOpts; lcs.value=cur; }
-  ['addClass','esClass','groupClassSelect','scheduleClass'].forEach(id => {
+  ['addClass','esClass','groupClassSelect','scheduleClass','schedSlotClass'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
     const cur = el.value; el.innerHTML = modalOpts; el.value = cur;
   });
@@ -3508,6 +3508,18 @@ document.getElementById('exportAccessBtn').addEventListener('click', async () =>
   a.click();
 });
 
+document.getElementById('clearAccessBtn')?.addEventListener('click', () => {
+  showConfirm(
+    'Xóa toàn bộ nhật ký truy cập? Hành động này không thể hoàn tác.',
+    async () => {
+      const { error } = await db.from('access_logs').delete().neq('id', 0);
+      if (error) { alert('Lỗi: ' + error.message); return; }
+      renderAccessStats();
+    },
+    { title: 'Xóa nhật ký truy cập', icon: '🗑', okText: 'Xóa tất cả', cancelText: 'Hủy' }
+  );
+});
+
 
 
 
@@ -3742,104 +3754,475 @@ document.getElementById('maintenanceSideBtn')?.addEventListener('click', async (
 })();
 
 // ============================================================
-// LỊCH HỌC
+// LỊCH HỌC V2 — Theo tuần, từng slot ngày
 // ============================================================
-let pendingScheduleFile = null;
 
+// ---- Helpers ngày ----
+function getMonday(d) {
+  const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = dt.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  return dt;
+}
+function addDays(d, n) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDateVN(d) {
+  const dt = new Date(d);
+  return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
+}
+const DAY_LABELS = ['','','T2','T3','T4','T5','T6','T7','CN'];
+const SESSION_ICON = { 'sáng':'☀️','chiều':'🌤','tối':'🌙' };
+
+// ---- State tuần hiện tại ----
+let schedCurrentWeekStart = getMonday(new Date());
+
+// ---- Kiểm tra nhắc nhở Chủ Nhật ----
+function checkScheduleSundayAlert() {
+  const today = new Date();
+  const isSunday = today.getDay() === 0;
+  const el = document.getElementById('schedSundayAlert');
+  if (el) el.style.display = isSunday ? 'flex' : 'none';
+}
+
+// ---- Render bảng lịch 7 ngày ----
 async function renderSchedule() {
+  checkScheduleSundayAlert();
   const cls = document.getElementById('scheduleFilterClass')?.value || '';
-  let query = db.from('schedules').select('*').order('created_at', { ascending: false });
+  const ws = toDateStr(schedCurrentWeekStart);
+  const we = toDateStr(addDays(schedCurrentWeekStart, 6));
+
+  // Cập nhật label tuần
+  const wlEl = document.getElementById('schedWeekLabel');
+  const wrEl = document.getElementById('schedWeekRange');
+  if (wlEl) {
+    const now = getMonday(new Date());
+    const diff = Math.round((schedCurrentWeekStart - now) / 86400000 / 7);
+    wlEl.textContent = diff === 0 ? '📅 Tuần này' : diff === 1 ? '📅 Tuần sau' : diff === -1 ? '📅 Tuần trước' : `📅 Tuần ${diff > 0 ? '+'+diff : diff}`;
+  }
+  if (wrEl) wrEl.textContent = `${fmtDateVN(schedCurrentWeekStart)} – ${fmtDateVN(addDays(schedCurrentWeekStart,6))}`;
+
+  // Query
+  let query = db.from('schedule_slots').select('*')
+    .gte('week_start', ws).lte('week_start', ws)
+    .order('day_of_week').order('start_time');
   if (cls) query = query.eq('class_name', cls);
-  const { data: list } = await query;
-  const grid = document.getElementById('scheduleGrid');
-  grid.innerHTML = '';
-  document.getElementById('emptySchedule').style.display = (list||[]).length ? 'none' : 'block';
-  (list||[]).forEach(s => {
-    const card = document.createElement('div');
-    card.style.cssText = 'background:var(--card);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);border:1.5px solid var(--border)';
-    card.innerHTML = `
-      <img src="${s.image_url}" style="width:100%;max-height:220px;object-fit:cover;cursor:pointer" onclick="window.open('${s.image_url}','_blank')"/>
-      <div style="padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem">
-        <div>
-          <div style="font-weight:700;font-size:.9rem">${s.title}</div>
-          <div style="font-size:.75rem;color:var(--muted);margin-top:.15rem">${s.class_name ? `<span class="class-tag">${s.class_name}</span>` : 'Tất cả lớp'} • ${fmtTime(s.created_at)}</div>
+  else query = query; // lấy hết
+  const { data: slots } = await query;
+  const list = slots || [];
+
+  const container = document.getElementById('schedWeekTable');
+  const emptyEl   = document.getElementById('emptySchedule');
+  if (!container) return;
+
+  // Group theo ngày
+  const byDay = {};
+  for (let i=2; i<=8; i++) byDay[i] = [];
+  list.forEach(s => { if (byDay[s.day_of_week]) byDay[s.day_of_week].push(s); });
+
+  // Build HTML bảng
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem">';
+  for (let dow=2; dow<=8; dow++) {
+    const dayDate = addDays(schedCurrentWeekStart, dow-2);
+    const isToday = dayDate.toDateString() === today.toDateString();
+    const isSun   = dow === 8;
+    const dateStr = toDateStr(dayDate);
+    const daySlots = byDay[dow];
+
+    html += `
+      <div style="min-width:0">
+        <!-- Header ngày -->
+        <div style="text-align:center;padding:.45rem .25rem;border-radius:10px;margin-bottom:.35rem;cursor:pointer;transition:background .15s;
+          background:${isToday ? 'var(--primary)' : isSun ? '#fef3c7' : 'var(--bg)'};
+          border:1.5px solid ${isToday ? 'var(--primary)' : isSun ? '#f59e0b' : 'var(--border)'};"
+          onclick="adminScheduleOpenAdd('${dateStr}',${dow})"
+          onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'"
+          title="Thêm buổi học ngày ${fmtDateVN(dayDate)}">
+          <div style="font-weight:800;font-size:.8rem;color:${isToday ? '#fff' : isSun ? '#92400e' : 'var(--text)'}">${DAY_LABELS[dow]}</div>
+          <div style="font-size:.7rem;color:${isToday ? 'rgba(255,255,255,.75)' : 'var(--muted)'};margin-top:.1rem">${fmtDateVN(dayDate)}</div>
+          <div style="font-size:.65rem;margin-top:.2rem;color:${isToday?'rgba(255,255,255,.7)':'var(--muted)'}">➕</div>
         </div>
-        <button class="btn-sm btn-danger" data-del="${s.id}">🗑</button>
+        <!-- Slots -->
+        <div style="display:flex;flex-direction:column;gap:.3rem" id="schedDay_${dow}">
+          ${daySlots.length === 0
+            ? `<div style="height:40px;border-radius:8px;border:1.5px dashed var(--border);opacity:.4"></div>`
+            : daySlots.map(s => _adminScheduleSlotHTML(s)).join('')
+          }
+        </div>
       </div>`;
-    card.querySelector('[data-del]').addEventListener('click', () => {
-      showConfirm(`Xóa lịch học "${s.title}"?`, async () => {
-        // Xóa file storage nếu có
-        if (s.image_url?.includes('supabase')) {
-          const path = s.image_url.split('/schedules/')[1];
-          if (path) await db.storage.from('schedules').remove([path]);
-        }
-        await db.from('schedules').delete().eq('id', s.id);
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+  emptyEl.style.display = 'none';
+
+  // Bind nút xóa
+  container.querySelectorAll('[data-sched-del]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.schedDel;
+      const subj = btn.dataset.schedSubj || 'buổi học này';
+      showConfirm(`Xóa "${subj}"?`, async () => {
+        await db.from('schedule_slots').delete().eq('id', id);
         renderSchedule();
       });
     });
-    grid.appendChild(card);
+  });
+
+  // Bind nút sửa
+  container.querySelectorAll('[data-sched-edit]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.schedEdit);
+      // Tìm slot trong list
+      const slot = list.find(s => s.id === id);
+      if (slot) adminScheduleOpenEdit(slot);
+    });
   });
 }
 
-document.getElementById('scheduleFilterClass')?.addEventListener('change', renderSchedule);
+function _adminScheduleSlotHTML(s) {
+  const icon = SESSION_ICON[s.session] || '📅';
+  return `
+    <div style="background:var(--card);border-radius:10px;padding:.65rem .75rem;border:1.5px solid var(--border);position:relative;overflow:hidden;font-size:.82rem;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.35rem;margin-bottom:.35rem">
+        <span style="font-weight:800;font-size:.85rem;display:flex;align-items:center;gap:.3rem">${icon} ${s.session}</span>
+        <div style="display:flex;gap:.3rem">
+          <button class="btn-sm" data-sched-edit="${s.id}" style="padding:.2rem .5rem;font-size:.75rem;min-height:0;line-height:1" title="Sửa">✏️</button>
+          <button class="btn-sm btn-danger" data-sched-del="${s.id}" data-sched-subj="${s.subject}" style="padding:.2rem .5rem;font-size:.75rem;min-height:0;line-height:1" title="Xóa">🗑</button>
+        </div>
+      </div>
+      <div style="font-weight:800;font-size:.9rem;color:var(--text);line-height:1.3;margin-bottom:.3rem;white-space:normal;word-break:break-word">${s.subject}</div>
+      <div style="color:var(--primary);font-weight:700;font-size:.8rem;margin-bottom:.25rem">⏰ ${s.start_time.slice(0,5)} – ${s.end_time.slice(0,5)}</div>
+      ${s.class_name
+        ? `<span class="class-tag" style="font-size:.72rem">${s.class_name}</span>`
+        : `<span style="font-size:.72rem;color:var(--muted);font-style:italic">Tất cả lớp</span>`}
+      ${s.notes ? `<div style="color:var(--muted);font-size:.75rem;margin-top:.25rem;font-style:italic">📌 ${s.notes}</div>` : ''}
+    </div>`;
+}
 
-document.getElementById('openAddScheduleBtn')?.addEventListener('click', async () => {
-  pendingScheduleFile = null;
-  document.getElementById('scheduleTitle').value = '';
-  document.getElementById('scheduleFileInfo').textContent = '';
-  document.getElementById('schedulePreview').style.display = 'none';
-  document.getElementById('scheduleError').textContent = '';
-  await populateClassFilters();
-  document.getElementById('scheduleClass').value = '';
-  document.getElementById('addScheduleModal').classList.add('open');
-});
-
-document.getElementById('scheduleCancelBtn')?.addEventListener('click', () => {
-  document.getElementById('addScheduleModal').classList.remove('open');
-  pendingScheduleFile = null;
-});
-
-document.getElementById('scheduleFileInput')?.addEventListener('change', e => {
-  const f = e.target.files[0]; if (!f) return;
-  pendingScheduleFile = f;
-  document.getElementById('scheduleFileInfo').textContent = `📎 ${f.name}`;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    document.getElementById('schedulePreviewImg').src = ev.target.result;
-    document.getElementById('schedulePreview').style.display = '';
-  };
-  reader.readAsDataURL(f);
-});
-
-// Drag & drop
-const dropZone = document.getElementById('scheduleDropZone');
-dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; });
-dropZone?.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border)'; });
-dropZone?.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.style.borderColor = 'var(--border)';
-  const f = e.dataTransfer.files[0]; if (!f || !f.type.startsWith('image/')) return;
-  pendingScheduleFile = f;
-  document.getElementById('scheduleFileInfo').textContent = `📎 ${f.name}`;
-  const reader = new FileReader();
-  reader.onload = ev => { document.getElementById('schedulePreviewImg').src = ev.target.result; document.getElementById('schedulePreview').style.display = ''; };
-  reader.readAsDataURL(f);
-});
-
-document.getElementById('scheduleSaveBtn')?.addEventListener('click', async () => {
-  const title = document.getElementById('scheduleTitle').value.trim();
-  const cls   = document.getElementById('scheduleClass').value;
-  const err   = document.getElementById('scheduleError');
-  const btn   = document.getElementById('scheduleSaveBtn');
-  if (!title) { err.textContent = 'Vui lòng nhập tiêu đề.'; return; }
-  if (!pendingScheduleFile) { err.textContent = 'Vui lòng chọn hình ảnh.'; return; }
-  btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
-  const safeName = `${Date.now()}_${pendingScheduleFile.name.replace(/[^a-zA-Z0-9.\-_]/g,'_')}`;
-  const { error: upErr } = await db.storage.from('schedules').upload(safeName, pendingScheduleFile, { cacheControl: '3600', upsert: false });
-  if (upErr) { err.textContent = 'Lỗi upload: ' + upErr.message; btn.textContent = '💾 Lưu'; btn.disabled = false; return; }
-  const { data: urlData } = db.storage.from('schedules').getPublicUrl(safeName);
-  await db.from('schedules').insert({ title, class_name: cls || null, image_url: urlData.publicUrl });
-  btn.textContent = '💾 Lưu'; btn.disabled = false;
-  document.getElementById('addScheduleModal').classList.remove('open');
-  pendingScheduleFile = null;
+// ---- Điều hướng tuần ----
+document.getElementById('schedPrevWeek')?.addEventListener('click', () => {
+  schedCurrentWeekStart = addDays(schedCurrentWeekStart, -7);
   renderSchedule();
 });
+document.getElementById('schedNextWeek')?.addEventListener('click', () => {
+  schedCurrentWeekStart = addDays(schedCurrentWeekStart, 7);
+  renderSchedule();
+});
+document.getElementById('scheduleFilterClass')?.addEventListener('change', renderSchedule);
+
+// ---- Helper: parse giờ từ chuỗi tự nhập ----
+function _parseTime(str) {
+  if (!str) return null;
+  // Chấp nhận: 8, 8:00, 08:00, 8h, 8h30, 8:30, 830
+  str = str.trim().replace(/\s/g,'').toLowerCase().replace('h',':');
+  // Trường hợp chỉ gõ số như "830" → "8:30"
+  if (/^\d{3,4}$/.test(str)) {
+    str = str.slice(0,-2) + ':' + str.slice(-2);
+  }
+  const parts = str.split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1] || '0', 10);
+  if (isNaN(h) || h < 0 || h > 23) return null;
+  if (isNaN(m) || m < 0 || m > 59) return null;
+  return { h, m, str: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}` };
+}
+
+// ---- Helper: preview giờ tiếng Việt ----
+function _timePreview(timeStr) {
+  const t = _parseTime(timeStr);
+  if (!t) return '';
+  const { h, m } = t;
+  const mTxt = m > 0 ? ` ${m} phút` : '';
+  if (h === 0)  return `🌙 12 giờ đêm${mTxt}`;
+  if (h < 6)    return `🌙 ${h} giờ sáng sớm${mTxt}`;
+  if (h < 12)   return `☀️ ${h} giờ sáng${mTxt}`;
+  if (h === 12) return `☀️ 12 giờ trưa${mTxt}`;
+  if (h < 18)   return `🌤 ${h - 12} giờ chiều${mTxt} (${h}h)`;
+  return `🌙 ${h - 12} giờ tối${mTxt} (${h}h)`;
+}
+
+function _updateTimeSummary() {
+  const startRaw = document.getElementById('schedStartTime')?.value || '';
+  const endRaw   = document.getElementById('schedEndTime')?.value   || '';
+  const ts = _parseTime(startRaw);
+  const te = _parseTime(endRaw);
+  const prevS   = document.getElementById('schedStartPreview');
+  const prevE   = document.getElementById('schedEndPreview');
+  const summary = document.getElementById('schedTimeSummary');
+  if (prevS) prevS.textContent = ts ? _timePreview(startRaw) : (startRaw ? '⚠️ Giờ không hợp lệ' : '');
+  if (prevE) prevE.textContent = te ? _timePreview(endRaw)   : (endRaw   ? '⚠️ Giờ không hợp lệ' : '');
+  if (!summary) return;
+  if (!ts || !te) { summary.textContent = ''; return; }
+  const startMins = ts.h*60 + ts.m;
+  const endMins   = te.h*60 + te.m;
+  const diff = endMins - startMins;
+  if (diff > 0) {
+    const dh = Math.floor(diff/60), dm = diff%60;
+    const dur = dh > 0 ? `${dh} tiếng${dm > 0 ? ` ${dm} phút` : ''}` : `${dm} phút`;
+    summary.textContent = `${ts.str} → ${te.str}  ·  Thời lượng: ${dur}`;
+    summary.style.color = '#4f46e5';
+  } else {
+    summary.textContent = '⚠️ Giờ kết thúc phải sau giờ bắt đầu';
+    summary.style.color = '#ef4444';
+  }
+}
+
+// Bind sự kiện trực tiếp vào input text
+document.getElementById('schedStartTime')?.addEventListener('input', _updateTimeSummary);
+document.getElementById('schedEndTime')?.addEventListener('input', _updateTimeSummary);
+_updateTimeSummary();
+
+// ---- Session button active highlight ----
+document.querySelectorAll('input[name="schedSession"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.querySelectorAll('.sched-session-btn').forEach(btn => btn.classList.remove('active'));
+    radio.closest('.sched-session-btn')?.classList.add('active');
+  });
+});
+
+// ---- Mở modal SỬA slot ----
+let _editingSlotId = null;
+
+function adminScheduleOpenEdit(slot) {
+  _editingSlotId = slot.id;
+  document.getElementById('schedModalTitle').textContent = '✏️ Sửa buổi học';
+  document.getElementById('schedModalSubtitle').textContent = 'Chỉnh sửa thông tin buổi học';
+
+  // Điền ngày từ week_start + day_of_week
+  const [wy, wm, wd] = slot.week_start.split('-').map(Number);
+  const slotD = new Date(wy, wm - 1, wd + (slot.day_of_week - 2));
+  document.getElementById('schedSlotDate').value = _sToDateStrLocal(slotD);
+
+  // Lớp
+  populateClassFilters().then(() => {
+    document.getElementById('schedSlotClass').value = slot.class_name || '';
+  });
+
+  // Buổi
+  document.querySelectorAll('input[name="schedSession"]').forEach(r => r.checked = false);
+  const sessionRadio = document.querySelector(`input[name="schedSession"][value="${slot.session}"]`);
+  if (sessionRadio) sessionRadio.checked = true;
+  document.querySelectorAll('.sched-session-btn').forEach(btn => btn.classList.remove('active'));
+  sessionRadio?.closest('.sched-session-btn')?.classList.add('active');
+
+  // Giờ
+  document.getElementById('schedStartTime').value = slot.start_time.slice(0,5);
+  document.getElementById('schedEndTime').value   = slot.end_time.slice(0,5);
+  _updateTimeSummary();
+
+  // Nội dung + ghi chú
+  document.getElementById('schedSubject').value = slot.subject || '';
+  document.getElementById('schedNotes').value   = slot.notes   || '';
+  document.getElementById('schedSlotError').textContent = '';
+
+  // Đổi nút lưu thành "Cập nhật"
+  document.getElementById('schedSaveBtn').textContent = '💾 Cập nhật';
+
+  document.getElementById('addScheduleModal').classList.add('open');
+}
+
+// Helper tạo date string local (tránh UTC offset)
+function _sToDateStrLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function adminScheduleOpenAdd(dateStr, dow) {
+  _editingSlotId = null; // reset — đây là thêm mới
+  document.getElementById('schedModalTitle').textContent = '📅 Thêm buổi học';
+  document.getElementById('schedModalSubtitle').textContent = 'Điền thông tin buổi học mới';
+  document.getElementById('schedSlotDate').value = dateStr;
+  document.getElementById('schedSlotClass').value = '';
+  document.querySelectorAll('input[name="schedSession"]').forEach(r => r.checked = false);
+  document.querySelector('input[name="schedSession"][value="sáng"]').checked = true;
+  document.querySelectorAll('.sched-session-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelector('input[name="schedSession"][value="sáng"]')?.closest('.sched-session-btn')?.classList.add('active');
+  document.getElementById('schedStartTime').value = '08:00';
+  document.getElementById('schedEndTime').value   = '10:00';
+  _updateTimeSummary();
+  document.getElementById('schedSubject').value = '';
+  document.getElementById('schedNotes').value = '';
+  document.getElementById('schedSlotError').textContent = '';
+  document.getElementById('schedSaveBtn').textContent = '💾 Lưu lịch học';
+  document.getElementById('addScheduleModal').classList.add('open');
+}
+
+// ---- Nút "Thêm lịch" trên header ----
+document.getElementById('openAddScheduleBtn')?.addEventListener('click', async () => {
+  await populateClassFilters();
+  const today = toDateStr(new Date());
+  adminScheduleOpenAdd(today, new Date().getDay() || 7);
+});
+
+// ---- Đóng modal ----
+document.getElementById('schedCancelBtn')?.addEventListener('click', () => {
+  document.getElementById('addScheduleModal').classList.remove('open');
+});
+document.getElementById('schedCancelBtnFooter')?.addEventListener('click', () => {
+  document.getElementById('addScheduleModal').classList.remove('open');
+});
+
+// ---- Lưu slot ----
+document.getElementById('schedSaveBtn')?.addEventListener('click', async () => {
+  const dateVal  = document.getElementById('schedSlotDate').value;
+  const cls      = document.getElementById('schedSlotClass').value;
+  const session  = document.querySelector('input[name="schedSession"]:checked')?.value;
+  const startT   = document.getElementById('schedStartTime').value;
+  const endT     = document.getElementById('schedEndTime').value;
+  const subject  = document.getElementById('schedSubject').value.trim();
+  const notes    = document.getElementById('schedNotes').value.trim();
+  const err      = document.getElementById('schedSlotError');
+  const btn      = document.getElementById('schedSaveBtn');
+
+  err.textContent = '';
+  if (!dateVal)   { err.textContent = 'Vui lòng chọn ngày.'; return; }
+  if (!session)   { err.textContent = 'Vui lòng chọn buổi học.'; return; }
+  if (!startT)    { err.textContent = 'Vui lòng nhập giờ bắt đầu.'; return; }
+  if (!endT)      { err.textContent = 'Vui lòng nhập giờ kết thúc.'; return; }
+
+  // Parse giờ tự nhập
+  const tsObj = _parseTime(startT);
+  const teObj = _parseTime(endT);
+  if (!tsObj) { err.textContent = 'Giờ bắt đầu không hợp lệ. VD: 08:00'; return; }
+  if (!teObj) { err.textContent = 'Giờ kết thúc không hợp lệ. VD: 10:00'; return; }
+  const startNorm = tsObj.str;
+  const endNorm   = teObj.str;
+  if (tsObj.h*60+tsObj.m >= teObj.h*60+teObj.m) { err.textContent = 'Giờ kết thúc phải sau giờ bắt đầu.'; return; }
+  if (!subject)   { err.textContent = 'Vui lòng nhập nội dung buổi học.'; return; }
+
+  // Tính week_start (thứ 2) và day_of_week
+  const d = new Date(dateVal + 'T00:00:00');
+  const weekStart = getMonday(d);
+  const jsDay = d.getDay();
+  const dow = jsDay === 0 ? 8 : jsDay + 1;
+
+  // ---- Kiểm tra trùng giờ trong cùng ngày + lớp ----
+  btn.textContent = '⏳ Đang kiểm tra...'; btn.disabled = true;
+  const ws = toDateStr(weekStart);
+
+  let conflictQuery = db.from('schedule_slots')
+    .select('id,subject,start_time,end_time,class_name')
+    .eq('week_start', ws)
+    .eq('day_of_week', dow);
+  // Lấy tất cả slot cùng ngày, sau đó lọc lớp phía client
+  const { data: existingSlots } = await conflictQuery;
+
+  // Hai buổi bị trùng nếu: startA < endB AND endA > startB
+  const toMins = t => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+  const newStart = toMins(startNorm), newEnd = toMins(endNorm);
+
+  const conflict = (existingSlots||[]).find(s => {
+    if (_editingSlotId && s.id === _editingSlotId) return false; // bỏ qua chính nó khi sửa
+    const sameClass = !s.class_name || !cls || s.class_name === cls;
+    if (!sameClass) return false;
+    const sStart = toMins(s.start_time), sEnd = toMins(s.end_time);
+    return newStart < sEnd && newEnd > sStart;
+  });
+
+  if (conflict) {
+    const cStart = conflict.start_time.slice(0,5);
+    const cEnd   = conflict.end_time.slice(0,5);
+    err.innerHTML = `⚠️ Trùng giờ với buổi <b>"${conflict.subject}"</b> (${cStart} – ${cEnd}). Vui lòng chọn khung giờ khác.`;
+    btn.textContent = _editingSlotId ? '💾 Cập nhật' : '💾 Lưu lịch học'; btn.disabled = false;
+    return;
+  }
+
+  // ---- Lưu / Cập nhật ----
+  btn.textContent = '⏳ Đang lưu...';
+
+  let saveError;
+  if (_editingSlotId) {
+    // UPDATE
+    const { error } = await db.from('schedule_slots').update({
+      week_start : ws,
+      day_of_week: dow,
+      class_name : cls || null,
+      session,
+      start_time : startNorm,
+      end_time   : endNorm,
+      subject,
+      notes      : notes || null
+    }).eq('id', _editingSlotId);
+    saveError = error;
+  } else {
+    // INSERT
+    const { error } = await db.from('schedule_slots').insert({
+      week_start : ws,
+      day_of_week: dow,
+      class_name : cls || null,
+      session,
+      start_time : startNorm,
+      end_time   : endNorm,
+      subject,
+      notes      : notes || null
+    });
+    saveError = error;
+  }
+
+  btn.textContent = _editingSlotId ? '💾 Cập nhật' : '💾 Lưu lịch học';
+  btn.disabled = false;
+  if (saveError) { err.textContent = 'Lỗi: ' + saveError.message; return; }
+
+  _editingSlotId = null;
+  document.getElementById('addScheduleModal').classList.remove('open');
+  schedCurrentWeekStart = weekStart;
+  renderSchedule();
+});
+
+// ---- Nhắc Chủ Nhật — kiểm tra mỗi phút ----
+setInterval(checkScheduleSundayAlert, 60000);
+
+// ---- Toast nhắc Chủ Nhật toàn cục (hiện ở mọi trang) ----
+function _showSundayToastGlobal() {
+  const today = new Date();
+  if (today.getDay() !== 0) return; // không phải CN
+
+  const key = 'dh_sunday_toast_' + today.toDateString();
+  if (sessionStorage.getItem(key)) return; // đã hiện trong session này
+  sessionStorage.setItem(key, '1');
+
+  const toast = document.getElementById('sundayScheduleToast');
+  if (!toast) return;
+  toast.style.display = 'block';
+
+  // Progress bar chạy rồi tự ẩn sau 15s
+  const bar = document.getElementById('sundayToastProgress');
+  if (bar) {
+    setTimeout(() => { bar.style.width = '0%'; }, 100);
+    setTimeout(() => { toast.style.display = 'none'; }, 15000);
+  }
+}
+
+// Hiện ngay sau khi trang load xong
+setTimeout(_showSundayToastGlobal, 2000);
+
+// ---- Push notification Chủ Nhật nhắc lên lịch ----
+(function initSundayReminder() {
+  function doSundayReminder() {
+    const now = new Date();
+    if (now.getDay() !== 0) return; // không phải CN
+    const lastKey = 'dh_sched_reminded_' + now.toDateString();
+    if (localStorage.getItem(lastKey)) return; // đã nhắc hôm nay
+    localStorage.setItem(lastKey, '1');
+
+    // Thử push notification
+    if ('Notification' in window) {
+      const send = () => new Notification('📅 Nhắc lịch học', {
+        body: 'Hôm nay Chủ Nhật — hãy lên lịch cho tuần tới để học viên chuẩn bị!',
+        icon: 'icons/icon-192.png'
+      });
+      if (Notification.permission === 'granted') { send(); }
+      else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(p => { if (p === 'granted') send(); });
+      }
+    }
+  }
+  // Chạy ngay khi load và mỗi 30 phút
+  doSundayReminder();
+  setInterval(doSundayReminder, 30 * 60 * 1000);
+})();

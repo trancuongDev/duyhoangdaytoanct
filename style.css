@@ -2479,3 +2479,130 @@ div[style*="overflow-x"] {
 #adminBottomNav a.active,
 #adminBottomNav a:active { color: var(--primary, #6366f1); }
 #adminBottomNav a span.nav-icon { font-size: 1.3rem; line-height: 1; }
+
+/* ============================================================
+   LỊCH HỌC V2 — Schedule grid (học sinh)
+   ============================================================ */
+
+/* Grid 7 cột desktop */
+.sched-student-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: .4rem;
+}
+
+/* Cột ngày */
+.sched-day-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+.sched-day-col.sched-day-empty { opacity: .45; }
+
+/* Header ngày */
+.sched-day-header {
+  text-align: center;
+  padding: .4rem .2rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+}
+.sched-day-header.sched-day-today {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.sched-day-header.sched-day-today .sched-day-name,
+.sched-day-header.sched-day-today .sched-day-date { color: #fff; }
+.sched-day-header.sched-day-sun {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+.sched-day-header.sched-day-sun .sched-day-name,
+.sched-day-header.sched-day-sun .sched-day-date { color: #92400e; }
+.sched-day-name { display: block; font-weight: 800; font-size: .78rem; color: var(--text); }
+.sched-day-date { display: block; font-size: .67rem; color: var(--muted); margin-top: .1rem; }
+
+/* Placeholder ngày trống */
+.sched-no-slot {
+  text-align: center;
+  font-size: .75rem;
+  color: var(--muted);
+  padding: .75rem 0;
+  border: 1.5px dashed var(--border);
+  border-radius: 9px;
+}
+
+/* Slot card */
+.sched-slots { display: flex; flex-direction: column; gap: .3rem; }
+.sched-slot-card {
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  padding: .5rem .6rem;
+  background: var(--card);
+  font-size: .75rem;
+  transition: box-shadow .2s;
+  word-break: break-word;
+}
+.sched-slot-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.1); }
+
+.sched-slot-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .25rem;
+  margin-bottom: .2rem;
+}
+.sched-slot-session { font-weight: 700; font-size: .75rem; }
+.sched-slot-badge {
+  font-size: .62rem;
+  font-weight: 800;
+  color: #fff;
+  border-radius: 20px;
+  padding: .1rem .45rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sched-slot-subject { font-weight: 800; font-size: .78rem; line-height: 1.3; margin-bottom: .2rem; }
+.sched-slot-time    { font-size: .7rem; color: inherit; opacity: .75; }
+.sched-slot-notes   { font-size: .68rem; font-style: italic; opacity: .7; margin-top: .2rem; }
+.sched-zalo-tip     {
+  margin-top: .35rem;
+  font-size: .68rem;
+  background: rgba(255,255,255,.5);
+  border-radius: 6px;
+  padding: .2rem .45rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+/* ---- Mobile: 1 cột (chỉ ngày có lịch) ---- */
+@media (max-width: 768px) {
+  .sched-student-grid {
+    grid-template-columns: 1fr;
+    gap: .6rem;
+  }
+  .sched-day-col.sched-day-empty { display: none; } /* ẩn ngày trống trên mobile */
+  .sched-day-header { display: flex; align-items: center; gap: .5rem; text-align: left; padding: .45rem .75rem; }
+  .sched-day-name { font-size: .85rem; }
+  .sched-day-date { font-size: .75rem; margin-top: 0; }
+  .sched-slots { flex-direction: row; flex-wrap: wrap; gap: .4rem; }
+  .sched-slot-card { flex: 1 1 calc(50% - .4rem); min-width: 130px; }
+}
+
+@media (max-width: 480px) {
+  .sched-slot-card { flex: 1 1 100%; min-width: 0; }
+}
+
+/* ---- Admin: bảng 7 cột ---- */
+#schedWeekTable .sched-slot-card { font-size: .72rem; }
+
+@media (max-width: 900px) {
+  #schedWeekTable > div { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 600px) {
+  #schedWeekTable > div { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 400px) {
+  #schedWeekTable > div { grid-template-columns: 1fr; }
+}
