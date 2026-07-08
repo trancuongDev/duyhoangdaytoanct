@@ -1038,6 +1038,9 @@ function openViewer(title, url, fileName, fileType) {
     }
   } else if (fileType==='application/pdf') {
     dl.style.display = '';
+    dl.href = url;
+    if (fileName) dl.download = fileName; else dl.removeAttribute('download');
+    dl.target = '_blank';
     const iframe = document.createElement('iframe');
     iframe.className = 'viewer-iframe';
     iframe.onload = hideLoading;
@@ -1045,6 +1048,9 @@ function openViewer(title, url, fileName, fileType) {
     setTimeout(() => { iframe.src = url; }, 0);
   } else if ((fileType||'').startsWith('image/')) {
     dl.style.display = '';
+    dl.href = url;
+    if (fileName) dl.download = fileName; else dl.removeAttribute('download');
+    dl.target = '_blank';
     const img = document.createElement('img');
     img.className = 'viewer-img';
     img.alt = title;
@@ -1053,6 +1059,9 @@ function openViewer(title, url, fileName, fileType) {
     setTimeout(() => { img.src = url; }, 0);
   } else {
     dl.style.display = '';
+    dl.href = url;
+    if (fileName) dl.download = fileName; else dl.removeAttribute('download');
+    dl.target = '_blank';
     body.innerHTML = '<p class="muted-center">⚠️ Không xem trực tiếp được. Vui lòng tải xuống.</p>';
   }
   document.getElementById('viewerModal').classList.add('open');
