@@ -313,7 +313,7 @@ async function renderHome() {
 
   // Load thông báo + bài học song song
   const [{ data: allRecentLessons }, { data: anns }] = await Promise.all([
-    db.from('lessons').select('id,name,class_name').order('created_at',{ascending:false}).limit(200),
+    db.from('lessons').select('id,name,class_name').order('group_name',{ascending:true}).order('sort_order',{ascending:true}).order('created_at',{ascending:true}).limit(200),
     db.from('announcements').select('*').order('created_at',{ascending:false}).limit(200)
   ]);
   const list = (allRecentLessons || []).filter(l => lessonMatchesStudentClasses(l, myClasses)).slice(0, 4);
@@ -418,7 +418,8 @@ async function renderLessonList(forceRefresh = false) {
       .from('lessons')
       .select('*')
       .order('group_name',{ascending:true})
-      .order('created_at',{ascending:false})
+      .order('sort_order',{ascending:true})
+      .order('created_at',{ascending:true})
       .limit(5000);
     const ownLessons = (allLessonsRaw || []).filter(l => lessonMatchesStudentClasses(l, myClasses));
 
