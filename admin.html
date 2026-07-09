@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
-  <title>Quản Trị - DHDTCT LMS v1.3.0</title>
+  <title>Quản Trị - DHDTCT LMS v1.4.9</title>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
   <link rel="stylesheet" href="style.css"/>
@@ -18,6 +18,12 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <style>
+    .sortable-ghost { opacity: .4; background: var(--primary-light) !important; border: 2px dashed var(--primary) !important; }
+    .sortable-chosen { box-shadow: 0 8px 24px rgba(99,102,241,.3) !important; }
+    .drag-handle:active { cursor: grabbing; }
+  </style>
 </head>
 <body class="dashboard-page">
 
@@ -30,9 +36,6 @@
       <button class="sidebar-mini-toggle" title="Thu gọn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;transition:all .2s;flex-shrink:0" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
     </div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="slink" data-label="Trang chủ" style="border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:.25rem">
-        <span class="slink-icon">🏠</span><span class="slink-label">Trang chủ</span>
-      </a>
       <a href="#" class="slink active" data-page="overview" data-label="Tổng quan"><span class="slink-icon">📊</span><span class="slink-label">Tổng quan</span><span id="sidebarOnlineBadge" style="display:none;background:#10b981;color:#fff;font-size:.65rem;font-weight:700;padding:.1rem .45rem;border-radius:20px;margin-left:auto">0</span></a>
       <a href="#" class="slink" data-page="lessons" data-label="Bài học"><span class="slink-icon">📚</span><span class="slink-label">Bài học</span></a>
       <a href="#" class="slink" data-page="lesson-groups" data-label="Nhóm bài học"><span class="slink-icon">📂</span><span class="slink-label">Nhóm bài học</span></a>
@@ -50,8 +53,11 @@
       <a href="#" class="slink" data-page="profile" data-label="Hồ sơ"><span class="slink-icon">�</span><span class="slink-label">Hồ sơ</span></a>/
     </nav>
     <a href="login.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất"><span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span></a>
+    <a href="index.html" style="display:flex;align-items:center;gap:.6rem;margin:.3rem .75rem .5rem;padding:.45rem .85rem;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:.78rem;font-weight:600;transition:all .18s;text-decoration:none" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.5)'">
+      <span style="font-size:.9rem">🌐</span><span class="slink-label">Về trang chủ</span>
+    </a>
     <a href="#" class="slink" id="maintenanceSideBtn" style="margin:.4rem .75rem" data-label="Bảo trì"><span class="slink-icon">🔧</span><span class="slink-label">Chế độ bảo trì</span></a>
-    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.3.0</div>
+    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.9</div>
     <div class="sidebar-mini-reopen">
       <button class="sidebar-mini-toggle" title="Mở rộng">▶</button>
     </div>
@@ -1148,7 +1154,7 @@
     <span class="cp-dot"></span>
     <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
     <span class="cp-dot"></span>
-    <span><b>v1.3.0</b></span>
+    <span><b>v1.4.9</b></span>
   </div>
 
 </body>

@@ -1232,25 +1232,46 @@ db.channel('maintenance-watch')
 
 // Polling backup mỗi 10 giây — đảm bảo hoạt động dù Realtime chưa bật
 let _maintenanceShown = false;
+setInterval(async () => {
+  if (_maintenanceShown) return;
+  try {
+    const { data } = await db.from('app_settings').select('value').eq('key','maintenance').maybeSingle();
+    if (data?.value === 'true') _showMaintenanceScreen();
+  } catch(e) {}
+}, 10000);
 function _showMaintenanceScreen() {
   if (_maintenanceShown) return;
   _maintenanceShown = true;
   if (typeof _wmDestroyed !== 'undefined') _wmDestroyed = true;
-  setOffline().catch(()=>{});
+  // Xóa session token trong DB và đặt offline
+  try {
+    db.from('students')
+      .update({ session_token: null, is_online: false, last_seen: new Date().toISOString() })
+      .eq('username', currentUser)
+      .then(() => {});
+  } catch(e) {}
   sessionStorage.clear();
+  // Đếm ngược 3s rồi redirect về login
   document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
   document.body.innerHTML = `
     <div style="min-height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e1b4b,#312e81);padding:2rem;box-sizing:border-box">
       <div style="background:#fff;border-radius:20px;padding:2.5rem 2rem;text-align:center;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3)">
         <img src="btht.png" alt="Bảo trì" style="width:100%;border-radius:12px;margin-bottom:1.25rem"/>
         <div style="font-size:1.3rem;font-weight:800;color:#1e1b4b;margin-bottom:.75rem">Hệ thống đang bảo trì</div>
-        <div style="font-size:.9rem;color:#64748b;line-height:1.7;margin-bottom:1.5rem">
+        <div style="font-size:.9rem;color:#64748b;line-height:1.7;margin-bottom:1rem">
           Chúng tôi đang nâng cấp hệ thống để phục vụ bạn tốt hơn.<br/>
           Vui lòng quay lại sau ít phút.
         </div>
-        <div style="font-size:.82rem;color:#94a3b8">trợ lý và giáo viên ko hổ trợ duy trì tài khoản.</div>
+        <div id="_mtCountdown" style="font-size:.85rem;color:#6366f1;font-weight:700;margin-bottom:.5rem">Tự động đăng xuất sau 3 giây...</div>
       </div>
     </div>`;
+  let _c = 3;
+  const _t = setInterval(() => {
+    _c--;
+    const el = document.getElementById('_mtCountdown');
+    if (el) el.textContent = `Tự động đăng xuất sau ${_c} giây...`;
+    if (_c <= 0) { clearInterval(_t); location.href = 'login.html'; }
+  }, 1000);
 }
 
 // Realtime: lắng nghe thông báo mới từ admin
@@ -1682,7 +1703,50 @@ function _sSlotStyle(status) {
 }
 
 // ---- Render lịch học học sinh ----
+let _scheduleSelectedClass = ''; // '' = tất cả lớp
+
+function _updateScheduleClassPicker() {
+  const picker = document.getElementById('scheduleClassPicker');
+  if (!picker) return;
+  picker.querySelectorAll('button').forEach(btn => {
+    const isActive = btn.dataset.cls === _scheduleSelectedClass;
+    btn.style.background = isActive ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.12)';
+    btn.style.color = isActive ? '#1e1b4b' : '#fff';
+    btn.style.borderColor = isActive ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.25)';
+    btn.style.fontWeight = isActive ? '800' : '700';
+  });
+}
+
 async function renderStudentSchedule() {
+  // ── Hiển thị bộ chọn lớp nếu học nhiều lớp ──
+  const picker = document.getElementById('scheduleClassPicker');
+  if (picker && myClasses.length > 1) {
+    picker.style.display = 'flex';
+    if (!picker.dataset.built) {
+      picker.dataset.built = '1';
+      // Nút "Tất cả"
+      const allBtn = document.createElement('button');
+      allBtn.textContent = '📋 Tất cả';
+      allBtn.dataset.cls = '';
+      allBtn.style.cssText = 'padding:.35rem .85rem;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.9);color:#1e1b4b;font-size:.78rem;font-weight:800;cursor:pointer;transition:all .18s';
+      allBtn.addEventListener('click', () => { _scheduleSelectedClass = ''; _updateScheduleClassPicker(); renderStudentSchedule(); });
+      picker.appendChild(allBtn);
+      // Nút từng lớp
+      myClasses.forEach(cls => {
+        const btn = document.createElement('button');
+        btn.textContent = '🏫 ' + cls;
+        btn.dataset.cls = cls;
+        btn.style.cssText = 'padding:.35rem .85rem;border-radius:20px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .18s';
+        btn.addEventListener('click', () => { _scheduleSelectedClass = cls; _updateScheduleClassPicker(); renderStudentSchedule(); });
+        picker.appendChild(btn);
+      });
+    }
+    _updateScheduleClassPicker();
+  }
+
+  // Xác định lớp cần hiển thị
+  const activeClasses = _scheduleSelectedClass ? [_scheduleSelectedClass] : myClasses;
+
   const ws = _sToDateStr(_sCurrentWeekStart);
 
   // Label tuần
@@ -1698,8 +1762,8 @@ async function renderStudentSchedule() {
     .eq('week_start', ws)
     .order('day_of_week').order('start_time');
 
-  if (myClasses.length > 0) {
-    const classFilters = myClasses.map(c => `class_name.eq.${c}`).join(',');
+  if (activeClasses.length > 0) {
+    const classFilters = activeClasses.map(c => `class_name.eq.${c}`).join(',');
     query = query.or(`${classFilters},class_name.is.null`);
   }
 

@@ -228,6 +228,63 @@ footer b{color:rgba(255,255,255,.5)}
   </div>
 </div>
 
+<!-- PHÂN BỐ HỌC VIÊN -->
+<div style="position:relative;z-index:1;max-width:900px;margin:5rem auto 0;padding:0 1.5rem" class="reveal">
+  <div style="text-align:center;margin-bottom:1.75rem">
+    <span style="display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:.35rem .9rem;font-size:.78rem;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.5px;text-transform:uppercase">🗺️ Phân bố học viên</span>
+    <h2 style="font-size:clamp(1.6rem,4vw,2.2rem);font-weight:900;margin-top:.65rem;letter-spacing:-.3px">Gần <span style="background:linear-gradient(135deg,#fde68a,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">3000 học viên</span> trên cả nước</h2>
+    <p style="font-size:.9rem;color:rgba(255,255,255,.5);margin-top:.5rem">Trải dài từ Bắc vào Nam — mọi tỉnh thành đều có học viên của DHDT LMS</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem" id="cityGrid"></div>
+</div>
+
+<script>
+const CITY_DATA = [
+  { city:'Cần Thơ',       count:838, color:['#6366f1','#4f46e5'] },
+  { city:'Vĩnh Long',     count:355, color:['#8b5cf6','#7c3aed'] },
+  { city:'An Giang',      count:332, color:['#10b981','#059669'] },
+  { city:'Đồng Tháp',     count:308, color:['#f59e0b','#d97706'] },
+  { city:'Cà Mau',        count:197, color:['#ec4899','#db2777'] },
+  { city:'TP.HCM',        count:189, color:['#f43f5e','#e11d48'] },
+  { city:'Tây Ninh',      count:87,  color:['#06b6d4','#0891b2'] },
+  { city:'Khánh Hoà',     count:71,  color:['#14b8a6','#0d9488'] },
+  { city:'Hà Nội',        count:63,  color:['#a855f7','#9333ea'] },
+  { city:'Đồng Nai',      count:55,  color:['#84cc16','#65a30d'] },
+  { city:'Gia Lai',       count:55,  color:['#fb923c','#ea580c'] },
+  { city:'Hải Phòng',     count:39,  color:['#38bdf8','#0ea5e9'] },
+  { city:'Đà Nẵng',       count:39,  color:['#34d399','#10b981'] },
+  { city:'Bắc Ninh',      count:39,  color:['#c084fc','#a855f7'] },
+  { city:'Phú Thọ',       count:39,  color:['#fbbf24','#f59e0b'] },
+  { city:'Lâm Đồng',      count:31,  color:['#4ade80','#22c55e'] },
+  { city:'Ninh Bình',     count:31,  color:['#67e8f9','#22d3ee'] },
+  { city:'Hà Tĩnh',       count:24,  color:['#f9a8d4','#ec4899'] },
+  { city:'Huế',           count:24,  color:['#a5b4fc','#6366f1'] },
+  { city:'Tuyên Quang',   count:16,  color:['#86efac','#22c55e'] },
+  { city:'Sơn La',        count:16,  color:['#fcd34d','#f59e0b'] },
+  { city:'Thái Nguyên',   count:16,  color:['#7dd3fc','#38bdf8'] },
+  { city:'Các tỉnh khác', count:87,  color:['#64748b','#475569'] },
+];
+
+const maxCount = CITY_DATA[0].count;
+const grid = document.getElementById('cityGrid');
+CITY_DATA.forEach(d => {
+  const pct = Math.round(d.count / maxCount * 100);
+  const isTop = d.count >= 100;
+  grid.innerHTML += `
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:.9rem 1rem;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.transform=''">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+        <span style="font-size:.88rem;font-weight:700;color:#fff">${d.city}</span>
+        <span style="font-size:.82rem;font-weight:900;background:linear-gradient(135deg,${d.color[0]},${d.color[1]});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${d.count.toLocaleString()}</span>
+      </div>
+      <div style="background:rgba(255,255,255,.08);border-radius:20px;height:5px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${d.color[0]},${d.color[1]});border-radius:20px;transition:width 1.2s ease"></div>
+      </div>
+      <div style="font-size:.68rem;color:rgba(255,255,255,.35);margin-top:.3rem;font-weight:600">${Math.round(d.count/2950*100)}% tổng học viên</div>
+    </div>`;
+});
+</script>
+
 <!-- HONOR PREVIEW -->
 <div class="honor-section reveal" style="margin-top:5rem">
   <div class="honor-preview">

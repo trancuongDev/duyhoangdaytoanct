@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Học Sinh - DHDT LMS v1.4.5</title>
+  <title>Học Sinh - DHDT LMS v1.4.9</title>
   <meta http-equiv="X-Frame-Options" content="DENY"/>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
@@ -81,9 +81,6 @@
       <button id="sidebarClose" class="sidebar-mini-toggle" title="Thu gọn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;transition:all .2s;flex-shrink:0" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
     </div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="slink" data-label="Trang chủ" style="border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:.25rem">
-        <span class="slink-icon">🏠</span><span class="slink-label">Trang chủ</span>
-      </a>
       <a href="#" class="slink active" data-page="home" data-label="Trang chủ">
         <span class="slink-icon">🏠</span><span class="slink-label">Trang Trang Học Sinh</span>
       </a>
@@ -109,7 +106,10 @@
     <a href="login.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất">
       <span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span>
     </a>
-    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.5</div>
+    <a href="index.html" style="display:flex;align-items:center;gap:.6rem;margin:.3rem .75rem .5rem;padding:.45rem .85rem;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:.78rem;font-weight:600;transition:all .18s;text-decoration:none" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.5)'">
+      <span style="font-size:.9rem">🌐</span><span class="slink-label">Về trang chủ</span>
+    </a>
+    <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.9</div>
     <div class="sidebar-mini-reopen">
       <button id="sidebarMiniReopen" class="sidebar-mini-toggle" title="Mở rộng">▶</button>
     </div>
@@ -420,6 +420,8 @@
           <div style="font-size:1.1rem;font-weight:900;letter-spacing:-.3px">📅 Lịch học</div>
           <div style="font-size:.78rem;opacity:.65;margin-top:.15rem">Lịch học theo từng tuần của lớp bạn</div>
         </div>
+        <!-- Chọn lớp (chỉ hiện khi học nhiều lớp) -->
+        <div id="scheduleClassPicker" style="display:none;flex-wrap:wrap;gap:.4rem"></div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;font-size:.72rem;font-weight:700">
           <span style="display:flex;align-items:center;gap:.3rem;background:rgba(16,185,129,.25);border:1px solid rgba(16,185,129,.4);padding:.2rem .6rem;border-radius:20px;color:#6ee7b7">🟢 Chưa học</span>
           <span style="display:flex;align-items:center;gap:.3rem;background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.4);padding:.2rem .6rem;border-radius:20px;color:#fca5a5">🔴 Đang học</span>
@@ -530,7 +532,7 @@
       <p>© Bản quyền thuộc về <b>DHDT LMS</b>. Toàn bộ nội dung trên website bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và hệ thống quản lý đều thuộc quyền sở hữu của chúng tôi và được pháp luật bảo hộ.</p>
       <p>Nghiêm cấm mọi hành vi sao chép, chỉnh sửa, phát tán, chia sẻ hoặc sử dụng dưới bất kỳ hình thức nào khi chưa có sự cho phép bằng văn bản từ chủ sở hữu.</p>
       <p>Mọi hành vi vi phạm bản quyền sẽ bị xử lý theo quy định của pháp luật hiện hành.</p>
-      <p style="margin-top:.5rem;color:#555;font-size:.72rem">Phiên bản <b style="color:#6366f1">v1.4.5</b></p>
+      <p style="margin-top:.5rem;color:#555;font-size:.72rem">Phiên bản <b style="color:#6366f1">v1.4.9</b></p>
     </footer>
   </div>
 

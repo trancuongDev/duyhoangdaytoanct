@@ -1887,6 +1887,38 @@ function closeViewer() { document.getElementById('viewerModal').classList.remove
 // ============================================================
 let currentLessonId=null, pendingLessonVideoFile=null, pendingLessonDocFile=null;
 let _renderLessonsTimer = null;
+
+// ── Lưu / khôi phục trạng thái danh sách bài học ──
+function _saveAdminLessonState() {
+  const page = document.getElementById('pageLessons');
+  if (page) sessionStorage.setItem('adm_lesson_scroll', page.scrollTop);
+  const openGroups = [...document.querySelectorAll('#lessonList .group-card.open')]
+    .map(c => c.dataset.groupId).filter(Boolean);
+  sessionStorage.setItem('adm_open_groups', JSON.stringify(openGroups));
+}
+
+async function _restoreAdminLessonState() {
+  const savedScroll = sessionStorage.getItem('adm_lesson_scroll');
+  const savedGroups = JSON.parse(sessionStorage.getItem('adm_open_groups') || '[]');
+  if (!savedGroups.length && !savedScroll) return;
+  requestAnimationFrame(() => {
+    savedGroups.forEach(gid => {
+      const card = document.querySelector(`#lessonList .group-card[data-group-id="${gid}"]`);
+      if (card && !card.classList.contains('open')) {
+        card.querySelector('.group-card-header')?.click();
+      }
+    });
+    if (savedScroll) {
+      setTimeout(() => {
+        const page = document.getElementById('pageLessons');
+        if (page) page.scrollTop = parseInt(savedScroll);
+      }, 100);
+    }
+    sessionStorage.removeItem('adm_lesson_scroll');
+    sessionStorage.removeItem('adm_open_groups');
+  });
+}
+
 async function renderLessons() {
   clearTimeout(_renderLessonsTimer);
   return new Promise(resolve => {
@@ -1900,7 +1932,7 @@ async function _doRenderLessons() {
   document.getElementById('lessonListView').style.display='';
   document.getElementById('lessonDetailView').style.display='none';
   const fc = document.getElementById('lessonFilterClass').value;
-  let query = db.from('lessons').select('*').order('group_name',{ascending:true}).order('created_at',{ascending:false});
+  let query = db.from('lessons').select('*').order('group_name',{ascending:true}).order('sort_order',{ascending:true}).order('created_at',{ascending:true});
   if (fc) query = query.eq('class_name', fc);
   const { data: list } = await query;
   const el = document.getElementById('lessonList');
@@ -1937,6 +1969,7 @@ async function _doRenderLessons() {
     const c = colors[gi % colors.length];
     const card = document.createElement('div');
     card.className = 'group-card';
+    card.dataset.groupId = groupName; // để khôi phục trạng thái mở
     card.style.setProperty('--gc', c.gc);
     card.style.setProperty('--gc-light', c.gcLight);
     card.style.setProperty('--gc-glow', c.gcGlow);
@@ -1975,6 +2008,13 @@ async function _doRenderLessons() {
           const vc = vcMap[l.id]||0, dc = dcMap[l.id]||0;
           const item = document.createElement('div');
           item.className = 'group-lesson-item';
+          item.dataset.id = l.id;
+          // Handle kéo thả
+          const handle = document.createElement('div');
+          handle.className = 'drag-handle';
+          handle.title = 'Kéo để sắp xếp';
+          handle.innerHTML = '⠿';
+          handle.style.cssText = 'cursor:grab;color:var(--muted);font-size:1.1rem;padding:0 .4rem;flex-shrink:0;user-select:none';
           const num = document.createElement('div'); num.className = 'group-lesson-num'; num.textContent = idx+1;
           const info = document.createElement('div'); info.className = 'group-lesson-info';
           info.innerHTML = `<div class="group-lesson-title"><span style="margin-right:.35rem">\uD83D\uDCDA</span>${l.name}</div><div class="group-lesson-stats"><span>\uD83C\uDFAC ${vc}</span><span>\uD83D\uDCC4 ${dc}</span>${l.class_name?`<span class="class-tag" style="font-size:.68rem">${l.class_name}</span>`:''}</div>`;
@@ -1984,12 +2024,39 @@ async function _doRenderLessons() {
           const eb = document.createElement('button'); eb.className = 'btn-sm'; eb.textContent = String.fromCharCode(9999,65039);
           eb.addEventListener('click', e => { e.stopPropagation(); openLessonModal(l); });
           const db2 = document.createElement('button'); db2.className = 'btn-sm btn-danger'; db2.textContent = String.fromCharCode(128465);
-          db2.addEventListener('click', e => { e.stopPropagation(); showConfirm(`Xoa bai hoc "${l.name}"?`, async () => { await db.from('lessons').delete().eq('id',l.id); renderLessons(); }); });
+          db2.addEventListener('click', e => { e.stopPropagation(); showConfirm(`Xoa bai hoc "${l.name}"?`, async () => { _saveAdminLessonState(); await db.from('lessons').delete().eq('id',l.id); await renderLessons(); await _restoreAdminLessonState(); }); });
           acts.appendChild(openBtn); acts.appendChild(eb); acts.appendChild(db2);
-          item.appendChild(num); item.appendChild(info); item.appendChild(acts);
+          item.appendChild(handle); item.appendChild(num); item.appendChild(info); item.appendChild(acts);
           item.addEventListener('click', () => openLessonDetail(l.id));
           inner.appendChild(item);
         });
+
+        // Kích hoạt SortableJS
+        if (typeof Sortable !== 'undefined') {
+          Sortable.create(inner, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            onEnd: async function(evt) {
+              // Lấy thứ tự mới
+              const items = [...inner.querySelectorAll('.group-lesson-item')];
+              // Cập nhật số thứ tự hiển thị
+              items.forEach((el, i) => {
+                const numEl = el.querySelector('.group-lesson-num');
+                if (numEl) numEl.textContent = i + 1;
+              });
+              // Lưu sort_order vào DB
+              const updates = items.map((el, i) => ({
+                id: parseInt(el.dataset.id),
+                sort_order: i + 1
+              }));
+              for (const u of updates) {
+                await db.from('lessons').update({ sort_order: u.sort_order }).eq('id', u.id);
+              }
+            }
+          });
+        }
       }
     });
 
@@ -2081,11 +2148,17 @@ document.getElementById('lSaveBtn').addEventListener('click', async () => {
 
   btn.textContent = 'Lưu'; btn.disabled = false;
   document.getElementById('lessonModal').classList.remove('open');
+  _saveAdminLessonState(); // lưu trạng thái trước khi render lại
   await renderLessons();
+  await _restoreAdminLessonState(); // khôi phục sau khi render xong
 });
 
 async function openLessonDetail(id) {
   currentLessonId = id;
+
+  // Lưu scroll position và nhóm đang mở
+  _saveAdminLessonState();
+
   document.getElementById('lessonListView').style.display = 'none';
   document.getElementById('lessonDetailView').style.display = '';
   document.getElementById('lessonDetailTitle').textContent = '...';
@@ -2102,7 +2175,10 @@ async function openLessonDetail(id) {
   // Render video và doc song song
   await Promise.all([renderLessonVideos(id), renderLessonDocs(id)]);
 }
-document.getElementById('backToLessonsBtn').addEventListener('click', renderLessons);
+document.getElementById('backToLessonsBtn').addEventListener('click', async () => {
+  await renderLessons();
+  await _restoreAdminLessonState();
+});
 
 async function renderLessonVideos(lessonId) {
   const { data:vids }=await db.from('lesson_videos').select('*').eq('lesson_id',lessonId).order('created_at');
@@ -3171,13 +3247,17 @@ db.channel('realtime-lessons')
     if (currentLessonId && document.getElementById('lessonDetailView')?.style.display !== 'none') {
       renderLessonVideos(currentLessonId);
     }
-    if (document.getElementById('pageLessons')?.classList.contains('active')) renderLessons();
+    // Chỉ render lại list khi đang ở list view (không phải detail view)
+    if (document.getElementById('pageLessons')?.classList.contains('active') &&
+        document.getElementById('lessonListView')?.style.display !== 'none') renderLessons();
   })
   .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_docs' }, () => {
     if (currentLessonId && document.getElementById('lessonDetailView')?.style.display !== 'none') {
       renderLessonDocs(currentLessonId);
     }
-    if (document.getElementById('pageLessons')?.classList.contains('active')) renderLessons();
+    // Chỉ render lại list khi đang ở list view (không phải detail view)
+    if (document.getElementById('pageLessons')?.classList.contains('active') &&
+        document.getElementById('lessonListView')?.style.display !== 'none') renderLessons();
   })
   .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_groups' }, () => {
     if (document.getElementById('pageLessonGroups')?.classList.contains('active')) renderGroups();

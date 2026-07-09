@@ -1,7 +1,7 @@
-﻿{
-  "name": "DHDT LMS v1.4.5",
+{
+  "name": "DHDT LMS v1.4.9",
   "short_name": "DHDT LMS",
-  "description": "DHDT LMS - v1.4.5",
+  "description": "DHDT LMS - v1.4.9",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

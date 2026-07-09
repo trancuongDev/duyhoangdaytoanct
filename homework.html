@@ -535,7 +535,7 @@
   <a href="login.html" class="slink slink-logout">
     <span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span>
   </a>
-  <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.5</div>
+  <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.9</div>
   <div class="sidebar-mini-reopen">
     <button id="sidebarMiniReopen" class="sidebar-mini-toggle" title="Mở rộng">▶</button>
   </div>
@@ -932,6 +932,63 @@ document.addEventListener('DOMContentLoaded', () => {
 const SUPA_URL = 'https://gojpmogjretoxplydjvg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── Kiểm tra bảo trì ──────────────────────────────────────
+let _hwMaintenanceShown = false;
+function _showHWMaintenance() {
+  if (_hwMaintenanceShown) return;
+  _hwMaintenanceShown = true;
+  // Xóa session
+  try {
+    if (currentUser?.username) {
+      sb.from('students')
+        .update({ session_token: null, is_online: false, last_seen: new Date().toISOString() })
+        .eq('username', currentUser.username)
+        .then(() => {});
+    }
+  } catch(e) {}
+  sessionStorage.clear();
+  document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
+  document.body.innerHTML = `
+    <div style="min-height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e1b4b,#312e81);padding:2rem;box-sizing:border-box">
+      <div style="background:#fff;border-radius:20px;padding:2.5rem 2rem;text-align:center;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3)">
+        <img src="btht.png" alt="Bảo trì" style="width:100%;border-radius:12px;margin-bottom:1.25rem"/>
+        <div style="font-size:1.3rem;font-weight:800;color:#1e1b4b;margin-bottom:.75rem">Hệ thống đang bảo trì</div>
+        <div style="font-size:.9rem;color:#64748b;line-height:1.7;margin-bottom:1rem">
+          Chúng tôi đang nâng cấp hệ thống để phục vụ bạn tốt hơn.<br/>Vui lòng quay lại sau ít phút.
+        </div>
+        <div id="_hwMtCountdown" style="font-size:.85rem;color:#6366f1;font-weight:700">Tự động đăng xuất sau 3 giây...</div>
+      </div>
+    </div>`;
+  let _c = 3;
+  const _t = setInterval(() => {
+    _c--;
+    const el = document.getElementById('_hwMtCountdown');
+    if (el) el.textContent = `Tự động đăng xuất sau ${_c} giây...`;
+    if (_c <= 0) { clearInterval(_t); location.href = 'login.html'; }
+  }, 1000);
+}
+// Kiểm tra ngay khi load
+(async () => {
+  try {
+    const { data } = await sb.from('app_settings').select('value').eq('key','maintenance').maybeSingle();
+    if (data?.value === 'true') _showHWMaintenance();
+  } catch(e) {}
+})();
+// Realtime lắng nghe
+sb.channel('hw-maintenance-watch')
+  .on('postgres_changes', { event:'*', schema:'public', table:'app_settings', filter:'key=eq.maintenance' },
+    payload => { if (payload.new?.value === 'true') _showHWMaintenance(); })
+  .subscribe();
+// Polling backup mỗi 10s
+setInterval(async () => {
+  if (_hwMaintenanceShown) return;
+  try {
+    const { data } = await sb.from('app_settings').select('value').eq('key','maintenance').maybeSingle();
+    if (data?.value === 'true') _showHWMaintenance();
+  } catch(e) {}
+}, 10000);
+// ────────────────────────────────────────────────────────────
 
 let currentUser  = null;
 let allHomework  = [];
