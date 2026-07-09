@@ -22,18 +22,18 @@ async function decryptUrl(enc) {
 }
 
 // Auth guard
-if (sessionStorage.getItem('dh_role') !== 'student') location.href = 'index.html';
+if (sessionStorage.getItem('dh_role') !== 'student') location.href = 'login.html';
 
 // ── Xác thực session token với DB ngay khi load ──
 (async () => {
   const username = sessionStorage.getItem('dh_user');
   const token    = sessionStorage.getItem('dh_token');
-  if (!username || !token) { sessionStorage.clear(); location.href = 'index.html'; return; }
+  if (!username || !token) { sessionStorage.clear(); location.href = 'login.html'; return; }
   try {
     const { data: s } = await db.from('students').select('session_token,active').eq('username', username).single();
     if (!s || s.session_token !== token || s.active === false) {
       sessionStorage.clear();
-      location.href = 'index.html';
+      location.href = 'login.html';
     }
   } catch(e) { /* network error — cho qua */ }
 })();
@@ -197,7 +197,7 @@ async function loadMe() {
   if (locked) {
     alert('Khóa học của bạn đã kết thúc. Tài khoản đã bị khóa. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.');
     sessionStorage.clear();
-    location.href = 'index.html';
+    location.href = 'login.html';
     return;
   }
 
@@ -221,7 +221,7 @@ document.getElementById('logoutBtn').addEventListener('click', async e => {
   e.preventDefault();
   await setOffline();
   sessionStorage.clear();
-  location.href = 'index.html';
+  location.href = 'login.html';
 });
 
 // Set offline khi đóng tab/thoát
@@ -1156,7 +1156,7 @@ function _showKickedScreen() {
         Phiên này đã bị <b style="color:#ef4444">đăng xuất tự động</b>.
       </div>
       <div id="_kickCountdown" style="color:rgba(255,255,255,.5);font-size:.85rem">Tự động chuyển về đăng nhập sau <b style="color:#fff">5</b> giây...</div>
-      <button onclick="location.href='index.html'" style="background:#6366f1;color:#fff;border:none;padding:.75rem 2rem;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
+      <button onclick="location.href='login.html'" style="background:#6366f1;color:#fff;border:none;padding:.75rem 2rem;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
         Đăng nhập lại
       </button>
     </div>`;
@@ -1165,7 +1165,7 @@ function _showKickedScreen() {
     _c--;
     const el = document.getElementById('_kickCountdown');
     if (el) el.innerHTML = `Tự động chuyển về đăng nhập sau <b style="color:#fff">${_c}</b> giây...`;
-    if (_c <= 0) { clearInterval(_t); location.href = 'index.html'; }
+    if (_c <= 0) { clearInterval(_t); location.href = 'login.html'; }
   }, 1000);
 }
 
@@ -1202,7 +1202,7 @@ db.channel('student-lock-' + currentUser)
             trợ lý và giáo viên ko hổ trợ duy trì tài khoản.
           </div>
           <div id="_lockCountdown" style="color:rgba(255,255,255,.5);font-size:.85rem">Tự động chuyển về đăng nhập sau <b style="color:#fff">3</b> giây...</div>
-          <button onclick="location.href='index.html'" style="margin-top:.5rem;background:#6366f1;color:#fff;border:none;padding:.75rem 2rem;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
+          <button onclick="location.href='login.html'" style="margin-top:.5rem;background:#6366f1;color:#fff;border:none;padding:.75rem 2rem;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
             Về trang đăng nhập
           </button>
         </div>`;
@@ -1211,7 +1211,7 @@ db.channel('student-lock-' + currentUser)
         _c--;
         const el = document.getElementById('_lockCountdown');
         if (el) el.innerHTML = `Tự động chuyển về đăng nhập sau <b style="color:#fff">${_c}</b> giây...`;
-        if (_c <= 0) { clearInterval(_t); location.href = 'index.html'; }
+        if (_c <= 0) { clearInterval(_t); location.href = 'login.html'; }
       }, 1000);
     }
   })
@@ -1442,7 +1442,7 @@ setInterval(async () => {
     alert('Tài khoản của bạn đã bị khóa. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.');
     await setOffline();
     sessionStorage.clear();
-    location.href = 'index.html';
+    location.href = 'login.html';
     return;
   }
 
@@ -1458,7 +1458,7 @@ setInterval(async () => {
       alert(`Tất cả khóa học đã kết thúc. Tài khoản đã bị khóa. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`);
       await setOffline();
       sessionStorage.clear();
-      location.href = 'index.html';
+      location.href = 'login.html';
       return;
     }
   }
@@ -1513,7 +1513,7 @@ setInterval(async () => {
     overlay.style.display = 'none';
     await db.from('students').update({ is_online: false, last_seen: new Date().toISOString() }).eq('username', currentUser);
     sessionStorage.clear();
-    location.href = 'index.html';
+    location.href = 'login.html';
   }
 
   function reset() {

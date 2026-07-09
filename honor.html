@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bảng Vinh Danh - DHDT LMS</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+</head>
+<body style="background:linear-gradient(135deg,#0a0820 0%,#1e1b4b 40%,#312e81 75%,#1e3a5f 100%);min-height:100vh;overflow-x:hidden;font-family:'Inter',sans-serif">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:particleFly linear infinite}
+@keyframes particleFly{0%{opacity:0;transform:translateY(100vh) scale(0)}10%{opacity:.7}90%{opacity:.4}100%{opacity:0;transform:translateY(-10vh) scale(1)}}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.1;transform:scale(.8)}50%{opacity:.9;transform:scale(1.2)}}
+.page-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem}
+.honor-header{text-align:center;padding:2.5rem 1rem 1.5rem}
+.honor-crown{font-size:4rem;display:block;margin-bottom:.5rem;animation:crownFloat 3s ease-in-out infinite}
+@keyframes crownFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+.honor-title{font-size:2.4rem;font-weight:900;letter-spacing:-.5px;line-height:1.1;background:linear-gradient(135deg,#fde68a,#f59e0b,#fbbf24,#fde68a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 2px 12px rgba(251,191,36,.5))}
+.honor-subtitle{color:rgba(255,255,255,.6);font-size:.95rem;font-weight:500;margin-top:.5rem}
+.honor-period{display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:.35rem .9rem;font-size:.8rem;color:rgba(255,255,255,.75);font-weight:600}
+</style>
+<style>
+/* ══ TAB CHÍNH (VSAT / THPT) ══ */
+.main-tabs{display:flex;gap:.5rem;justify-content:center;margin-bottom:1.75rem}
+.main-tab{flex:1;max-width:200px;padding:.85rem 1.25rem;border:2px solid rgba(255,255,255,.15);border-radius:16px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:1rem;font-weight:800;cursor:pointer;transition:all .25s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.3rem}
+.main-tab .tab-icon{font-size:1.8rem}
+.main-tab .tab-label{font-size:.95rem;letter-spacing:.3px}
+.main-tab .tab-sub{font-size:.7rem;font-weight:500;opacity:.6}
+.main-tab:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff}
+.main-tab.active.vsat{background:linear-gradient(135deg,rgba(99,102,241,.4),rgba(79,70,229,.4));border-color:#6366f1;color:#fff;box-shadow:0 4px 24px rgba(99,102,241,.4)}
+.main-tab.active.thpt{background:linear-gradient(135deg,rgba(16,185,129,.35),rgba(5,150,105,.35));border-color:#10b981;color:#fff;box-shadow:0 4px 24px rgba(16,185,129,.35)}
+
+/* ══ FILTER PILLS ══ */
+.filter-wrap{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.75rem}
+.filter-btn{padding:.45rem 1rem;border:1.5px solid rgba(255,255,255,.2);border-radius:20px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.filter-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);color:#fff}
+.filter-btn.active{background:linear-gradient(135deg,#6366f1,#4f46e5);border-color:#6366f1;color:#fff;box-shadow:0 3px 12px rgba(99,102,241,.4)}
+.filter-btn.active.thpt-pill{background:linear-gradient(135deg,#10b981,#059669);border-color:#10b981;box-shadow:0 3px 12px rgba(16,185,129,.4)}
+
+/* ══ STATS ══ */
+.stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.75rem}
+.stat-item{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.9rem 1rem;text-align:center}
+.stat-num{font-size:1.6rem;font-weight:900;color:#fff;line-height:1}
+.stat-num.gold{color:#fbbf24}.stat-num.cyan{color:#22d3ee}
+.stat-label{font-size:.72rem;color:rgba(255,255,255,.5);font-weight:600;margin-top:.2rem}
+
+/* ══ PODIUM ══ */
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:1rem;margin-bottom:2.5rem;padding:0 .5rem}
+.podium-item{flex:1;max-width:200px;display:flex;flex-direction:column;align-items:center;transition:transform .2s}
+.podium-item:hover{transform:translateY(-6px)}
+.podium-avatar{position:relative;margin-bottom:.6rem}
+.podium-avatar-img{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:900;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3);position:relative;z-index:1;border:3px solid rgba(255,255,255,.3)}
+.podium-avatar-img.rank1{width:88px;height:88px;font-size:2.1rem;background:linear-gradient(135deg,#f59e0b,#d97706);border:4px solid #fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,.3),0 8px 32px rgba(245,158,11,.5)}
+.podium-avatar-img.rank2{background:linear-gradient(135deg,#64748b,#475569);border-color:#94a3b8}
+.podium-avatar-img.rank3{background:linear-gradient(135deg,#b45309,#92400e);border-color:#d97706}
+.podium-crown{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:1.5rem;animation:crownFloat 2s ease-in-out infinite;z-index:2}
+.podium-info{text-align:center;margin-bottom:.5rem}
+.podium-name{font-weight:800;color:#fff;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.podium-class{font-size:.72rem;color:rgba(255,255,255,.5);font-weight:600;margin-top:.1rem}
+.podium-score{display:inline-block;padding:.2rem .65rem;border-radius:20px;font-size:.82rem;font-weight:900;margin-top:.2rem}
+.podium-score.rank1{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e}
+.podium-score.rank2{background:linear-gradient(135deg,#f1f5f9,#e2e8f0);color:#475569}
+.podium-score.rank3{background:linear-gradient(135deg,#ffedd5,#fed7aa);color:#9a3412}
+.podium-stage{width:100%;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:900;color:rgba(255,255,255,.9)}
+.podium-stage.rank1{background:linear-gradient(135deg,#f59e0b,#d97706);min-height:90px;box-shadow:0 -4px 24px rgba(245,158,11,.4)}
+.podium-stage.rank2{background:linear-gradient(135deg,#64748b,#475569);min-height:70px}
+.podium-stage.rank3{background:linear-gradient(135deg,#b45309,#92400e);min-height:55px}
+</style>
+<style>
+/* ══ LIST ══ */
+.honor-list{display:flex;flex-direction:column;gap:.55rem}
+.honor-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.85rem 1.1rem;display:flex;align-items:center;gap:1rem;transition:all .2s;backdrop-filter:blur(4px)}
+.honor-card:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);transform:translateX(4px)}
+.honor-card.top3{background:rgba(255,255,255,.1);border-color:rgba(251,191,36,.3)}
+.rank-badge{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;flex-shrink:0}
+.rank-badge.r1{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;box-shadow:0 4px 12px rgba(245,158,11,.4)}
+.rank-badge.r2{background:linear-gradient(135deg,#f1f5f9,#e2e8f0);color:#475569}
+.rank-badge.r3{background:linear-gradient(135deg,#ffedd5,#fed7aa);color:#9a3412}
+.rank-badge.rn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:.85rem}
+.honor-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:#fff;flex-shrink:0}
+.honor-info{flex:1;min-width:0}
+.honor-name{font-weight:800;color:#fff;font-size:.92rem}
+.honor-meta{font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.1rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.honor-tag{display:inline-flex;align-items:center;gap:.2rem;padding:.1rem .45rem;border-radius:20px;font-size:.68rem;font-weight:700}
+.honor-right{text-align:right;flex-shrink:0}
+.honor-score-big{font-size:1.3rem;font-weight:900;color:#fbbf24;line-height:1}
+.honor-score-label{font-size:.68rem;color:rgba(255,255,255,.45);font-weight:600;margin-top:.1rem}
+.section-head{display:flex;align-items:center;gap:.65rem;margin:1.5rem 0 .85rem;padding:.55rem .9rem;background:rgba(255,255,255,.06);border-radius:10px;border-left:3px solid #6366f1}
+.section-head.thpt-head{border-left-color:#10b981}
+.section-head span{font-weight:800;font-size:.88rem;color:rgba(255,255,255,.85)}
+.section-head small{font-size:.75rem;color:rgba(255,255,255,.45);margin-left:auto}
+.honor-empty{text-align:center;padding:4rem 1rem;color:rgba(255,255,255,.35)}
+.honor-empty-icon{font-size:3.5rem;margin-bottom:.75rem}
+.confetti{position:fixed;top:0;pointer-events:none;z-index:999;animation:confettiFall linear forwards}
+@keyframes confettiFall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+@media(max-width:600px){
+  .honor-title{font-size:1.7rem}
+  .main-tab{padding:.7rem .85rem}.main-tab .tab-icon{font-size:1.4rem}
+  .podium-avatar-img.rank1{width:72px;height:72px;font-size:1.6rem}
+  .podium-avatar-img{width:60px;height:60px;font-size:1.4rem}
+  .podium-name{max-width:85px;font-size:.78rem}
+  .stats-bar{gap:.4rem}.stat-num{font-size:1.2rem}
+}
+</style>
+
+<div id="particles"></div>
+
+<!-- Nút về trang chủ -->
+<a href="index.html" style="position:fixed;top:1rem;left:1rem;z-index:100;display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);border-radius:10px;padding:.5rem .9rem;font-size:.82rem;font-weight:700;color:rgba(255,255,255,.8);transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.8)'">
+  🏠 Trang chủ
+</a>
+
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <div class="honor-header">
+    <span class="honor-crown">👑</span>
+    <h1 class="honor-title">BẢNG VINH DANH</h1>
+    <p class="honor-subtitle">Học viên xuất sắc của DHDT LMS</p>
+    <div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">
+      <span class="honor-period">📅 Năm học 2025 – 2026</span>
+      <span class="honor-period">🗺️ Trải dài trên khắp cả nước</span>
+    </div>
+  </div>
+
+  <!-- 2 TAB CHÍNH -->
+  <div class="main-tabs">
+    <button class="main-tab active vsat" id="tabVSAT" onclick="switchMainTab('vsat')">
+      <span class="tab-icon">🏆</span>
+      <span class="tab-label">VSAT</span>
+      <span class="tab-sub">Toán tư duy</span>
+    </button>
+    <button class="main-tab thpt" id="tabTHPT" onclick="switchMainTab('thpt')">
+      <span class="tab-icon">🎓</span>
+      <span class="tab-label">THPT</span>
+      <span class="tab-sub">Toán THPT QG</span>
+    </button>
+  </div>
+
+  <!-- NỘI DUNG VSAT -->
+  <div id="sectionVSAT">
+    <div class="filter-wrap" id="vsatFilters">
+      <button class="filter-btn active" onclick="setFilter('all',this,'vsat')">🏆 Tất cả</button>
+      <button class="filter-btn" onclick="setFilter('cantho',this,'vsat')">Cần Thơ</button>
+      <button class="filter-btn" onclick="setFilter('angiang',this,'vsat')">An Giang</button>
+      <button class="filter-btn" onclick="setFilter('dongthap',this,'vsat')">Đồng Tháp</button>
+      <button class="filter-btn" onclick="setFilter('camau',this,'vsat')">Cà Mau</button>
+      <button class="filter-btn" onclick="setFilter('other',this,'vsat')">Tỉnh khác</button>
+    </div>
+    <div class="stats-bar" id="vsatStats"></div>
+    <div class="podium-wrap" id="vsatPodium"></div>
+    <div class="section-head">
+      <span>📋 Bảng xếp hạng VSAT</span>
+      <small id="vsatCount"></small>
+    </div>
+    <div class="honor-list" id="vsatList"></div>
+  </div>
+
+  <!-- NỘI DUNG THPT -->
+  <div id="sectionTHPT" style="display:none">
+    <div class="filter-wrap" id="thptFilters">
+      <button class="filter-btn active thpt-pill" onclick="setFilter('all',this,'thpt')">🎓 Tất cả</button>
+      <button class="filter-btn" onclick="setFilter('hcm',this,'thpt')">TP.HCM</button>
+      <button class="filter-btn" onclick="setFilter('hanoi',this,'thpt')">Hà Nội</button>
+      <button class="filter-btn" onclick="setFilter('haiphong',this,'thpt')">Hải Phòng</button>
+      <button class="filter-btn" onclick="setFilter('danang',this,'thpt')">Đà Nẵng</button>
+      <button class="filter-btn" onclick="setFilter('cantho',this,'thpt')">Cần Thơ</button>
+      <button class="filter-btn" onclick="setFilter('dongthap',this,'thpt')">Đồng Tháp</button>
+      <button class="filter-btn" onclick="setFilter('angiang',this,'thpt')">An Giang</button>
+      <button class="filter-btn" onclick="setFilter('other',this,'thpt')">Tỉnh khác</button>
+    </div>
+    <div class="stats-bar" id="thptStats"></div>
+    <div class="podium-wrap" id="thptPodium"></div>
+    <div class="section-head thpt-head">
+      <span>📋 Bảng xếp hạng THPT</span>
+      <small id="thptCount"></small>
+    </div>
+    <div class="honor-list" id="thptList"></div>
+  </div>
+
+</div>
+
+<script>
+// ══ DATA VSAT ══
+const DATA_VSAT = [
+  { name:'Nguyễn Duy Hoàng',      score:150,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Lê Thanh Nam',           score:150,   city:'An Giang',  key:'angiang'  },
+  { name:'Phạm Trung Hải',         score:147,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Phan Gia Hân',           score:147,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Bùi Minh Phú',           score:147,   city:'Đồng Tháp', key:'dongthap' },
+  { name:'Trần Quốc Toàn',         score:147,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Trần Quốc Hào',          score:147,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Nguyễn Hưng Lợi',        score:147,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Nguyễn Phước Lộc',       score:146,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Nguyễn Phước Nhân',      score:146,   city:'An Giang',  key:'angiang'  },
+  { name:'Nguyễn Phúc Lâm',        score:145.5, city:'Cần Thơ',   key:'cantho'   },
+  { name:'Tô Mỹ Như',              score:145.5, city:'Cà Mau',    key:'camau'    },
+  { name:'Nguyễn Thanh Tuấn',      score:145,   city:'TP.HCM',    key:'other'    },
+  { name:'Lê Phạm Kiều Hân',       score:144.5, city:'Cà Mau',    key:'camau'    },
+  { name:'Ngô Hồng Hải',           score:144,   city:'Đồng Tháp', key:'dongthap' },
+  { name:'Nguyễn Hoàng Lâm',       score:144,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Bùi Nguyễn Uyên Nhi',    score:144,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Nguyễn Ngọc Long',       score:144,   city:'Đồng Tháp', key:'dongthap' },
+  { name:'Huỳnh Thị Yến Vy',       score:144,   city:'Đồng Tháp', key:'dongthap' },
+  { name:'Phan Gia Bảo',           score:144,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Trần Quốc Linh',         score:142.5, city:'Cần Thơ',   key:'cantho'   },
+  { name:'Lê Nhật Đồng',           score:142.5, city:'An Giang',  key:'angiang'  },
+  { name:'Lê Tứ Ân',               score:142.5, city:'Cần Thơ',   key:'cantho'   },
+  { name:'Nguyễn Gia Khang',       score:142.5, city:'An Giang',  key:'angiang'  },
+  { name:'Trần Lệ Gia Hân',        score:142,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Lư Quốc Trị',            score:141,   city:'Đồng Tháp', key:'dongthap' },
+  { name:'Trần Ninh Long',         score:141,   city:'Tây Ninh',  key:'other'    },
+  { name:'Võ Ngọc Tuyết Ngân',     score:141,   city:'Cần Thơ',   key:'cantho'   },
+  { name:'Tăng Thành Phát',        score:141,   city:'Cà Mau',    key:'camau'    },
+  { name:'Phan Trí Tình',          score:140.5, city:'An Giang',  key:'angiang'  },
+  { name:'Võ Tuấn Kiệt',           score:140.5, city:'An Giang',  key:'angiang'  },
+  { name:'Phạm Văn Tý',            score:140,   city:'Đồng Tháp', key:'dongthap' },
+  { name:'Phạm Phúc Khang',        score:140,   city:'Vĩnh Long', key:'other'    },
+  { name:'Phan Thành Long',        score:140,   city:'Vĩnh Long', key:'other'    },
+];
+
+// ══ DATA THPT (để trống — nhập sau) ══
+const DATA_THPT = [
+  { name:'Đoàn Ngọc Siêu',              score:10,   city:'Hải Phòng',         key:'haiphong'  },
+  { name:'Hoàng Việt Bách',             score:10,   city:'Hà Tĩnh',           key:'other'     },
+  { name:'Lê Văn Nam',                  score:10,   city:'TP.HCM',            key:'hcm'       },
+  { name:'Lê Nhan',                     score:10,   city:'Đà Nẵng',           key:'danang'    },
+  { name:'Nguyễn Lương Hoàng Hải',      score:10,   city:'Hải Phòng',         key:'haiphong'  },
+  { name:'Phạm Trần Phương Linh',       score:10,   city:'Phú Thọ',           key:'other'     },
+  { name:'Nguyễn Duy Thế Đan',          score:10,   city:'Nghệ An',           key:'other'     },
+  { name:'Nguyễn Dương Long Minh Thắng',score:10,   city:'TP.HCM',            key:'hcm'       },
+  { name:'Trần Lê Mỹ Duyên',           score:9.75, city:'TP Huế',            key:'other'     },
+  { name:'Phạm Văn Tý',                 score:9.75, city:'Đồng Tháp',         key:'dongthap'  },
+  { name:'Ngô Huy Triều',               score:9.5,  city:'Bắc Ninh',          key:'other'     },
+  { name:'Lê Tứ Ân',                    score:9.5,  city:'Cần Thơ',           key:'cantho'    },
+  { name:'Phạm Xuân Phát',              score:9.5,  city:'TP.HCM',            key:'hcm'       },
+  { name:'Nguyễn Minh Khánh',           score:9.5,  city:'Cần Thơ',           key:'cantho'    },
+  { name:'Nguyễn Tuấn Linh',            score:9.5,  city:'Hải Phòng',         key:'haiphong'  },
+  { name:'Bùi Minh Phú',                score:9.25, city:'Đồng Tháp',         key:'dongthap'  },
+  { name:'Tăng Tuấn Phúc',              score:9,    city:'Cần Thơ',           key:'cantho'    },
+  { name:'Nguyễn Minh Khôi',            score:9,    city:'Vĩnh Long',         key:'other'     },
+  { name:'Nguyễn Trương Quốc An',       score:9,    city:'Cần Thơ',           key:'cantho'    },
+  { name:'Trần Thái Thắng',             score:9,    city:'Khánh Hoà',         key:'other'     },
+  { name:'Trần Hải Nam',                score:9,    city:'Bắc Ninh',          key:'other'     },
+  { name:'Trần Văn Quyền',              score:9,    city:'Vĩnh Long',         key:'other'     },
+  { name:'Trần Việt Thanh',             score:9,    city:'TP.HCM',            key:'hcm'       },
+  { name:'Nguyễn Bá Đạt',              score:9,    city:'Gia Lai - Quy Nhơn',key:'other'     },
+  { name:'Nguyễn Hiền Sang',            score:9,    city:'Hà Nội',            key:'hanoi'     },
+  { name:'Nguyễn Ánh Khoa',             score:9,    city:'TP Cần Thơ',        key:'cantho'    },
+  { name:'Nguyễn Thanh Dung',           score:9,    city:'Hà Nội',            key:'hanoi'     },
+  { name:'Nguyễn Trần Tuấn Đạt',       score:9,    city:'Gia Lai',           key:'other'     },
+  { name:'Ngô Anh Dũng',                score:9,    city:'Cần Thơ',           key:'cantho'    },
+  { name:'Trần Thanh Nhã',              score:9,    city:'Đồng Tháp',         key:'dongthap'  },
+  { name:'Nguyễn Huỳnh Phương Anh',    score:9,    city:'Vĩnh Long',         key:'other'     },
+  { name:'Trần Ngọc Tuấn Tú',          score:9,    city:'Tây Ninh',          key:'other'     },
+  { name:'Nguyễn Minh Khánh',           score:9,    city:'Vĩnh Long',         key:'other'     },
+  { name:'Võ Văn Thoại',                score:9,    city:'Gia Lai',           key:'other'     },
+  { name:'Nguyễn Thanh Tuấn',           score:9,    city:'TP Hồ Chí Minh',   key:'hcm'       },
+  { name:'Lê Trần Quốc Thái',          score:9,    city:'Đồng Tháp',         key:'dongthap'  },
+  { name:'Nguyễn Thị Minh Thơ',        score:9,    city:'Vĩnh Long',         key:'other'     },
+  { name:'Trần Tiến Quân',              score:9,    city:'Phú Thọ',           key:'other'     },
+  { name:'Trương Ngọc Viên',            score:9,    city:'Khánh Hoà',         key:'other'     },
+  { name:'Nguyễn Minh Tuấn',            score:9,    city:'Cần Thơ',           key:'cantho'    },
+  { name:'Mai Đức Duy',                 score:9,    city:'TP Hồ Chí Minh',   key:'hcm'       },
+  { name:'Nguyễn Ngọc Quân',            score:9,    city:'Hà Nội',            key:'hanoi'     },
+  { name:'Trần Thị Ngọc Hoa',          score:9,    city:'Đà Nẵng',           key:'danang'    },
+  { name:'Phạm Quang Nhật Dương',      score:9,    city:'Khánh Hoà',         key:'other'     },
+  { name:'Đoàn Thu Huyền',             score:9,    city:'Tuyên Quang',       key:'other'     },
+  { name:'Nguyễn Quang Minh',           score:9,    city:'Tuyên Quang',       key:'other'     },
+  { name:'Trần Huỳnh Thiên Thuận',     score:9,    city:'Khánh Hoà',         key:'other'     },
+  { name:'Lê Anh Tuấn',                score:9,    city:'Bắc Giang',         key:'other'     },
+  { name:'Nguyễn Thị Diễu',            score:9,    city:'Cần Thơ',           key:'cantho'    },
+  { name:'Gia Gia Huy',                 score:9,    city:'Hải Phòng',         key:'haiphong'  },
+  { name:'Lư Duy Đông',                score:9,    city:'Sơn La',            key:'other'     },
+  { name:'Nguyễn Đức Huy',             score:9,    city:'TP Hải Phòng',      key:'haiphong'  },
+  { name:'Dương Thị Cẩm Nhung',        score:9,    city:'Đồng Nai',          key:'other'     },
+  { name:'Trần Hoàng Anh',             score:9,    city:'Phú Thọ',           key:'other'     },
+  { name:'BÙI ĐỨC NGHĨA',              score:9,    city:'Ninh Bình',         key:'other'     },
+  { name:'Nguyễn Thái Học',            score:9,    city:'Đồng Nai',          key:'other'     },
+  { name:'La Văn Huy',                  score:9,    city:'Bắc Ninh',          key:'other'     },
+  { name:'Nguyễn Thiên Nhân',          score:9,    city:'An Giang',          key:'angiang'   },
+  { name:'Nguyễn Tiến Hiệp',           score:9,    city:'Thanh Hoá',         key:'other'     },
+  { name:'Hồ Ngọc Hân',                score:9,    city:'Cần Thơ',           key:'cantho'    },
+  { name:'Nguyễn Thành Đạt',           score:9,    city:'Yp Huế',            key:'other'     },
+];
+
+const CITY_COLORS = {
+  cantho:   ['#6366f1','#4f46e5'],
+  angiang:  ['#10b981','#059669'],
+  dongthap: ['#f59e0b','#d97706'],
+  camau:    ['#ec4899','#db2777'],
+  haiphong: ['#06b6d4','#0891b2'],
+  hcm:      ['#f43f5e','#e11d48'],
+  hanoi:    ['#8b5cf6','#7c3aed'],
+  danang:   ['#14b8a6','#0d9488'],
+  other:    ['#64748b','#475569'],
+};
+
+let currentMainTab = 'vsat';
+let vsatFilter = 'all';
+let thptFilter = 'all';
+
+function getInitials(name) {
+  const parts = name.trim().split(' ');
+  return parts[parts.length-1][0].toUpperCase();
+}
+
+function switchMainTab(tab) {
+  currentMainTab = tab;
+  document.getElementById('sectionVSAT').style.display = tab==='vsat' ? '' : 'none';
+  document.getElementById('sectionTHPT').style.display = tab==='thpt' ? '' : 'none';
+  document.getElementById('tabVSAT').className = 'main-tab vsat' + (tab==='vsat'?' active':'');
+  document.getElementById('tabTHPT').className = 'main-tab thpt' + (tab==='thpt'?' active':'');
+  launchConfetti();
+}
+
+function setFilter(key, btn, tab) {
+  if (tab==='vsat') vsatFilter = key; else thptFilter = key;
+  const wrap = document.getElementById(tab==='vsat'?'vsatFilters':'thptFilters');
+  wrap.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab==='thpt') btn.classList.add('thpt-pill');
+  renderTab(tab);
+}
+
+function renderStats(data, statsId, maxPts) {
+  const scores = data.map(d=>d.score);
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : 0;
+  const best = scores.length ? Math.max(...scores) : 0;
+  document.getElementById(statsId).innerHTML = `
+    <div class="stat-item"><div class="stat-num gold">${data.length}</div><div class="stat-label">Học viên</div></div>
+    <div class="stat-item"><div class="stat-num cyan">${avg}</div><div class="stat-label">Điểm trung bình</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:#a78bfa">${best}</div><div class="stat-label">Điểm cao nhất</div></div>`;
+}
+
+function renderPodium(data, podiumId) {
+  const top3 = data.slice(0,3);
+  const wrap = document.getElementById(podiumId);
+  if (!top3.length) { wrap.innerHTML=''; return; }
+  const order = [top3[1],top3[0],top3[2]].filter(Boolean);
+  const origRank = order.map(s=>top3.indexOf(s)+1);
+  wrap.innerHTML = order.map((s,i) => {
+    const r = origRank[i]; const rc = `rank${r}`;
+    const [c1,c2] = CITY_COLORS[s.key]||CITY_COLORS.other;
+    return `<div class="podium-item">
+      <div class="podium-avatar">
+        ${r===1?'<div class="podium-crown">👑</div>':''}
+        <div class="podium-avatar-img ${rc}" style="${r>1?`background:linear-gradient(135deg,${c1},${c2})`:''}">
+          ${getInitials(s.name)}</div>
+      </div>
+      <div class="podium-info">
+        <div class="podium-name" title="${s.name}">${s.name}</div>
+        <div class="podium-class">📍 ${s.city}</div>
+        <div class="podium-score ${rc}">${s.score} điểm</div>
+      </div>
+      <div class="podium-stage ${rc}">${r===1?'🥇':r===2?'🥈':'🥉'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderList(data, listId, countId, maxPts) {
+  document.getElementById(countId).textContent = `${data.length} học viên`;
+  const el = document.getElementById(listId);
+  if (!data.length) {
+    el.innerHTML = `<div class="honor-empty"><div class="honor-empty-icon">🏆</div><p style="font-size:.95rem">Chưa có dữ liệu — sắp cập nhật</p></div>`;
+    return;
+  }
+  const maxScore = Math.max(...data.map(d=>d.score));
+  el.innerHTML = data.map((s,i) => {
+    const rank=i+1, isTop3=rank<=3;
+    const rankIcon=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
+    const rankClass=rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
+    const pct=Math.round(s.score/maxScore*100);
+    const [c1,c2]=CITY_COLORS[s.key]||CITY_COLORS.other;
+    const badge=rank===1?'👑 Quán quân':rank===2?'🥈 Á quân':rank===3?'🥉 Hạng ba':s.score>=maxPts*.98?'⭐ Xuất sắc':s.score>=maxPts*.96?'🌟 Giỏi':'✅ Tiêu biểu';
+    const badgeBg=rank<=3?'rgba(251,191,36,.15)':s.score>=maxPts*.98?'rgba(99,102,241,.2)':'rgba(255,255,255,.08)';
+    const badgeColor=rank<=3?'#fbbf24':s.score>=maxPts*.98?'#a78bfa':'rgba(255,255,255,.6)';
+    return `<div class="honor-card ${isTop3?'top3':''}">
+      <div class="rank-badge ${rankClass}">${rankIcon}</div>
+      <div class="honor-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${getInitials(s.name)}</div>
+      <div class="honor-info">
+        <div class="honor-name">${s.name}</div>
+        <div class="honor-meta">
+          <span>📍 ${s.city}</span>
+          <span class="honor-tag" style="background:${badgeBg};color:${badgeColor}">${badge}</span>
+        </div>
+        <div style="margin-top:.5rem;background:rgba(255,255,255,.1);border-radius:20px;height:5px;overflow:hidden;max-width:220px">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${c1},${c2});border-radius:20px"></div>
+        </div>
+      </div>
+      <div class="honor-right">
+        <div class="honor-score-big">${s.score}</div>
+        <div class="honor-score-label">/ ${maxPts} điểm</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTab(tab) {
+  if (tab==='vsat') {
+    const f = vsatFilter;
+    const data = f==='all' ? DATA_VSAT : DATA_VSAT.filter(s=>s.key===f);
+    renderStats(data,'vsatStats',150);
+    renderPodium(data,'vsatPodium');
+    renderList(data,'vsatList','vsatCount',150);
+  } else {
+    const f = thptFilter;
+    const data = f==='all' ? DATA_THPT : DATA_THPT.filter(s=>s.key===f);
+    renderStats(data,'thptStats',10);
+    renderPodium(data,'thptPodium');
+    renderList(data,'thptList','thptCount',10);
+  }
+}
+
+// ══ PARTICLES ══
+function initParticles() {
+  const wrap = document.getElementById('particles');
+  const colors=['#fbbf24','#818cf8','#34d399','#f472b6','#60a5fa','#a78bfa'];
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2.5+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${2+Math.random()*3}s;animation-delay:${Math.random()*3}s`;
+    wrap.appendChild(s);
+  }
+  for(let i=0;i<18;i++){
+    const p=document.createElement('div');p.className='particle';
+    const sz=Math.random()*6+3;
+    p.style.cssText=`width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}%;animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*10}s`;
+    wrap.appendChild(p);
+  }
+}
+
+function launchConfetti() {
+  const colors=['#fbbf24','#6366f1','#10b981','#f43f5e','#06b6d4','#a855f7'];
+  for(let i=0;i<35;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div');c.className='confetti';
+      const sz=Math.random()*10+5;
+      c.style.cssText=`width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}%;border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${2+Math.random()*2}s;opacity:.9`;
+      document.body.appendChild(c);
+      setTimeout(()=>c.remove(),4000);
+    },i*60);
+  }
+}
+
+initParticles();
+renderTab('vsat');
+setTimeout(launchConfetti,600);
+</script>
+</body>
+</html>

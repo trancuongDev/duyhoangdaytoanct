@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8"/>
@@ -199,7 +199,7 @@ const db = supabase.createClient(
 );
 
 const _role = sessionStorage.getItem('dh_role');
-if (_role !== 'teacher' && _role !== 'assistant') location.href = 'index.html';
+if (_role !== 'teacher' && _role !== 'assistant') location.href = 'login.html';
 
 let allMembers=[], allClasses=[], memberCounts={}, editingMemberId=null, editingClassId=null;
 

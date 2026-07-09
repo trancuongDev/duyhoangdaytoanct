@@ -1,6 +1,6 @@
 // Auth guard
 if (!sessionStorage.getItem('dh_role')) {
-  window.location.href = 'index.html';
+  window.location.href = 'login.html';
 }
 
 document.getElementById('welcomeText').textContent =
@@ -8,7 +8,7 @@ document.getElementById('welcomeText').textContent =
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
   sessionStorage.clear();
-  window.location.href = 'index.html';
+  window.location.href = 'login.html';
 });
 
 const subjectLabels = {

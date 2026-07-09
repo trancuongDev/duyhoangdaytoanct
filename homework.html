@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8"/>
@@ -529,7 +529,10 @@
       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
   </div>
   <nav class="sidebar-nav" id="sidebarNav"></nav>
-  <a href="index.html" class="slink slink-logout">
+  <a href="index.html" class="slink" style="margin:.25rem .75rem;border:1px solid rgba(255,255,255,.1);border-radius:10px">
+    <span class="slink-icon">🏠</span><span class="slink-label">Trang chủ</span>
+  </a>
+  <a href="login.html" class="slink slink-logout">
     <span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span>
   </a>
   <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.5</div>
@@ -725,7 +728,7 @@
     <div class="hw-modal-body">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.75rem;flex-shrink:0">
         <h2 style="margin:0" id="doHWTitle">Làm bài</h2>
-        <button class="btn-outline" onclick="closeDoHW()">✕ Đóng</button>
+        <!-- Nút đóng bị ẩn: học sinh phải nộp bài mới thoát được -->
       </div>
       <p id="doHWDesc" style="font-size:.86rem;color:var(--muted);margin-bottom:.75rem;flex-shrink:0"></p>
 
@@ -737,15 +740,9 @@
         <textarea id="doHWNoteText" rows="2" placeholder="..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.9rem;outline:none;font-family:inherit;background:var(--card);color:var(--text);resize:vertical"></textarea>
       </div>
       <div id="doHWErr" class="error-msg" style="margin-top:.5rem;margin-bottom:1rem"></div>
-
-      <!-- Footer nằm trong body, sticky dưới vùng cuộn -->
-      <div class="hw-modal-footer">
-        <button class="btn-outline" onclick="closeDoHW()">Hủy</button>
-        <button class="btn-primary" onclick="submitAnswers()">📤 Nộp bài</button>
-      </div>
     </div>
 
-    <!-- ── Navigator + Timer cố định ở đáy modal ── -->
+    <!-- ── Navigator + Timer + Nút nộp bài cố định ở đáy modal ── -->
     <div id="qNavWrap" style="display:none">
 
       <!-- Header: timer + meta -->
@@ -781,6 +778,19 @@
             <span id="qNavProgress">0/0 câu</span>
           </div>
         </div>
+
+        <!-- Nút nộp bài — cố định trong thanh navigator -->
+        <button onclick="submitAnswers()"
+          style="flex-shrink:0;display:flex;align-items:center;gap:.45rem;
+                 background:linear-gradient(135deg,#10b981,#059669);color:#fff;
+                 border:none;border-radius:10px;padding:.55rem 1.1rem;
+                 font-size:.88rem;font-weight:800;cursor:pointer;
+                 box-shadow:0 3px 12px rgba(16,185,129,.4);
+                 transition:filter .15s,transform .15s;white-space:nowrap"
+          onmouseover="this.style.filter='brightness(1.1)';this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.filter='';this.style.transform=''">
+          📤 Nộp bài
+        </button>
 
       </div>
 
@@ -961,7 +971,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="font-size:3rem;margin-bottom:1rem">🔐</div>
         <div style="font-size:1.1rem;font-weight:800;color:var(--text);margin-bottom:.5rem">Chưa đăng nhập</div>
         <div style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem">Vui lòng đăng nhập để sử dụng trang Bài Tập.</div>
-        <a href="index.html" class="btn-primary" style="display:inline-flex;align-items:center;gap:.5rem;text-decoration:none">
+        <a href="login.html" class="btn-primary" style="display:inline-flex;align-items:center;gap:.5rem;text-decoration:none">
           🏠 Về trang đăng nhập
         </a>
       </div>`;
@@ -1478,6 +1488,8 @@ function renderAdminSubmissions(filterHwId=null) {
               <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
                 <span style="font-weight:700;font-size:.9rem">${esc(s.student_name||s.username)}</span>
                 ${rankTag}
+                ${s.force_submitted ? `<span style="display:inline-flex;align-items:center;gap:.25rem;background:#fef2f2;color:#991b1b;border:1.5px solid #fca5a5;border-radius:20px;padding:.18rem .6rem;font-size:.72rem;font-weight:800;flex-shrink:0">🚪 Thoát khỏi bài thi</span>` : ''}
+                ${s.tab_violations ? `<span style="display:inline-flex;align-items:center;gap:.25rem;background:#fff7ed;color:#c2410c;border:1.5px solid #fdba74;border-radius:20px;padding:.18rem .6rem;font-size:.72rem;font-weight:800;flex-shrink:0">⚠️ Chuyển tab ${s.tab_violations} lần</span>` : ''}
               </div>
               <div style="font-size:.77rem;color:var(--muted);margin-top:.1rem">${esc(s.class_name||'')} · Nộp: ${fmtDate(s.submitted_at)}</div>
               ${chips.length ? `<div style="display:flex;flex-wrap:wrap;gap:.28rem;margin-top:.45rem">${chips.join('')}</div>` : ''}
@@ -3661,32 +3673,85 @@ async function openDoHW(hwId) {
     (hw.description||'') + (attemptLabel ? `  •  ${attemptLabel}` : '');
   document.getElementById('doHWNoteText').value    = '';
   document.getElementById('doHWErr').textContent   = '';
+
+  // ── Popup cảnh báo quy định trước khi vào làm bài ──
+  const confirmed = await new Promise(resolve => {
+    // Xóa popup cũ nếu có
+    document.getElementById('_doHWWarningOverlay')?.remove();
+
+    const ov = document.createElement('div');
+    ov.id = '_doHWWarningOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:999998;background:rgba(15,23,42,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:1.25rem';
+    ov.innerHTML = `
+      <div style="background:var(--card,#fff);border-radius:20px;max-width:460px;width:100%;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.35);animation:_hwWarnPop .25s cubic-bezier(.34,1.56,.64,1)">
+        <style>@keyframes _hwWarnPop{from{opacity:0;transform:scale(.85) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}</style>
+
+        <!-- Tiêu đề đỏ -->
+        <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:1.25rem 1.5rem;display:flex;align-items:center;gap:.85rem">
+          <div style="font-size:2.2rem;flex-shrink:0">📋</div>
+          <div>
+            <div style="color:#fff;font-size:1.05rem;font-weight:900">Quy định làm bài</div>
+            <div style="color:#fecaca;font-size:.78rem;margin-top:.15rem">${esc(hw.title)}</div>
+          </div>
+        </div>
+
+        <!-- Nội dung -->
+        <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.6rem">
+
+          <div style="display:flex;align-items:flex-start;gap:.65rem;padding:.65rem .85rem;background:#fef2f2;border-radius:10px;border-left:3px solid #ef4444">
+            <span style="font-size:1.1rem;flex-shrink:0;margin-top:.05rem">🚫</span>
+            <div style="font-size:.86rem;color:#7f1d1d;line-height:1.6"><b>Nghiêm cấm chuyển tab</b> hoặc tra mạng trong khi làm bài.<br/>Vi phạm <b>3 lần</b> → bài tự động nộp ngay lập tức.</div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:.65rem;padding:.65rem .85rem;background:#fff7ed;border-radius:10px;border-left:3px solid #f59e0b">
+            <span style="font-size:1.1rem;flex-shrink:0;margin-top:.05rem">⏱️</span>
+            <div style="font-size:.86rem;color:#92400e;line-height:1.6">
+              ${hw.time_limit
+                ? `Thời gian làm bài: <b>${hw.time_limit} phút</b>. Hết giờ sẽ tự động nộp.`
+                : 'Bài không giới hạn thời gian.'}
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:.65rem;padding:.65rem .85rem;background:#f0fdf4;border-radius:10px;border-left:3px solid #10b981">
+            <span style="font-size:1.1rem;flex-shrink:0;margin-top:.05rem">✅</span>
+            <div style="font-size:.86rem;color:#065f46;line-height:1.6">Sau khi nộp bài <b>không thể sửa lại</b>. Hãy kiểm tra kỹ trước khi nộp.</div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:.65rem;padding:.65rem .85rem;background:#ede9fe;border-radius:10px;border-left:3px solid #8b5cf6">
+            <span style="font-size:1.1rem;flex-shrink:0;margin-top:.05rem">👁️</span>
+            <div style="font-size:.86rem;color:#4c1d95;line-height:1.6">Mọi hành vi vi phạm đều được <b>ghi nhận và báo cáo giáo viên</b>.</div>
+          </div>
+
+        </div>
+
+        <!-- Nút -->
+        <div style="padding:0 1.5rem 1.4rem;display:flex;gap:.65rem">
+          <button id="_doHWWarnCancel" style="flex:1;padding:.75rem;border:1.5px solid #e2e8f0;background:none;border-radius:12px;font-size:.88rem;font-weight:700;color:#64748b;cursor:pointer">Quay lại</button>
+          <button id="_doHWWarnOk" style="flex:2;padding:.75rem;border:none;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:12px;font-size:.92rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,.4)">✏️ Tôi hiểu — Bắt đầu làm bài</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+    document.getElementById('_doHWWarnOk').onclick     = () => { ov.remove(); resolve(true); };
+    document.getElementById('_doHWWarnCancel').onclick = () => { ov.remove(); resolve(false); };
+  });
+
+  if (!confirmed) return; // Học sinh bấm "Quay lại"
+  _tabSwitchCount = 0; // reset vi phạm cho lần làm mới
+
   document.getElementById('doHWQuestions').innerHTML = buildQDisplay(qs, doHWAnswers, false);
   document.getElementById('modalDoHW').classList.add('open');
+  _pushDoHWState(); // chặn nút Back trình duyệt
   buildQNavigator(qs);
   setTimeout(() => renderLatexAll(document.getElementById('modalDoHW')), 200);
   startCountdown(hw.time_limit||null, qs.length);
 }
 
 async function closeDoHW(force=false) {
-  // Nếu đang làm bài (có câu đã trả lời hoặc timer chạy) → hỏi xác nhận
-  if (!force) {
-    const answered = Object.keys(doHWAnswers).filter(k => {
-      const v = doHWAnswers[k];
-      return v !== undefined && v !== null && v !== '';
-    }).length;
-    if (answered > 0 || cdSecondsLeft > 0) {
-      const ok = await showConfirm({
-        icon: '⚠️',
-        title: 'Thoát khỏi bài làm?',
-        msg: 'Bạn chưa nộp bài.\nThoát ra sẽ MẤT toàn bộ câu trả lời.',
-        okText: 'Thoát',
-        okColor: '#ef4444',
-        cancelText: 'Ở lại làm bài'
-      });
-      if (!ok) return;
-    }
-  }
+  // Chỉ cho thoát khi force=true (gọi sau khi nộp bài xong)
+  // Học sinh không thể tự đóng modal khi đang làm bài
+  if (!force) return;
+
   stopCountdown();
   doHWFlagged = new Set();
   const wrap = document.getElementById('qNavWrap');
@@ -4151,12 +4216,14 @@ async function submitAnswers(autoSubmit=false) {
     answers:       doHWAnswers,
     note:          document.getElementById('doHWNoteText').value.trim() || null,
     status:        finalStatus,
-    score:         finalScore,   // luôn lưu điểm tự chấm được (kể cả khi còn SA manual)
+    score:         finalScore,
     max_score:     finalMax,
     manual_scores: Object.keys(initialManualScores).length ? initialManualScores : null,
     time_used:     cdUsedSecs > 0 ? cdUsedSecs : null,
     submitted_at:  new Date().toISOString(),
-    attempt:       attemptNum
+    attempt:       attemptNum,
+    tab_violations: _tabSwitchCount > 0 ? _tabSwitchCount : null,
+    force_submitted: autoSubmit ? true : null   // true = tự động nộp do tắt tab / hết vi phạm
   };
 
   let error;
@@ -4541,7 +4608,26 @@ async function viewStudentResult(subId) {
   // Thông tin nộp bài
   const timeStr = sub.time_used
     ? (Math.floor(sub.time_used/60)+'p '+( sub.time_used%60)+'s') : null;
-  const scoreHtml = `<div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem;align-items:center">
+
+  // Banner cảnh báo vi phạm chuyển tab
+  const violations = sub.tab_violations || 0;
+  const violationBanner = violations > 0 ? `
+    <div style="background:linear-gradient(135deg,#7f1d1d,#991b1b);border-radius:12px;padding:.85rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.85rem;box-shadow:0 4px 16px rgba(220,38,38,.3)">
+      <div style="font-size:2rem;flex-shrink:0">🚨</div>
+      <div>
+        <div style="color:#fff;font-weight:900;font-size:.95rem;margin-bottom:.2rem">PHÁT HIỆN VI PHẠM TRONG KHI LÀM BÀI</div>
+        <div style="color:#fecaca;font-size:.85rem;line-height:1.6">
+          Học sinh đã <b style="color:#fff">chuyển tab ${violations} lần</b> trong quá trình làm bài.
+          ${violations >= 3 ? '<br/><span style="color:#fef3c7;font-weight:700">⚠️ Bài đã bị tự động nộp do vi phạm quá giới hạn (3 lần).</span>' : ''}
+        </div>
+      </div>
+      <div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:10px;padding:.5rem .85rem;text-align:center;flex-shrink:0">
+        <div style="color:#fff;font-size:1.6rem;font-weight:900;line-height:1">${violations}</div>
+        <div style="color:#fecaca;font-size:.68rem;font-weight:700">LẦN VI PHẠM</div>
+      </div>
+    </div>` : '';
+
+  const scoreHtml = `${violationBanner}<div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem;align-items:center">
     ${sub.score!=null
       ? `<span class="score-pill" style="font-size:.9rem">🏅 ${roundScore(sub.max_score>0?sub.score/sub.max_score*10:sub.score)}/10</span>`
       : '<span style="background:#fef3c7;color:#92400e;padding:.25rem .75rem;border-radius:20px;font-size:.82rem;font-weight:700">⏳ Chưa chấm</span>'
@@ -5077,6 +5163,143 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
     if (safeIds.includes(el.id)) return; // bỏ qua
     el.classList.remove('open');
   });
+});
+
+// ═══ CHẶN CHUYỂN TAB / ĐÓNG TAB / BACK khi đang làm bài ═══
+function _isDoHWOpen() {
+  return document.getElementById('modalDoHW')?.classList.contains('open');
+}
+function _pushDoHWState() {
+  history.pushState({ doHW: true }, '');
+}
+
+// Chặn nút Back trình duyệt
+window.addEventListener('popstate', function() {
+  if (_isDoHWOpen()) history.pushState({ doHW: true }, '');
+});
+
+// Chặn đóng tab / reload / điều hướng ra ngoài
+window.addEventListener('beforeunload', function(e) {
+  if (_isDoHWOpen()) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
+
+// ═══ AUTO-SUBMIT KHI TẮT TAB / TẮT TRANG ═══
+// Dùng pagehide (đáng tin cậy hơn beforeunload trên mobile)
+// + visibilitychange để bắt thêm trường hợp
+let _autoSubmitFired = false;
+
+async function _autoSubmitOnExit() {
+  if (_autoSubmitFired) return;
+  if (!_isDoHWOpen()) return;
+  _autoSubmitFired = true;
+  try {
+    await submitAnswers(true); // true = autoSubmit, bỏ qua confirm
+  } catch(e) {}
+}
+
+window.addEventListener('pagehide', function(e) {
+  if (_isDoHWOpen()) {
+    _autoSubmitFired = false; // reset để cho phép fire
+    _autoSubmitOnExit();
+  }
+});
+
+// Bắt thêm trường hợp: tab bị đóng (visibilitychange + document.hidden + không quay lại)
+let _exitTimer = null;
+// (visibilitychange chuyển tab đã xử lý ở block bên dưới)
+
+// ═══ PHÁT HIỆN CHUYỂN TAB & HIỆN CẢNH BÁO ═══
+let _tabSwitchCount = 0;
+let _lastVisibilityTime = 0;
+
+document.addEventListener('visibilitychange', function() {
+  if (!_isDoHWOpen()) {
+    if (_exitTimer) { clearTimeout(_exitTimer); _exitTimer = null; }
+    return;
+  }
+
+  if (document.hidden) {
+    _lastVisibilityTime = Date.now();
+    // Nếu 30s không quay lại → coi như đóng tab → tự nộp bài
+    _exitTimer = setTimeout(() => {
+      if (_isDoHWOpen() && document.hidden) {
+        _autoSubmitFired = false;
+        _autoSubmitOnExit();
+      }
+    }, 30000);
+  } else {
+    // Quay lại tab → hủy timer auto-submit
+    if (_exitTimer) { clearTimeout(_exitTimer); _exitTimer = null; }
+
+    if (_lastVisibilityTime === 0) return;
+    const awaySeconds = Math.round((Date.now() - _lastVisibilityTime) / 1000);
+    _lastVisibilityTime = 0;
+    _tabSwitchCount++;
+
+    const MAX_TAB_SWITCH = 3;
+    const isLastWarning = _tabSwitchCount >= MAX_TAB_SWITCH;
+
+    // Xóa overlay cũ nếu còn
+    document.getElementById('_tabWarnOverlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = '_tabWarnOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(220,38,38,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;text-align:center;padding:2rem';
+
+    if (isLastWarning) {
+      overlay.innerHTML = `
+        <div style="font-size:4rem">🚫</div>
+        <div style="color:#fff;font-size:1.6rem;font-weight:900">HẾT LƯỢT VI PHẠM</div>
+        <div style="color:#fecaca;font-size:1rem;font-weight:600;line-height:1.8;max-width:480px">
+          Bạn đã vi phạm <b style="color:#fff">${MAX_TAB_SWITCH} lần</b> chuyển tab trong khi làm bài.<br/>
+          <span style="color:#fef3c7">Bài làm sẽ được <b style="color:#fff">tự động nộp</b> ngay bây giờ.</span>
+        </div>
+        <div style="color:#fef3c7;font-size:.88rem;line-height:1.7;max-width:460px">
+          Hành vi vi phạm đã được <b>ghi nhận và báo cáo giáo viên</b>.
+        </div>
+        <div id="_tabCountdown" style="color:#fff;font-size:1.3rem;font-weight:900">Nộp bài sau 3...</div>
+      `;
+      document.body.appendChild(overlay);
+
+      // Đếm ngược 3s rồi nộp bài
+      let countdown = 3;
+      const cdEl = document.getElementById('_tabCountdown');
+      const timer = setInterval(() => {
+        countdown--;
+        if (cdEl) cdEl.textContent = `Nộp bài sau ${countdown}...`;
+        if (countdown <= 0) {
+          clearInterval(timer);
+          overlay.remove();
+          submitAnswers(true); // auto-submit
+        }
+      }, 1000);
+    } else {
+      const remaining = MAX_TAB_SWITCH - _tabSwitchCount;
+      overlay.innerHTML = `
+        <div style="font-size:4rem">⚠️</div>
+        <div style="color:#fff;font-size:1.6rem;font-weight:900">VI PHẠM QUY ĐỊNH THI</div>
+        <div style="color:#fecaca;font-size:1rem;font-weight:600;line-height:1.8;max-width:480px">
+          Bạn đã rời khỏi trang thi${awaySeconds > 0 ? ` trong <b style="color:#fff">${awaySeconds}s</b>` : ''}<br/>
+          <span style="color:#fef3c7">Vi phạm lần thứ <b style="color:#fff;font-size:1.2rem">${_tabSwitchCount}/${MAX_TAB_SWITCH}</b></span>
+        </div>
+        <div style="color:#fef3c7;font-size:.88rem;line-height:1.7;max-width:460px">
+          Nghiêm cấm tra mạng hoặc sử dụng tài liệu trong khi làm bài.<br/>
+          Hành vi vi phạm đã được <b>ghi nhận và báo cáo giáo viên</b>.<br/>
+          <b style="color:#fff">Còn ${remaining} lần</b> — vi phạm thêm sẽ bị <b style="color:#fff">tự động nộp bài</b>.
+        </div>
+        <button id="_tabWarnBtn" style="margin-top:.5rem;background:#fff;color:#dc2626;padding:.85rem 2.5rem;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3)">
+          Tôi hiểu — Tiếp tục làm bài
+        </button>
+      `;
+      document.body.appendChild(overlay);
+      document.getElementById('_tabWarnBtn').onclick = () => overlay.remove();
+      setTimeout(() => overlay.remove(), 8000);
+    }
+  }
 });
 
 // ═══════════════════════════════════════════

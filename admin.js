@@ -1,4 +1,4 @@
-﻿//// Khởi tạo Supabase client (CDN đã load sẵn qua script tag)
+//// Khởi tạo Supabase client (CDN đã load sẵn qua script tag)
 const db = supabase.createClient(
   'https://gojpmogjretoxplydjvg.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
@@ -232,7 +232,7 @@ function showConfirm(message, onOk, { title='Xác nhận xóa', icon='🗑', okT
 
 // Auth guard
 const _role = sessionStorage.getItem('dh_role');
-if (_role !== 'teacher' && _role !== 'assistant') location.href = 'index.html';
+if (_role !== 'teacher' && _role !== 'assistant') location.href = 'login.html';
 const isTeacher = _role === 'teacher';
 
 // ---- Helpers ----
@@ -275,7 +275,7 @@ if (!isTeacher) {
     if (el) el.style.display = 'none';
   });
 }
-document.getElementById('logoutBtn').addEventListener('click', e => { e.preventDefault(); sessionStorage.clear(); location.href='index.html'; });
+document.getElementById('logoutBtn').addEventListener('click', e => { e.preventDefault(); sessionStorage.clear(); location.href='login.html'; });
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarBackdrop').classList.toggle('show');
@@ -3712,7 +3712,7 @@ document.getElementById('maintenanceSideBtn')?.addEventListener('click', async (
     clearInterval(countdown);
     overlay.style.display = 'none';
     sessionStorage.clear();
-    location.href = 'index.html';
+    location.href = 'login.html';
   }
 
   function reset() {
