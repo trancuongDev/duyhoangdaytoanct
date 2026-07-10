@@ -403,7 +403,7 @@ async function renderGroups() {
   document.getElementById('emptyGroups').style.display = (list||[]).length ? 'none' : 'block';
   if (!(list||[]).length) return;
 
-  const { data: allLessons } = await db.from('lessons').select('id,name,class_name,description,group_id,group_name').order('created_at', {ascending: false});
+  const { data: allLessons } = await db.from('lessons').select('id,name,class_name,description,group_id,group_name,sort_order').order('sort_order', {ascending: true}).order('created_at', {ascending: true});
   const lessonIds = (allLessons||[]).map(l => l.id);
   const [{ data: allVids }, { data: allDocs }] = lessonIds.length ? await Promise.all([
     db.from('lesson_videos').select('lesson_id').in('lesson_id', lessonIds),
@@ -438,6 +438,12 @@ async function renderGroups() {
   function buildLessonItem(l, idx, onOpen, onEdit, onDel) {
     const item = document.createElement('div');
     item.className = 'group-lesson-item';
+    item.dataset.id = l.id;
+    const handle = document.createElement('div');
+    handle.innerHTML = '⠿';
+    handle.title = 'Kéo để sắp xếp';
+    handle.style.cssText = 'cursor:grab;color:var(--muted);font-size:1.1rem;padding:0 .4rem;flex-shrink:0;user-select:none';
+    handle.className = 'drag-handle';
     const num = document.createElement('div'); num.className = 'group-lesson-num'; num.textContent = idx + 1;
     const info = document.createElement('div'); info.className = 'group-lesson-info';
     info.innerHTML = `<div class="group-lesson-title"><span style="margin-right:.35rem">📚</span>${l.name}</div>
@@ -448,7 +454,7 @@ async function renderGroups() {
     acts.appendChild(openBtn);
     if (onEdit) { const eb = document.createElement('button'); eb.className = 'btn-sm'; eb.textContent = '✏️'; eb.addEventListener('click', e => { e.stopPropagation(); onEdit(); }); acts.appendChild(eb); }
     if (onDel)  { const db2 = document.createElement('button'); db2.className = 'btn-sm btn-danger'; db2.textContent = '🗑'; db2.addEventListener('click', e => { e.stopPropagation(); onDel(); }); acts.appendChild(db2); }
-    item.appendChild(num); item.appendChild(info); item.appendChild(acts);
+    item.appendChild(handle); item.appendChild(num); item.appendChild(info); item.appendChild(acts);
     item.addEventListener('click', onOpen);
     return item;
   }
@@ -536,6 +542,26 @@ async function renderGroups() {
             () => showConfirm(`Xóa bài học "${l.name}"?`, async () => { await db.from('lessons').delete().eq('id', l.id); renderGroups(); })
           ));
         });
+
+        // Kích hoạt Sortable trong nhóm bài học
+        if (typeof Sortable !== 'undefined' && directLessons.length > 1) {
+          Sortable.create(inner, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            onEnd: async function() {
+              const items = [...inner.querySelectorAll('.group-lesson-item')];
+              items.forEach((el, i) => {
+                const numEl = el.querySelector('.group-lesson-num');
+                if (numEl) numEl.textContent = i + 1;
+              });
+              for (const [i, el] of items.entries()) {
+                await db.from('lessons').update({ sort_order: i + 1 }).eq('id', parseInt(el.dataset.id));
+              }
+            }
+          });
+        }
         if (!children.length && !directLessons.length) {
           const msg = document.createElement('div'); msg.className = 'group-empty-msg'; msg.textContent = 'Chưa có nội dung.';
           inner.appendChild(msg);
@@ -2107,7 +2133,17 @@ document.getElementById('lSaveBtn').addEventListener('click', async () => {
   if (editingLessonId) {
     await db.from('lessons').update({ name, class_name: cls, description: desc, group_id: groupId ? parseInt(groupId) : null, group_name: groupName }).eq('id', editingLessonId);
   } else {
-    const { data: newLesson } = await db.from('lessons').insert({ name, class_name: cls, description: desc, group_id: groupId ? parseInt(groupId) : null, group_name: groupName }).select('id').single();
+    // Tính sort_order = max hiện tại trong nhóm + 1 → bài mới nằm cuối
+    let nextOrder = 1;
+    const { data: existing } = await db.from('lessons')
+      .select('sort_order')
+      .eq('group_name', groupName || '')
+      .order('sort_order', { ascending: false })
+      .limit(1);
+    if (existing && existing.length > 0 && existing[0].sort_order != null) {
+      nextOrder = existing[0].sort_order + 1;
+    }
+    const { data: newLesson } = await db.from('lessons').insert({ name, class_name: cls, description: desc, group_id: groupId ? parseInt(groupId) : null, group_name: groupName, sort_order: nextOrder }).select('id').single();
     lessonId = newLesson?.id;
 
     // Lưu video links inline

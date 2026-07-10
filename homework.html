@@ -677,6 +677,14 @@
         <label>📌 Ghi chú hướng dẫn chấm <span style="color:var(--muted);font-weight:400">(học sinh chỉ thấy sau khi nộp bài)</span></label>
         <textarea id="hwGradingNotes" rows="3" placeholder="VD: Câu 3 cần giải thích rõ bước lập phương trình. Câu 5 chấp nhận cả 2 cách giải..." style="resize:vertical"></textarea>
       </div>
+
+      <!-- Cho phép tải đề -->
+      <div style="grid-column:1/-1">
+        <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;user-select:none;padding:.6rem .85rem;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);transition:all .18s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" id="hwAllowDownload" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer"/>
+          <span>📥 Cho phép học sinh <b>tải đề về</b> <span style="color:var(--muted);font-weight:400">(file không có đáp án, để tự luyện)</span></span>
+        </label>
+      </div>
       <div>
         <label>🎯 Tổng điểm bài <span style="color:var(--muted);font-weight:400">(để trống = giữ điểm từng câu)</span></label>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
@@ -1020,6 +1028,7 @@ let cdWarned60    = false;  // đã hiện cảnh báo 60s chưa
 document.addEventListener('DOMContentLoaded', async () => {
   initSidebar();
   initDarkMode();
+  // Toggle hiển thị vùng upload file đề — không cần nữa (dùng exportHW)
   await loadUser();
   if (!currentUser) {
     // Hiển thị thông báo thay vì redirect im lặng
@@ -2368,6 +2377,12 @@ function renderStudentList() {
           : (!sub||canRetry)?`<button class="btn-primary" onclick="openDoHW(${h.id})">${sub&&canRetry?'🔄 Làm lại':'✏️ Làm bài'}</button>`:''
         }
         ${sub?`<button class="btn-sm" onclick="openResult(${h.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem kết quả</button>`:''}
+        ${h.allow_download
+          ? `<button class="btn-sm" onclick="exportHW(${h.id})"
+               style="border-color:#0891b2;color:#0e7490;background:#e0f2fe;font-weight:700">
+               📥 Tải đề về
+             </button>`
+          : ''}
       </div>
     </div>`;
   }).join('');
@@ -2392,6 +2407,9 @@ function openModalHW() {
   document.getElementById('hwTotalScore').value = '';
   document.getElementById('hwScorePreview').textContent = '';
   document.getElementById('hwFormErr').textContent='';
+  // Reset allow_download
+  document.getElementById('hwAllowDownload').checked = false;
+  window._hwAttachExistingUrl = null;
   document.getElementById('modalHWTitle').textContent='➕ Giao bài tập mới';
   renderQuestionList();
   document.getElementById('modalHW').classList.add('open');
@@ -2416,6 +2434,9 @@ async function openEditHW(hwId) {
   updateScorePreview();
   document.getElementById('hwGradingNotes').value = hw.grading_notes || '';
   document.getElementById('hwFormErr').textContent='';
+  // Điền allow_download
+  document.getElementById('hwAllowDownload').checked = !!hw.allow_download;
+  window._hwAttachExistingUrl = null;
   document.getElementById('modalHWTitle').textContent='✏️ Sửa bài tập';
   // Load questions
   const qs = await loadQuestions(hwId);
@@ -3388,7 +3409,8 @@ async function saveHomework(isDraft=false) {
     total_score:  parseFloat(document.getElementById('hwTotalScore').value)||null,
     grading_notes: document.getElementById('hwGradingNotes').value.trim()||null,
     created_by:currentUser.username,
-    is_draft: isDraft
+    is_draft: isDraft,
+    allow_download: document.getElementById('hwAllowDownload').checked
   };
   const editId=document.getElementById('hwEditId').value;
   let hwId=editId?parseInt(editId):null;
@@ -5775,19 +5797,44 @@ async function exportHW(hwId) {
 
   const html = htmlParts.join('');
 
-  // Tạo Blob và download — không bị chặn popup
+  // Tạo Blob
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
   const safeName = hw.title.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF ]/g,'').trim() || 'bai-tap';
-  a.download = `${safeName}${isStudent ? '' : ' (dap-an)'}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 
-  showToast('✅ Đã tải file — mở bằng trình duyệt rồi Ctrl+P để lưu PDF');
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // Mobile: mở tab mới — dùng Share API nếu có, không thì mở tab
+    if (navigator.share && navigator.canShare) {
+      try {
+        const file = new File([blob], `${safeName}.html`, { type: 'text/html' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: hw.title });
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+          showToast('✅ Đã chia sẻ file đề');
+          return;
+        }
+      } catch(e) { /* fallback */ }
+    }
+    // Fallback: mở tab mới để xem + dùng print
+    const win = window.open(url, '_blank');
+    if (win) {
+      showToast('✅ Mở tab mới — nhấn ⋮ → Chia sẻ hoặc In để lưu PDF');
+    } else {
+      showToast('⚠️ Vui lòng cho phép mở tab mới', false);
+    }
+  } else {
+    // Desktop: download thẳng
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safeName}${isStudent ? '' : ' (dap-an)'}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✅ Đã tải file — mở bằng trình duyệt rồi Ctrl+P để lưu PDF');
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 </script>
 
