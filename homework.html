@@ -9,6 +9,9 @@
   <link rel="stylesheet" href="style.css"/>
   <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- jsPDF + html2canvas để xuất PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- MathJax for LaTeX rendering -->
   <script>
     window.MathJax = {
@@ -1078,11 +1081,78 @@ async function loadUser() {
   if (!username || !dhRole) return;
 
   const role = (dhRole === 'teacher' || dhRole === 'assistant') ? 'admin' : 'student';
-  currentUser = { username, full_name: dhName || username, role, class_name: '' };
+
   if (role === 'student') {
-    const { data } = await sb.from('students').select('class_name').eq('username', username).maybeSingle();
-    currentUser.class_name = data?.class_name || '';
+    // Kiểm tra session token TRƯỚC khi set currentUser
+    const localToken = sessionStorage.getItem('dh_token');
+    if (!localToken) { sessionStorage.clear(); location.href = 'login.html'; return; }
+
+    const { data } = await sb.from('students').select('class_name,session_token,active').eq('username', username).maybeSingle();
+
+    if (!data || data.session_token !== localToken || data.active === false) {
+      sessionStorage.clear();
+      location.href = 'login.html';
+      return;
+    }
+
+    currentUser = { username, full_name: dhName || username, role, class_name: data.class_name || '' };
+
+    // ── Realtime: bị đăng xuất khi thiết bị khác đăng nhập ──
+    sb.channel('hw-student-lock-' + username)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'students',
+        filter: `username=eq.${username}`
+      }, (payload) => {
+        const s = payload.new;
+        const tok = sessionStorage.getItem('dh_token');
+        if (s.session_token && tok && s.session_token !== tok) {
+          _hwShowKicked();
+        } else if (!s.active) {
+          sessionStorage.clear();
+          location.href = 'login.html';
+        }
+      })
+      .subscribe();
+
+    // ── Polling 30s backup ──
+    setInterval(async () => {
+      try {
+        const tok = sessionStorage.getItem('dh_token');
+        if (!tok) return;
+        const { data: s } = await sb.from('students').select('session_token,active').eq('username', username).maybeSingle();
+        if (!s || s.session_token !== tok || !s.active) _hwShowKicked();
+      } catch(e) {}
+    }, 30000);
+
+  } else {
+    // Admin/giáo viên — không cần check session token
+    currentUser = { username, full_name: dhName || username, role, class_name: '' };
   }
+}
+
+function _hwShowKicked() {
+  sessionStorage.clear();
+  document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
+  document.body.innerHTML = `
+    <div style="position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;text-align:center;padding:2rem;z-index:99999">
+      <div style="font-size:3.5rem">📱</div>
+      <div style="color:#f59e0b;font-size:1.3rem;font-weight:800">Đăng nhập từ thiết bị khác</div>
+      <div style="color:rgba(255,255,255,.75);font-size:.95rem;max-width:320px;line-height:1.7">
+        Tài khoản của bạn vừa được đăng nhập từ một thiết bị khác.<br/>
+        Mỗi tài khoản chỉ được dùng trên <b style="color:#fff">1 thiết bị</b> tại một thời điểm.
+      </div>
+      <div id="_hwKickCd" style="color:rgba(255,255,255,.5);font-size:.85rem">Tự động chuyển về đăng nhập sau <b style="color:#fff">5</b> giây...</div>
+      <button onclick="location.href='login.html'" style="background:#6366f1;color:#fff;border:none;padding:.75rem 2rem;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
+        Đăng nhập lại
+      </button>
+    </div>`;
+  let _c = 5;
+  const _t = setInterval(() => {
+    _c--;
+    const el = document.getElementById('_hwKickCd');
+    if (el) el.innerHTML = `Tự động chuyển về đăng nhập sau <b style="color:#fff">${_c}</b> giây...`;
+    if (_c <= 0) { clearInterval(_t); location.href = 'login.html'; }
+  }, 1000);
 }
 
 function renderTopbar() {
@@ -5796,45 +5866,81 @@ async function exportHW(hwId) {
   ];
 
   const html = htmlParts.join('');
-
-  // Tạo Blob
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
   const safeName = hw.title.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF ]/g,'').trim() || 'bai-tap';
 
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  showToast('⏳ Đang tạo PDF...', true);
 
-  if (isMobile) {
-    // Mobile: mở tab mới — dùng Share API nếu có, không thì mở tab
-    if (navigator.share && navigator.canShare) {
-      try {
-        const file = new File([blob], `${safeName}.html`, { type: 'text/html' });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: hw.title });
-          setTimeout(() => URL.revokeObjectURL(url), 3000);
-          showToast('✅ Đã chia sẻ file đề');
-          return;
+  // Render HTML vào iframe ẩn rồi dùng html2canvas + jsPDF
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:794px;height:1123px;border:none;visibility:hidden';
+  document.body.appendChild(iframe);
+
+  iframe.onload = async () => {
+    try {
+      // Chờ MathJax trong iframe render xong
+      const iDoc = iframe.contentDocument;
+      await new Promise(r => setTimeout(r, 1500));
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+      const pageW = 210, pageH = 297, margin = 10;
+      const contentW = pageW - margin * 2;
+
+      // Chia body thành từng trang bằng cách chụp toàn bộ rồi cắt
+      const canvas = await html2canvas(iDoc.body, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        width: 794,
+        windowWidth: 794
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const imgW = contentW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      const pageContentH = pageH - margin * 2;
+
+      let yOffset = 0;
+      let pageIndex = 0;
+      while (yOffset < imgH) {
+        if (pageIndex > 0) pdf.addPage();
+        // Vẽ phần ảnh tương ứng với trang này
+        pdf.addImage(imgData, 'JPEG', margin, margin - yOffset, imgW, imgH);
+        // Clip bằng cách set clipping (jsPDF không clip trực tiếp, dùng rect trắng che)
+        if (yOffset + pageContentH < imgH) {
+          pdf.setFillColor(255,255,255);
+          pdf.rect(0, pageH - margin + 0.1, pageW, margin + 1, 'F'); // che phần tràn cuối
         }
-      } catch(e) { /* fallback */ }
+        yOffset += pageContentH;
+        pageIndex++;
+      }
+
+      const pdfBlob = pdf.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}${isStudent ? '' : ' (dap-an)'}.pdf`;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+      showToast('✅ Đã xuất PDF thành công');
+    } catch(err) {
+      console.error('exportHW PDF error:', err);
+      // Fallback: mở tab HTML nếu lỗi
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      window.open(URL.createObjectURL(blob), '_blank');
+      showToast('⚠️ Không tạo được PDF, đã mở file HTML', false);
+    } finally {
+      document.body.removeChild(iframe);
     }
-    // Fallback: mở tab mới để xem + dùng print
-    const win = window.open(url, '_blank');
-    if (win) {
-      showToast('✅ Mở tab mới — nhấn ⋮ → Chia sẻ hoặc In để lưu PDF');
-    } else {
-      showToast('⚠️ Vui lòng cho phép mở tab mới', false);
-    }
-  } else {
-    // Desktop: download thẳng
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${safeName}${isStudent ? '' : ' (dap-an)'}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showToast('✅ Đã tải file — mở bằng trình duyệt rồi Ctrl+P để lưu PDF');
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  iframe.src = URL.createObjectURL(blob);
 }
 </script>
 
