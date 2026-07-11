@@ -871,7 +871,8 @@ function openViewer(title, url, fileName, fileType) {
   _hideTabWarning();
 
   let displayTitle = title;
-  if (isVideo || isLink) displayTitle = 'Video bài học';
+  if ((isVideo || isLink) && (!title || title === 'Video bài học')) displayTitle = 'Video bài học';
+  else if (isVideo || isLink) displayTitle = title;
   else if (isHandwrittenLink) displayTitle = 'Bản viết tay';
   else if (isDocLink || fileType==='application/pdf' || (fileType||'').startsWith('image/')) displayTitle = 'Tài liệu';
 

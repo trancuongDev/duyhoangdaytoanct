@@ -587,6 +587,7 @@
     <div id="adminTabs" style="display:none">
       <div class="tab-hw">
         <button class="active" onclick="switchAdminTab('list',this)">📋 Danh sách</button>
+        <button onclick="switchAdminTab('notdone',this)">⏳ Chưa làm</button>
         <button onclick="switchAdminTab('submissions',this)">📬 Bài nộp</button>
         <button onclick="switchAdminTab('ranking',this)">📊 Xếp hạng</button>
       </div>
@@ -1050,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderTopbar();
   renderSidebarNav();
   if (currentUser.role === 'admin') {
-    document.getElementById('adminTabs').style.display = 'block';
+    document.getElementById('adminTabs').style.display = 'none'; // tabs đã chuyển vào sidebar
     document.getElementById('hwHeaderActions').innerHTML =
       `<button onclick="exportScoresCSV()" style="display:inline-flex;align-items:center;gap:.4rem;background:#10b981;border:none;color:#fff;font-weight:700;font-size:.85rem;padding:.5rem 1rem;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(16,185,129,.4);transition:all .15s" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">⬇ Xuất điểm CSV</button>
       <button class="btn-primary" onclick="openModalHW()">➕ Giao bài tập mới</button>`;
@@ -1164,22 +1165,56 @@ function renderTopbar() {
 
 function renderSidebarNav() {
   const nav = document.getElementById('sidebarNav');
-  const links = currentUser.role === 'admin'
-    ? [['admin.html','📊','Tổng quan'],['homework.html','📝','Bài Tập'],['admin.html','👨‍🎓','Học sinh']]
-    : [['student.html','🏠','Trang chủ'],['homework.html','📝','Bài Tập'],['student.html','🔔','Thông báo']];
-  nav.innerHTML = links.map(([href,icon,label]) =>
-    `<a href="${href}" class="slink${href==='homework.html'?' active':''}" data-label="${label}">
-      <span class="slink-icon">${icon}</span><span class="slink-label">${label}</span>
-    </a>`
-  ).join('');
 
-  // Thêm nút Hướng dẫn cho học sinh
-  if (currentUser.role !== 'admin') {
+  if (currentUser.role === 'admin') {
+    // Admin: link điều hướng + tabs bài tập trong sidebar
+    nav.innerHTML = `
+      <a href="admin.html" class="slink" data-label="Tổng quan">
+        <span class="slink-icon">📊</span><span class="slink-label">Tổng quan</span>
+      </a>
+      <a href="homework.html" class="slink active" data-label="Bài Tập">
+        <span class="slink-icon">📝</span><span class="slink-label">Bài Tập</span>
+      </a>
+      <a href="admin.html" class="slink" data-label="Học sinh">
+        <span class="slink-icon">👨‍🎓</span><span class="slink-label">Học sinh</span>
+      </a>
+      <div style="margin:.5rem .75rem 0;border-top:1px solid rgba(255,255,255,.12);padding-top:.5rem">
+        <div style="font-size:.65rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.6px;text-transform:uppercase;padding:.15rem .5rem .3rem">Xem theo</div>
+        <a href="#" class="slink active" id="sideTab_list" onclick="switchAdminTab('list',this);setSideTab('list');return false" data-label="Danh sách bài tập">
+          <span class="slink-icon">📋</span><span class="slink-label">Danh sách bài tập</span>
+        </a>
+        <a href="#" class="slink" id="sideTab_notdone" onclick="switchAdminTab('notdone',this);setSideTab('notdone');return false" data-label="Danh sách HS">
+          <span class="slink-icon">👥</span><span class="slink-label">Danh sách HS</span>
+        </a>
+        <a href="#" class="slink" id="sideTab_submissions" onclick="switchAdminTab('submissions',this);setSideTab('submissions');return false" data-label="Bài nộp">
+          <span class="slink-icon">📬</span><span class="slink-label">Bài nộp</span>
+        </a>
+        <a href="#" class="slink" id="sideTab_ranking" onclick="switchAdminTab('ranking',this);setSideTab('ranking');return false" data-label="Xếp hạng">
+          <span class="slink-icon">📊</span><span class="slink-label">Xếp hạng</span>
+        </a>
+      </div>`;
+  } else {
+    // Học sinh
+    const links = [['student.html','🏠','Trang chủ'],['homework.html','📝','Bài Tập'],['student.html','🔔','Thông báo']];
+    nav.innerHTML = links.map(([href,icon,label]) =>
+      `<a href="${href}" class="slink${href==='homework.html'?' active':''}" data-label="${label}">
+        <span class="slink-icon">${icon}</span><span class="slink-label">${label}</span>
+      </a>`
+    ).join('');
     nav.innerHTML += `
       <a href="#" class="slink" onclick="document.getElementById('modalGuide').classList.add('open');document.getElementById('sidebarBackdrop').classList.remove('open');document.getElementById('sidebar').classList.remove('open');return false;" data-label="Hướng dẫn">
         <span class="slink-icon">📖</span><span class="slink-label">Hướng dẫn</span>
       </a>`;
   }
+}
+
+function setSideTab(tab) {
+  ['list','notdone','submissions','ranking'].forEach(t => {
+    const el = document.getElementById('sideTab_' + t);
+    if (el) el.classList.toggle('active', t === tab);
+  });
+  // Ẩn tab bar trên content (không cần nữa)
+  document.getElementById('adminTabs').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════
@@ -1404,31 +1439,32 @@ function esc(s) {
 // ═══════════════════════════════════════════
 // ADMIN TABS
 // ═══════════════════════════════════════════
-function switchAdminTab(tab,btn) {
-  adminTab=tab;
-  document.querySelectorAll('#adminTabs .tab-hw button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+function switchAdminTab(tab, btn) {
+  adminTab = tab;
+  // Sync active state sidebar
+  setSideTab(tab);
   if (tab==='list') renderAdminList();
   else if (tab==='submissions') renderAdminSubmissions();
   else if (tab==='ranking') renderAdminRanking();
+  else if (tab==='notdone') renderAdminNotDone();
   if (tab==='submissions') _clearSubmissionBadge();
 }
 
 // Badge số bài nộp mới trên tab
 let _newSubCount = 0;
 function _updateSubmissionBadge() {
-  if (adminTab === 'submissions') return; // đang xem rồi
+  if (adminTab === 'submissions') return;
   _newSubCount++;
-  const btns = document.querySelectorAll('#adminTabs .tab-hw button');
-  if (btns[1]) {
-    btns[1].textContent = '';
-    btns[1].innerHTML = `📬 Bài nộp <span style="background:#ef4444;color:#fff;border-radius:20px;padding:.05rem .45rem;font-size:.72rem;font-weight:800;margin-left:.25rem">${_newSubCount}</span>`;
+  const el = document.getElementById('sideTab_submissions');
+  if (el) {
+    const label = el.querySelector('.slink-label');
+    if (label) label.innerHTML = `Bài nộp <span style="background:#ef4444;color:#fff;border-radius:20px;padding:.05rem .42rem;font-size:.68rem;font-weight:800;margin-left:.2rem">${_newSubCount}</span>`;
   }
 }
 function _clearSubmissionBadge() {
   _newSubCount = 0;
-  const btns = document.querySelectorAll('#adminTabs .tab-hw button');
-  if (btns[1]) btns[1].textContent = '📬 Bài nộp';
+  const el = document.getElementById('sideTab_submissions');
+  if (el) { const label = el.querySelector('.slink-label'); if (label) label.textContent = 'Bài nộp'; }
 }
 function switchStudentTab(tab,btn) {
   studentTab=tab;
@@ -1544,6 +1580,207 @@ function renderAdminList() {
 }
 
 // ═══════════════════════════════════════════
+// RENDER ADMIN — CHƯA LÀM BÀI
+// ═══════════════════════════════════════════
+// RENDER ADMIN — CHƯA LÀM BÀI (theo học sinh)
+// ═══════════════════════════════════════════
+async function renderAdminNotDone() {
+  const el = document.getElementById('hwContent');
+  el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">⏳</div><p>Đang tải...</p></div>`;
+
+  // Fetch tất cả học sinh — dùng nhiều batch để vượt giới hạn 1000 rows của Supabase
+  let allFetched = [], from = 0, batchSize = 1000;
+  while (true) {
+    const { data: batch } = await sb.from('students')
+      .select('username,full_name,class_name,student_code,active,id')
+      .neq('active', false)
+      .order('full_name', { ascending: true })
+      .range(from, from + batchSize - 1);
+    if (!batch || batch.length === 0) break;
+    allFetched = allFetched.concat(batch);
+    if (batch.length < batchSize) break;
+    from += batchSize;
+  }
+  const students = allFetched;
+
+  // Lấy thêm lớp từ bảng classes + student_classes
+  const [{ data: classesTable }, { data: scRows }] = await Promise.all([
+    sb.from('classes').select('name').order('name'),
+    sb.from('student_classes').select('student_id,class_name').limit(10000)
+  ]);  // Map: username → id và id → extra classes
+  const usernameToId = {};
+  (students||[]).forEach(s => { usernameToId[s.username] = s.id; });
+  const extraClassMap = {}; // username → [class_name]
+  (scRows||[]).forEach(sc => {
+    const username = Object.keys(usernameToId).find(u => usernameToId[u] === sc.student_id);
+    if (username) {
+      if (!extraClassMap[username]) extraClassMap[username] = [];
+      extraClassMap[username].push(sc.class_name);
+    }
+  });
+  // Merge lớp từ student_classes vào class_name của từng học sinh
+  const allStudents = (students||[]).map(s => {
+    const extras = extraClassMap[s.username] || [];
+    const base = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+    const merged = [...new Set([...base, ...extras])];
+    return { ...s, class_name: merged.join(', ') };
+  });
+  const activeHW    = allHomework.filter(h => !h.is_draft);
+
+  if (!allStudents.length) {
+    el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">👥</div><p>Chưa có học sinh nào.</p></div>`;
+    return;
+  }
+
+  // username → Set(homework_id đã nộp)
+  const doneMap = {};
+  allSubmissions.forEach(s => {
+    if (!doneMap[s.username]) doneMap[s.username] = new Set();
+    doneMap[s.username].add(s.homework_id);
+  });
+
+  let _cls = 'all', _hw = 'all', _show = 'all';
+
+  function _getStudentHW(s) {
+    // Bài tập dành cho học sinh này
+    const sc = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+    return activeHW.filter(h => {
+      if (_hw !== 'all' && String(h.id) !== _hw) return false;
+      if (!h.class_name) return true; // giao tất cả
+      const hwc = h.class_name.split(',').map(c=>c.trim()).filter(Boolean);
+      return sc.some(c => hwc.includes(c));
+    });
+  }
+
+  function _render() {
+    // Lấy danh sách lớp từ cả bảng classes, students và student_classes
+    const fromClasses  = (classesTable||[]).map(c=>c.name);
+    const fromStudents = allStudents.flatMap(s =>
+      (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean)
+    );
+    const classes = [...new Set([...fromClasses, ...fromStudents])].sort();
+
+    let filtered = _cls === 'all' ? allStudents
+      : allStudents.filter(s => {
+          const sc = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+          return sc.includes(_cls);
+        });
+
+    // Tính dữ liệu cho từng học sinh
+    const rows = filtered.map(s => {
+      const myHW   = _getStudentHW(s);
+      const done   = myHW.filter(h =>  doneMap[s.username]?.has(h.id));
+      const notDone= myHW.filter(h => !doneMap[s.username]?.has(h.id));
+      return { s, myHW, done, notDone };
+    }); // Không filter ra — luôn hiện tất cả học sinh
+
+    // Filter show: all / notdone / done
+    const shown = _show === 'all'     ? rows
+                : _show === 'notdone' ? rows.filter(r => r.notDone.length > 0)
+                :                       rows.filter(r => r.notDone.length === 0);
+
+    const totalNotDone = rows.reduce((s,r)=>s+r.notDone.length,0);
+
+    let html = `
+      <!-- Bộ lọc -->
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.1rem;align-items:center">
+        <select onchange="window._ndCls=this.value;window._ndRender()"
+          style="padding:.45rem .8rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.84rem;background:var(--card);color:var(--text)">
+          <option value="all">🏫 Tất cả lớp</option>
+          ${classes.map(c=>`<option value="${esc(c)}" ${_cls===c?'selected':''}>${esc(c)}</option>`).join('')}
+        </select>
+        <select onchange="window._ndHw=this.value;window._ndRender()"
+          style="padding:.45rem .8rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.84rem;background:var(--card);color:var(--text)">
+          <option value="all">📋 Tất cả bài</option>
+          ${activeHW.map(h=>`<option value="${h.id}" ${_hw===String(h.id)?'selected':''}>${esc(h.title)}</option>`).join('')}
+        </select>
+        <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+          ${[['notdone','❌ Chưa làm'],['done','✅ Đã làm hết'],['all','👥 Tất cả']].map(([v,l])=>`
+            <button onclick="window._ndShow='${v}';window._ndRender()"
+              style="padding:.4rem .85rem;border-radius:20px;border:1.5px solid var(--border);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .18s;
+              ${_show===v?'background:var(--primary);color:#fff;border-color:var(--primary)':'background:var(--card);color:var(--muted)'}">${l}</button>`).join('')}
+        </div>
+        <span style="margin-left:auto;font-size:.82rem;color:var(--muted)">
+          <b style="color:var(--hw-red)">${rows.filter(r=>r.notDone.length>0).length}</b> HS chưa làm đủ &nbsp;·&nbsp;
+          <b style="color:var(--hw-green)">${rows.filter(r=>r.notDone.length===0).length}</b> HS hoàn thành
+        </span>
+      </div>
+
+      <!-- Bảng -->
+      <div style="overflow-x:auto;border-radius:14px;border:1.5px solid var(--border)">
+        <table style="width:100%;border-collapse:collapse;min-width:560px">
+          <thead>
+            <tr style="background:var(--primary-light)">
+              <th style="padding:.6rem .9rem;text-align:left;font-size:.8rem;font-weight:800;color:var(--primary);white-space:nowrap">Học sinh</th>
+              <th style="padding:.6rem .9rem;text-align:left;font-size:.8rem;font-weight:800;color:var(--primary)">Lớp</th>
+              <th style="padding:.6rem .9rem;text-align:center;font-size:.8rem;font-weight:800;color:var(--hw-green)">Đã làm</th>
+              <th style="padding:.6rem .9rem;text-align:center;font-size:.8rem;font-weight:800;color:var(--hw-red)">Chưa làm</th>
+              <th style="padding:.6rem .9rem;text-align:left;font-size:.8rem;font-weight:800;color:var(--primary)">Bài chưa làm</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+    shown.forEach(({ s, myHW, done, notDone }, i) => {
+      const pct = myHW.length ? Math.round(done.length/myHW.length*100) : 0;
+      const bg  = i%2===0 ? 'var(--card)' : 'var(--bg)';
+      const init= (s.full_name||s.username||'?').split(' ').pop()[0]?.toUpperCase()||'?';
+      const avatarBg = notDone.length===0 ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#ef4444,#dc2626)';
+
+      html += `<tr style="background:${bg};border-top:1px solid var(--border)">
+        <td style="padding:.6rem .9rem">
+          <div style="display:flex;align-items:center;gap:.55rem">
+            <div style="width:32px;height:32px;border-radius:50%;background:${avatarBg};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;flex-shrink:0">${init}</div>
+            <div>
+              <div style="font-weight:700;font-size:.88rem">${esc(s.full_name||s.username)}</div>
+              ${s.student_code?`<div style="font-size:.7rem;color:var(--muted);font-family:monospace">${s.student_code}</div>`:''}
+            </div>
+          </div>
+        </td>
+        <td style="padding:.6rem .9rem">
+          <div style="display:flex;flex-wrap:wrap;gap:.25rem">
+            ${(s.class_name||'—').split(',').map(c=>c.trim()).filter(Boolean).map(c=>
+              `<span style="background:var(--primary-light);color:var(--primary);border-radius:6px;padding:.15rem .5rem;font-size:.75rem;font-weight:700;white-space:nowrap">${esc(c)}</span>`
+            ).join('') || '<span style="color:var(--muted);font-size:.82rem">—</span>'}
+          </div>
+        </td>
+        <td style="padding:.6rem .9rem;text-align:center">
+          <span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:.2rem .65rem;font-size:.8rem;font-weight:700">${done.length}/${myHW.length}</span>
+        </td>
+        <td style="padding:.6rem .9rem;text-align:center">
+          ${notDone.length>0
+            ? `<span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:.2rem .65rem;font-size:.8rem;font-weight:700">${notDone.length}</span>`
+            : `<span style="color:var(--hw-green);font-size:.85rem">✅</span>`}
+        </td>
+        <td style="padding:.6rem .9rem">
+          <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+            ${notDone.map(h=>`<span style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.15rem .5rem;font-size:.72rem;font-weight:600;color:var(--text)">${esc(h.title)}</span>`).join('')||'<span style="color:var(--hw-green);font-size:.8rem;font-weight:700">Đã làm hết 🎉</span>'}
+          </div>
+        </td>
+      </tr>`;
+    });
+
+    if (!shown.length) {
+      html += `<tr><td colspan="5" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:.9rem">Không có học sinh nào phù hợp.</td></tr>`;
+    }
+
+    html += `</tbody></table></div>`;
+    el.innerHTML = html;
+
+    // Gắn window vars cho button onchange
+    window._ndCls   = _cls;
+    window._ndHw    = _hw;
+    window._ndShow  = _show;
+    window._ndRender = () => { _cls=window._ndCls; _hw=window._ndHw; _show=window._ndShow; _render(); };
+  }
+
+  window._ndCls   = _cls;
+  window._ndHw    = _hw;
+  window._ndShow  = _show;
+  window._ndRender = () => { _cls=window._ndCls; _hw=window._ndHw; _show=window._ndShow; _render(); };
+  _render();
+}
+
+// ═══════════════════════════════════════════
 // RENDER ADMIN — BÀI NỘP
 // ═══════════════════════════════════════════
 function renderAdminSubmissions(filterHwId=null) {
@@ -1627,7 +1864,10 @@ function renderAdminSubmissions(filterHwId=null) {
                 ${s.force_submitted ? `<span style="display:inline-flex;align-items:center;gap:.25rem;background:#fef2f2;color:#991b1b;border:1.5px solid #fca5a5;border-radius:20px;padding:.18rem .6rem;font-size:.72rem;font-weight:800;flex-shrink:0">🚪 Thoát khỏi bài thi</span>` : ''}
                 ${s.tab_violations ? `<span style="display:inline-flex;align-items:center;gap:.25rem;background:#fff7ed;color:#c2410c;border:1.5px solid #fdba74;border-radius:20px;padding:.18rem .6rem;font-size:.72rem;font-weight:800;flex-shrink:0">⚠️ Chuyển tab ${s.tab_violations} lần</span>` : ''}
               </div>
-              <div style="font-size:.77rem;color:var(--muted);margin-top:.1rem">${esc(s.class_name||'')} · Nộp: ${fmtDate(s.submitted_at)}</div>
+              <div style="font-size:.77rem;color:var(--muted);margin-top:.1rem">
+                ${(s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean).map(c=>`<span style="background:var(--primary-light);color:var(--primary);border-radius:5px;padding:.08rem .4rem;font-size:.7rem;font-weight:700;margin-right:.2rem">${esc(c)}</span>`).join('')||''}
+                · Nộp: ${fmtDate(s.submitted_at)}
+              </div>
               ${chips.length ? `<div style="display:flex;flex-wrap:wrap;gap:.28rem;margin-top:.45rem">${chips.join('')}</div>` : ''}
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0">
@@ -2079,7 +2319,7 @@ function vsatReset() {
 
 function viewSubmissionsFor(hwId) {
   adminTab='submissions';
-  document.querySelectorAll('#adminTabs .tab-hw button').forEach((b,i)=>b.classList.toggle('active',i===1));
+  setSideTab('submissions');
   renderAdminSubmissions(hwId);
 }
 

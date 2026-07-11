@@ -905,6 +905,7 @@
 
         <!-- Video links -->
         <label style="font-size:.83rem">🎬 Link video <span class="muted">(mỗi dòng 1 link)</span></label>
+        <input type="text" id="lInlineVideoTitle" placeholder="Tên video (để trống = tự đặt theo số thứ tự)" style="width:100%;padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:10px;font-size:.83rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:.35rem"/>
         <textarea id="lInlineVideoLinks" placeholder="https://youtube.com/...&#10;https://drive.google.com/..." rows="3" style="resize:vertical;width:100%;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:10px;font-size:.85rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box"></textarea>
 
         <!-- Tài liệu links -->
@@ -951,8 +952,8 @@
         <label>Mã nhúng (iframe) <span class="muted">— dán thẻ &lt;iframe&gt; vào đây</span></label>
         <textarea id="lvEmbedInput" placeholder='&lt;iframe src="https://..." ...&gt;&lt;/iframe&gt;' rows="5" style="resize:vertical;width:100%;padding:.5rem;border:1px solid #ddd;border-radius:8px;font-size:.85rem;font-family:monospace"></textarea>
       </div>
-      <label>Tiêu đề</label>
-      <input type="text" id="lvTitleInput" placeholder="Tên video..." style="display:none"/>
+      <label>Tiêu đề video</label>
+      <input type="text" id="lvTitleInput" placeholder="VD: Bài 1 — Phương trình bậc 2"/>
       <div class="modal-actions">
         <button id="lvCancelBtn" class="btn-outline">Hủy</button>
         <button id="lvSaveBtn" class="btn-primary">Lưu</button>

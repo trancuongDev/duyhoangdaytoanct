@@ -1320,7 +1320,22 @@ async function renderStudents() {
   const expiry = document.getElementById('studentFilterExpiry')?.value || '';
   let query = db.from('students').select('*').order('full_name').limit(10000);
   // Không filter theo lớp ở DB vì class_name có thể chứa nhiều lớp
-  const { data: list } = await query;
+  const [{ data: list }, { data: scAll }] = await Promise.all([
+    query,
+    db.from('student_classes').select('student_id,class_name')
+  ]);
+
+  // Merge lớp phụ từ student_classes vào class_name
+  const scMap = {}; // student_id → [class_name]
+  (scAll||[]).forEach(sc => {
+    if (!scMap[sc.student_id]) scMap[sc.student_id] = [];
+    if (!scMap[sc.student_id].includes(sc.class_name)) scMap[sc.student_id].push(sc.class_name);
+  });
+  (list||[]).forEach(s => {
+    const extras = scMap[s.id] || [];
+    const base = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+    s.class_name = [...new Set([...base, ...extras])].join(', ');
+  });
 
   const today = new Date(); today.setHours(0,0,0,0);
   const { data: allClasses } = await db.from('classes').select('name,end_date');
@@ -2105,6 +2120,7 @@ function openLessonModal(l=null) {
   if (mediaSection) {
     mediaSection.style.display = l ? 'none' : '';
     document.getElementById('lInlineVideoLinks').value = '';
+    document.getElementById('lInlineVideoTitle') && (document.getElementById('lInlineVideoTitle').value = '');
     document.getElementById('lInlineDocLinks').value = '';
     document.getElementById('lInlineHwLinks').value = '';
   }
@@ -2151,8 +2167,12 @@ document.getElementById('lSaveBtn').addEventListener('click', async () => {
       const rawVideo = document.getElementById('lInlineVideoLinks').value.trim();
       if (rawVideo) {
         const videoLinks = rawVideo.split('\n').map(l=>l.trim()).filter(Boolean);
-        for (const url of videoLinks) {
-          await db.from('lesson_videos').insert({ lesson_id: lessonId, title: 'Video bài học', video_url: await encryptUrl(url), storage_path: null, file_name: null });
+        const inlineTitle = document.getElementById('lInlineVideoTitle')?.value.trim() || '';
+        for (const [i, url] of videoLinks.entries()) {
+          const t = inlineTitle
+            ? (videoLinks.length > 1 ? `${inlineTitle} (${i+1})` : inlineTitle)
+            : `Video bài học${videoLinks.length > 1 ? ' ' + (i+1) : ''}`;
+          await db.from('lesson_videos').insert({ lesson_id: lessonId, title: t, video_url: await encryptUrl(url), storage_path: null, file_name: null });
         }
       }
       // Lưu tài liệu links inline
@@ -2332,7 +2352,7 @@ document.getElementById('lvCancelBtn').addEventListener('click', () => {
 document.getElementById('lvSaveBtn').addEventListener('click', async () => {
   const isLinkTab  = document.getElementById('tabVideoLink').classList.contains('active');
   const isEmbedTab = document.getElementById('tabVideoEmbed').classList.contains('active');
-  const title = 'Video bài học';
+  const title = document.getElementById('lvTitleInput').value.trim() || 'Video bài học';
   const btn = document.getElementById('lvSaveBtn');
   btn.textContent = 'Đang lưu...'; btn.disabled = true;
 
@@ -2503,11 +2523,15 @@ async function renderClasses() {
 
   const colors = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
   allNames.forEach((cls, idx)=>{
-    // Lấy học viên từ student_classes (bao gồm cả lớp phụ)
+    // Lấy học viên từ student_classes — chỉ đếm học sinh active
     const studentIds = scMap[cls] ? [...scMap[cls]] : [];
-    const students = studentIds.map(id => studentMap[id]).filter(Boolean);
-    // Fallback: học viên có class_name = cls nhưng chưa có trong student_classes
-    const fallback = (allStudentsFull||[]).filter(s => s.class_name === cls && !scMap[cls]?.has(s.id));
+    const students = studentIds.map(id => studentMap[id]).filter(Boolean).filter(s => s.active !== false);
+    // Fallback: học viên có class_name chứa cls nhưng chưa có trong student_classes
+    const fallback = (allStudentsFull||[]).filter(s => {
+      if (scMap[cls]?.has(s.id)) return false; // đã đếm rồi
+      const sc = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+      return sc.includes(cls) && s.active !== false;
+    });
     const allInClass = [...students, ...fallback];
     const count = allInClass.length;
     const activeCount = allInClass.filter(s=>s.active).length;
@@ -2603,14 +2627,18 @@ async function openClassDetail(cls) {
   // Lấy học viên từ student_classes (bao gồm lớp phụ)
   const { data: scList } = await db.from('student_classes').select('student_id').eq('class_name', cls);
   const scIds = (scList||[]).map(sc => sc.student_id);
-  // Fallback: học viên có class_name = cls nhưng chưa có trong student_classes
-  const { data: fallbackList } = await db.from('students').select('*').eq('class_name', cls).limit(10000);
-  const fallbackIds = (fallbackList||[]).map(s => s.id).filter(id => !scIds.includes(id));
+  // Fallback: học viên có class_name chứa cls nhưng chưa có trong student_classes
+  const { data: allStudents } = await db.from('students').select('*').limit(10000);
+  const fallbackList = (allStudents||[]).filter(s => {
+    if (scIds.includes(s.id)) return false;
+    const sc = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+    return sc.includes(cls);
+  });
+  const fallbackIds = fallbackList.map(s => s.id);
   const allIds = [...new Set([...scIds, ...fallbackIds])];
   let list = [];
   if (allIds.length) {
-    const { data } = await db.from('students').select('*').in('id', allIds).limit(10000);
-    list = data || [];
+    list = (allStudents||[]).filter(s => allIds.includes(s.id));
   }
   const tbody=document.getElementById('classStudentBody');
   tbody.innerHTML='';
