@@ -3285,9 +3285,19 @@ setInterval(() => {
 
 // ── Realtime: online students ──
 db.channel('realtime-online')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, (payload) => {
+    // Cập nhật panel online ở tổng quan
     if (document.getElementById('pageOverview')?.classList.contains('active')) {
       renderOnlineStudents();
+    }
+    // Cập nhật danh sách học sinh nếu đang xem
+    if (document.getElementById('pageStudents')?.classList.contains('active')) {
+      renderStudents();
+    }
+    // Thông báo khi học sinh đăng nhập mới
+    if (payload.eventType === 'UPDATE' && payload.new?.is_online && !payload.old?.is_online) {
+      _adminNotify('🟢 Học sinh online',
+        `${payload.new.full_name || payload.new.username} vừa đăng nhập`, 'info');
     }
   })
   .subscribe();
@@ -3337,7 +3347,157 @@ db.channel('realtime-access-logs')
   })
   .subscribe();
 
-// ============================================================
+// ── Realtime: alerts (nhật ký cảnh báo) ──
+db.channel('realtime-alerts')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alerts' }, (payload) => {
+    // Cập nhật badge số cảnh báo hôm nay
+    const statEl = document.getElementById('statAlerts');
+    if (statEl) statEl.textContent = parseInt(statEl.textContent || '0') + 1;
+
+    // Badge nav
+    const badge = document.getElementById('alertNavBadge');
+    if (badge) {
+      badge.style.display = 'inline';
+      badge.textContent = parseInt(badge.textContent || '0') + 1;
+    }
+
+    // Nếu đang ở trang cảnh báo → refresh luôn
+    if (document.getElementById('pageSecurity')?.classList.contains('active')) {
+      renderAlerts();
+    }
+    // Nếu đang ở tổng quan → refresh recent alerts
+    if (document.getElementById('pageOverview')?.classList.contains('active')) {
+      renderOverview();
+    }
+
+    // Popup thông báo nhỏ
+    _adminNotify('🚨 Cảnh báo mới', payload.new?.student_name
+      ? `${payload.new.student_name} — ${(payload.new.reason||'').slice(0,60)}`
+      : 'Có cảnh báo bảo mật mới', 'warn');
+  })
+  .subscribe();
+
+// ── Realtime: login_logs ──
+db.channel('realtime-login-logs')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'login_logs' }, () => {
+    if (document.getElementById('pageLoginHistory')?.classList.contains('active')) {
+      renderLoginHistory();
+    }
+  })
+  .subscribe();
+
+// ── Realtime: homework & submissions (từ trang bài tập) ──
+db.channel('realtime-homework-admin')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'homework_submissions' },
+    (payload) => {
+      const nw = payload.new;
+      // Popup thông báo có học sinh nộp bài
+      if (nw?.student_name) {
+        _adminNotify('📬 Học sinh nộp bài',
+          `${nw.student_name} vừa nộp bài`, 'submit');
+      }
+    }
+  )
+  .subscribe();
+
+// ── Fallback polling 2s cho admin khi realtime gián đoạn ──────────
+let _adminFallbackInterval = null;
+let _adminRealtimeOk = true;
+
+function _startAdminFallback() {
+  if (_adminFallbackInterval) return;
+  _adminRealtimeOk = false;
+  _adminFallbackInterval = setInterval(async () => {
+    const curPage = document.querySelector('.page.active')?.id || '';
+    try {
+      if (curPage === 'pageOverview')    { renderOverview(); renderOnlineStudents(); }
+      if (curPage === 'pageStudents')    renderStudents();
+      if (curPage === 'pageSecurity')    renderAlerts();
+      if (curPage === 'pageLoginHistory') renderLoginHistory();
+    } catch(e) {}
+  }, 2000);
+}
+
+function _stopAdminFallback() {
+  if (_adminFallbackInterval) {
+    clearInterval(_adminFallbackInterval);
+    _adminFallbackInterval = null;
+    _adminRealtimeOk = true;
+  }
+}
+
+// Kiểm tra realtime còn sống không — mỗi 10s
+setInterval(() => {
+  const channels = db.getChannels ? db.getChannels() : [];
+  const allOk = channels.length === 0 || channels.some(c => c.state === 'joined');
+  if (!allOk && !_adminFallbackInterval) _startAdminFallback();
+  if (allOk && _adminFallbackInterval)  _stopAdminFallback();
+}, 10000);
+
+// ── Helper: popup thông báo nhỏ trong admin ──
+function _adminNotify(title, body, type = 'info') {
+  let stack = document.getElementById('_adminNotifyStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = '_adminNotifyStack';
+    stack.style.cssText = 'position:fixed;bottom:1.5rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column-reverse;gap:.45rem;max-width:300px;pointer-events:none';
+    document.body.appendChild(stack);
+  }
+  const colors = {
+    info:   'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    warn:   'linear-gradient(135deg,#78350f,#d97706)',
+    submit: 'linear-gradient(135deg,#064e3b,#059669)',
+  };
+  const icons = { info:'💡', warn:'🚨', submit:'📬' };
+  const div = document.createElement('div');
+  div.style.cssText = `background:${colors[type]||colors.info};color:#fff;border-radius:12px;padding:.65rem 1rem;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:_adminNIn .3s cubic-bezier(.34,1.56,.64,1);pointer-events:auto;border:1px solid rgba(255,255,255,.12);cursor:pointer`;
+  div.innerHTML = `<div style="display:flex;align-items:center;gap:.5rem">
+    <span style="font-size:1rem;flex-shrink:0">${icons[type]||'💡'}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:800;font-size:.84rem">${title}</div>
+      <div style="font-size:.75rem;opacity:.85;margin-top:.1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${body}</div>
+    </div>
+    <button onclick="this.parentNode.parentNode.remove()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+  </div>`;
+  div.onclick = e => { if (e.target.tagName !== 'BUTTON') div.remove(); };
+  stack.appendChild(div);
+
+  // Âm thanh
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'warn') {
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.setValueAtTime(330, ctx.currentTime + 0.15);
+    } else if (type === 'submit') {
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+    } else {
+      osc.frequency.setValueAtTime(520, ctx.currentTime);
+    }
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start(); osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+
+  // Tự xóa sau 5s
+  setTimeout(() => {
+    if (!div.parentNode) return;
+    div.style.transition = 'opacity .35s,transform .35s';
+    div.style.opacity = '0'; div.style.transform = 'translateX(20px)';
+    setTimeout(() => div.remove(), 380);
+  }, 5000);
+
+  // Inject CSS 1 lần
+  if (!document.getElementById('_adminNotifyStyle')) {
+    const s = document.createElement('style');
+    s.id = '_adminNotifyStyle';
+    s.textContent = `@keyframes _adminNIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}`;
+    document.head.appendChild(s);
+  }
+}
 // THỐNG KÊ TRUY CẬP
 // ============================================================
 async function renderAccessStats() {
