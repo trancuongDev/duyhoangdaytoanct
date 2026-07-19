@@ -12,6 +12,8 @@
   <!-- jsPDF + html2canvas để xuất PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- SheetJS để xuất Excel -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <!-- MathJax for LaTeX rendering -->
   <script>
     window.MathJax = {
@@ -1109,10 +1111,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     document.getElementById('studentTabs').style.display = 'block';
     document.getElementById('hwSubtitle').textContent = 'Làm bài và theo dõi kết quả';
+    // Thêm nút lịch sử vào header
+    document.getElementById('hwHeaderActions').innerHTML =
+      `<button onclick="openStudentHistory()"
+        style="display:inline-flex;align-items:center;gap:.4rem;background:none;border:1.5px solid rgba(255,255,255,.35);color:#fff;font-weight:700;font-size:.85rem;padding:.5rem 1rem;border-radius:10px;cursor:pointer;transition:all .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='none'">
+        📋 Lịch sử làm bài
+      </button>`;
     await loadStudentData();
     renderStudentList();
     updateGuideStats();
-
     // ── Polling 5s: tự động tải lại danh sách bài khi không đang làm bài ──
     setInterval(async () => {
       if (_isDoHWOpen()) return;
@@ -7224,6 +7232,18 @@ async function showHWSummary(hwId) {
       </div>
       <div style="padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:1rem">
 
+        <!-- Nút xuất -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button onclick="exportHWSummaryExcel(${hwId})"
+            style="display:inline-flex;align-items:center;gap:.35rem;background:#10b981;border:none;color:#fff;border-radius:8px;padding:.45rem .9rem;font-size:.8rem;font-weight:700;cursor:pointer">
+            📊 Xuất Excel
+          </button>
+          <button onclick="exportHWSummaryPDF('${summaryId}',${hwId})"
+            style="display:inline-flex;align-items:center;gap:.35rem;background:#6366f1;border:none;color:#fff;border-radius:8px;padding:.45rem .9rem;font-size:.8rem;font-weight:700;cursor:pointer">
+            📄 Xuất PDF
+          </button>
+        </div>
+
         <!-- Stat cards -->
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem">
           ${[
@@ -7273,6 +7293,234 @@ async function showHWSummary(hwId) {
 
       </div>
     </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+// ── Export Excel báo cáo tổng kết ───────────────────────────────
+async function exportHWSummaryExcel(hwId) {
+  const hw   = allHomework.find(h => h.id === hwId);
+  if (!hw) return;
+  const qs   = await loadQuestions(hwId);
+  const subs = allSubmissions.filter(s => s.homework_id === hwId);
+  if (!subs.length) { showToast('Chưa có bài nộp nào', false); return; }
+
+  const grandMax = qs.filter(q=>q.question_type!=='section')
+    .reduce((s,q)=>s+(parseFloat(q.points)||1),0) || (hw.total_score||10);
+
+  // Sheet 1: Bảng điểm
+  const scores10 = subs.filter(s=>s.score!=null).map(s=>
+    s.max_score>0 ? Math.round(s.score/s.max_score*10*100)/100 : s.score
+  );
+  const avg10 = scores10.length ? Math.round(scores10.reduce((a,b)=>a+b,0)/scores10.length*100)/100 : 0;
+
+  const wsData = [
+    ['STT','Họ tên','Mã HV','Lớp','Lần','TN','ĐS','GH','TL','Điểm thô','Tổng','Điểm/10','Xếp loại','Trạng thái','Ngày nộp']
+  ];
+
+  const sorted = [...subs].sort((a,b)=>
+    (a.class_name||'').localeCompare(b.class_name||'') ||
+    (a.student_name||'').localeCompare(b.student_name||'')
+  );
+
+  sorted.forEach((s, i) => {
+    const bd = calcScoreBreakdown(s);
+    const sc10 = s.score!=null && s.max_score>0 ? Math.round(s.score/s.max_score*10*100)/100 : (s.score??'');
+    const xepLoai = sc10==='' ? '' : sc10>=8?'Giỏi':sc10>=6.5?'Khá':sc10>=5?'TB':'Yếu';
+    wsData.push([
+      i+1,
+      s.student_name||s.username,
+      allStudentCodes[s.username]||'',
+      s.class_name||'',
+      s.attempt||1,
+      bd?.mc.max ? `${bd.mc.got}/${bd.mc.max}` : '',
+      bd?.tf.max ? `${bd.tf.got}/${bd.tf.max}` : '',
+      bd?.mt.max ? `${bd.mt.got}/${bd.mt.max}` : '',
+      bd?.sa.max ? `${bd.sa.got??'?'}/${bd.sa.max}` : '',
+      s.score??'',
+      grandMax,
+      sc10,
+      xepLoai,
+      s.status==='graded'?'Đã chấm':'Chờ chấm',
+      s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('vi-VN') : ''
+    ]);
+  });
+
+  // Sheet 2: Thống kê tổng hợp
+  const statData = [
+    ['Chỉ số','Giá trị'],
+    ['Tên bài', hw.title],
+    ['Lớp', hw.class_name||'Tất cả'],
+    ['Tổng bài nộp', subs.length],
+    ['Đã chấm', subs.filter(s=>s.status==='graded').length],
+    ['Điểm TB', avg10],
+    ['Điểm cao nhất', scores10.length?Math.max(...scores10):''],
+    ['Điểm thấp nhất', scores10.length?Math.min(...scores10):''],
+    ['Tỉ lệ đạt ≥5', scores10.length ? `${Math.round(scores10.filter(s=>s>=5).length/scores10.length*100)}%` : ''],
+    ['Giỏi (≥8)', scores10.filter(s=>s>=8).length],
+    ['Khá (6.5–<8)', scores10.filter(s=>s>=6.5&&s<8).length],
+    ['TB (5–<6.5)', scores10.filter(s=>s>=5&&s<6.5).length],
+    ['Yếu (<5)', scores10.filter(s=>s<5).length],
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet(wsData);
+  const ws2 = XLSX.utils.aoa_to_sheet(statData);
+
+  // Độ rộng cột tự động
+  ws1['!cols'] = [4,22,10,10,5,8,8,8,8,10,8,10,10,12,12].map(w=>({wch:w}));
+  ws2['!cols'] = [{wch:22},{wch:18}];
+
+  XLSX.utils.book_append_sheet(wb, ws1, 'Bảng điểm');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Thống kê');
+
+  const safeName = (hw.title||'baitap').replace(/[/\\:*?"<>|]/g,'_').slice(0,40);
+  XLSX.writeFile(wb, `BaoCao_${safeName}_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.xlsx`);
+  showToast(`✅ Đã xuất Excel ${subs.length} học sinh`);
+}
+
+// ── Export PDF báo cáo tổng kết ─────────────────────────────────
+async function exportHWSummaryPDF(summaryId, hwId) {
+  const ov = document.getElementById(summaryId);
+  const el = ov?.querySelector('div[style*="border-radius:20px"]');
+  if (!el) { showToast('Không tìm thấy nội dung', false); return; }
+  showToast('Đang tạo PDF...', true);
+  try {
+    // Tạm đặt background trắng để pdf rõ hơn
+    const oldBg = el.style.background;
+    el.style.background = '#ffffff';
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+    el.style.background = oldBg;
+
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW  = pageW - 20;
+    const imgH  = canvas.height * imgW / canvas.width;
+
+    if (imgH <= pageH - 20) {
+      pdf.addImage(imgData, 'PNG', 10, 10, imgW, imgH);
+    } else {
+      // Cắt nhiều trang
+      const ratio = canvas.width / imgW;
+      const pageImgH = (pageH - 20) * ratio;
+      let srcY = 0;
+      while (srcY < canvas.height) {
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width  = canvas.width;
+        sliceCanvas.height = Math.min(pageImgH, canvas.height - srcY);
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, srcY, sliceCanvas.width, sliceCanvas.height, 0, 0, sliceCanvas.width, sliceCanvas.height);
+        if (srcY > 0) pdf.addPage();
+        const sliceH = sliceCanvas.height / ratio;
+        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, sliceH);
+        srcY += pageImgH;
+      }
+    }
+
+    const hw = hwId ? allHomework.find(h => String(h.id) === String(hwId)) : null;
+    const safeName = (hw?.title||'baocao').replace(/[^\w\s-]/g,'_').slice(0,40);
+    pdf.save(`BaoCao_${safeName}_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.pdf`);
+    showToast('✅ Đã xuất PDF');
+  } catch(e) {
+    console.error('exportHWSummaryPDF error:', e);
+    showToast('❌ Lỗi xuất PDF: ' + e.message, false);
+  }
+}
+
+// ── Lịch sử điểm học sinh (tất cả bài + tất cả lần) ─────────────
+async function openStudentHistory() {
+  const histId = '_studentHistory';
+  document.getElementById(histId)?.remove();
+
+  const ov = document.createElement('div');
+  ov.id = histId;
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto';
+
+  // Gom dữ liệu
+  const myHw = allHomework.filter(h =>
+    allSubmissions.some(s => s.homework_id === h.id && s.username === currentUser.username)
+  );
+
+  // Load questions cho tất cả bài đã làm
+  await Promise.all(myHw.map(h => loadQuestions(h.id)));
+
+  const rows = myHw.map(h => {
+    const subs = allSubmissions
+      .filter(s => s.homework_id === h.id && s.username === currentUser.username)
+      .sort((a,b) => (a.attempt||1)-(b.attempt||1));
+    const best = subs.filter(s=>s.score!=null).reduce((b,s) => {
+      const sc = s.max_score>0?s.score/s.max_score:s.score/10;
+      return !b || sc > (b.max_score>0?b.score/b.max_score:b.score/10) ? s : b;
+    }, null);
+    return { h, subs, best };
+  }).sort((a,b) => new Date(b.h.created_at) - new Date(a.h.created_at));
+
+  // Tổng thống kê
+  const allScores = rows.flatMap(r => r.subs.filter(s=>s.score!=null).map(s=>
+    s.max_score>0 ? Math.round(s.score/s.max_score*10*100)/100 : s.score
+  ));
+  const avgAll = allScores.length ? Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length*100)/100 : null;
+  const bestAll = allScores.length ? Math.max(...allScores) : null;
+
+  const histHtml = rows.map(({ h, subs, best }) => {
+    const attHtml = subs.map((s,i) => {
+      const sc10 = s.score!=null && s.max_score>0 ? Math.round(s.score/s.max_score*10*100)/100 : s.score;
+      const col  = sc10==null?'#94a3b8':sc10>=8?'#065f46':sc10>=6.5?'#92400e':sc10>=5?'#92400e':'#991b1b';
+      const bg   = sc10==null?'#f1f5f9':sc10>=8?'#d1fae5':sc10>=6.5?'#fef3c7':sc10>=5?'#fef3c7':'#fee2e2';
+      const isBest = best && s.id === best.id && subs.filter(x=>x.score!=null).length > 1;
+      return `<div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;background:var(--bg);border-radius:9px;border:1.5px solid ${isBest?'#f59e0b':'var(--border)'}">
+        <span style="font-size:.72rem;color:var(--muted);font-weight:600;width:40px;flex-shrink:0">Lần ${s.attempt||i+1}</span>
+        <span style="background:${bg};color:${col};border-radius:20px;padding:.15rem .55rem;font-size:.82rem;font-weight:800;flex-shrink:0">
+          ${sc10!=null?sc10+'/10':'⏳ Chờ chấm'}
+        </span>
+        ${isBest?'<span style="font-size:.65rem;background:#fef3c7;color:#92400e;border-radius:99px;padding:.1rem .4rem;font-weight:800">🏆 Cao nhất</span>':''}
+        ${s.time_used?`<span style="font-size:.7rem;color:var(--muted)">⏱ ${Math.floor(s.time_used/60)}p${s.time_used%60}s</span>`:''}
+        <span style="font-size:.7rem;color:var(--muted);margin-left:auto">${s.submitted_at?new Date(s.submitted_at).toLocaleDateString('vi-VN'):''}</span>
+        <button onclick="openResult(${h.id},${s.attempt||i+1})" style="background:none;border:1.5px solid var(--border);border-radius:6px;padding:.18rem .5rem;font-size:.7rem;font-weight:700;color:var(--muted);cursor:pointer;flex-shrink:0">Xem</button>
+      </div>`;
+    }).join('');
+
+    const bestSc = best ? (best.max_score>0 ? Math.round(best.score/best.max_score*10*100)/100 : best.score) : null;
+    const bestCol = bestSc==null?'#94a3b8':bestSc>=8?'#065f46':bestSc>=6.5?'#92400e':'#991b1b';
+    const bestBg  = bestSc==null?'#f1f5f9':bestSc>=8?'#d1fae5':bestSc>=6.5?'#fef3c7':'#fee2e2';
+
+    return `<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:.65rem">
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.65rem .9rem;background:var(--bg);border-bottom:1.5px solid var(--border)">
+        <span style="font-size:.88rem;font-weight:800;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ${esc(h.title)}</span>
+        ${bestSc!=null?`<span style="background:${bestBg};color:${bestCol};border-radius:20px;padding:.18rem .65rem;font-size:.82rem;font-weight:900;flex-shrink:0">${bestSc}/10</span>`:''}
+        <span style="font-size:.72rem;color:var(--muted);flex-shrink:0">${subs.length} lần</span>
+      </div>
+      <div style="padding:.55rem .75rem;display:flex;flex-direction:column;gap:.3rem">${attHtml}</div>
+    </div>`;
+  }).join('');
+
+  ov.innerHTML = `
+    <div style="background:var(--card);border-radius:20px;max-width:520px;width:100%;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.3);animation:cfPop .25s cubic-bezier(.34,1.56,.64,1);max-height:92dvh;display:flex;flex-direction:column">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1e1b4b,#4338ca);padding:1rem 1.25rem;color:#fff;display:flex;align-items:center;gap:.75rem;flex-shrink:0">
+        <div style="flex:1">
+          <div style="font-size:.95rem;font-weight:900">📋 Lịch sử làm bài</div>
+          <div style="font-size:.72rem;opacity:.65;margin-top:.1rem">${esc(currentUser.full_name||currentUser.username)}</div>
+        </div>
+        ${avgAll!=null?`<div style="text-align:center;background:rgba(255,255,255,.12);border-radius:10px;padding:.4rem .75rem">
+          <div style="font-size:1.2rem;font-weight:900">${avgAll}</div>
+          <div style="font-size:.6rem;opacity:.65">Điểm TB</div>
+        </div>`:''}
+        ${bestAll!=null?`<div style="text-align:center;background:rgba(255,255,255,.12);border-radius:10px;padding:.4rem .75rem">
+          <div style="font-size:1.2rem;font-weight:900;color:#fde68a">${bestAll}</div>
+          <div style="font-size:.6rem;opacity:.65">Cao nhất</div>
+        </div>`:''}
+        <button onclick="document.getElementById('${histId}').remove()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:.9rem;flex-shrink:0">✕</button>
+      </div>
+      <!-- Nội dung cuộn -->
+      <div style="overflow-y:auto;padding:1rem;flex:1">
+        ${rows.length ? histHtml : '<div class="hw-empty"><div class="hw-empty-icon">📭</div><p>Chưa làm bài nào.</p></div>'}
+      </div>
+    </div>`;
+
   document.body.appendChild(ov);
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 }
