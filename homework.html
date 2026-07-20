@@ -1448,6 +1448,23 @@ function calcScoreBreakdown(sub) {
 function fmtDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+// ── Timezone helpers cho open_at ────────────────────────────
+// Convert UTC ISO string → "YYYY-MM-DDTHH:MM" (local time) cho datetime-local input
+function _utcToLocalInput(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  // Lấy local time components
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Format open_at để hiển thị đẹp: "15/01/2025 10:00"
+function _fmtOpenAt(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return d.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12: false });
+}
 }
 function isOverdue(d) { return d ? new Date(d) < new Date(new Date().toDateString()) : false; }
 function getStatusLabel(s) { return {submitted:'Đã nộp',graded:'Đã chấm',returned:'Trả bài'}[s]||'Đã nộp'; }
@@ -1642,7 +1659,7 @@ function renderAdminList() {
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;font-size:.78rem;color:var(--muted);margin-bottom:.75rem">
         <span>📅 ${fmtDate(hw.created_at)}</span>
         ${hw.time_limit?`<span style="display:inline-flex;align-items:center;gap:.25rem;background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:8px;font-weight:700">⏱ ${hw.time_limit} phút</span>`:''}
-        ${hw.open_at?`<span style="display:inline-flex;align-items:center;gap:.25rem;background:#fef3c7;color:#92400e;padding:.2rem .6rem;border-radius:8px;font-weight:700">🕐 Mở: ${new Date(hw.open_at).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>`:''}
+        ${hw.open_at?`<span style="display:inline-flex;align-items:center;gap:.25rem;background:#fef3c7;color:#92400e;padding:.2rem .6rem;border-radius:8px;font-weight:700">🕐 Mở: ${_fmtOpenAt(hw.open_at)}</span>`:''}
         ${hw.shuffle_questions?`<span style="display:inline-flex;align-items:center;gap:.25rem;background:#f3e8ff;color:#6b21a8;padding:.2rem .6rem;border-radius:8px;font-weight:700">🔀 Xáo câu</span>`:''}
         ${hw.anti_paste?`<span style="display:inline-flex;align-items:center;gap:.25rem;background:#fee2e2;color:#991b1b;padding:.2rem .6rem;border-radius:8px;font-weight:700">🚫 Anti-paste</span>`:''}
         ${!isDraft?`<span>📬 Đã nộp: <b style="color:var(--primary)">${subC}</b></span>`:''}
@@ -3340,11 +3357,10 @@ function renderStudentList() {
         ${h.time_limit?`<span style="background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:8px;font-weight:700">⏱ ${h.time_limit} phút</span>`:''}
         ${h.total_score?`<span style="background:#fef9c3;color:#854d0e;padding:.2rem .6rem;border-radius:8px;font-weight:700">🎯 ${h.total_score} điểm</span>`:''}
         ${h.open_at ? (() => {
-          const openTime = new Date(h.open_at);
-          const isOpen = new Date() >= openTime;
+          const isOpen = new Date() >= new Date(h.open_at);
           return isOpen
-            ? `<span style="background:#d1fae5;color:#065f46;padding:.2rem .6rem;border-radius:8px;font-weight:700">🔓 Đã mở lúc ${openTime.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})} ${openTime.toLocaleDateString('vi-VN')}</span>`
-            : `<span style="background:#fee2e2;color:#991b1b;padding:.2rem .6rem;border-radius:8px;font-weight:700">🔒 Mở lúc ${openTime.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})} ${openTime.toLocaleDateString('vi-VN')}</span>`;
+            ? `<span style="background:#d1fae5;color:#065f46;padding:.2rem .6rem;border-radius:8px;font-weight:700">🔓 Đã mở lúc ${_fmtOpenAt(h.open_at)}</span>`
+            : `<span style="background:#fee2e2;color:#991b1b;padding:.2rem .6rem;border-radius:8px;font-weight:700">🔒 Mở lúc ${_fmtOpenAt(h.open_at)}</span>`;
         })() : ''}
         ${h.shuffle_questions?`<span style="background:#f3e8ff;color:#6b21a8;padding:.2rem .6rem;border-radius:8px;font-weight:700">🔀 Xáo câu</span>`:''}
         ${attemptsBadge}
@@ -3470,7 +3486,7 @@ async function openEditHW(hwId) {
   document.getElementById('hwShuffleQ').checked = !!hw.shuffle_questions;
   document.getElementById('hwShuffleA').checked = !!hw.shuffle_answers;
   document.getElementById('hwAntiPaste').checked = !!hw.anti_paste;
-  document.getElementById('hwOpenAt').value = hw.open_at ? hw.open_at.slice(0,16) : '';
+  document.getElementById('hwOpenAt').value = hw.open_at ? _utcToLocalInput(hw.open_at) : '';
   window._hwAttachExistingUrl = null;
   document.getElementById('modalHWTitle').textContent='✏️ Sửa bài tập';
   // Load questions
@@ -4499,11 +4515,13 @@ async function saveHomework(isDraft=false) {
 
   // Các cột mới (cần chạy supabase_homework_features_v3.sql trước)
   // Thêm an toàn — nếu cột chưa tồn tại thì bỏ qua
+  const openAtRaw = document.getElementById('hwOpenAt').value;
   const extPayload = {
     shuffle_questions: document.getElementById('hwShuffleQ').checked,
     shuffle_answers:   document.getElementById('hwShuffleA').checked,
     anti_paste:        document.getElementById('hwAntiPaste').checked,
-    open_at:           document.getElementById('hwOpenAt').value || null
+    // Convert datetime-local (local time) → ISO string (UTC) để lưu đúng timezone
+    open_at: openAtRaw ? new Date(openAtRaw).toISOString() : null
   };
   // Merge vào payload chính (Supabase sẽ báo lỗi nếu cột chưa có → hiện gợi ý)
   Object.assign(payload, extPayload);
@@ -4830,7 +4848,7 @@ async function openDoHW(hwId) {
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
       const timeStr = h > 0 ? `${h}h ${m}p ${s}s` : m > 0 ? `${m}p ${s}s` : `${s}s`;
-      showToast(`⏰ Bài chưa mở — còn ${timeStr} nữa (${openTime.toLocaleString('vi-VN')})`, false);
+      showToast(`⏰ Bài chưa mở — còn ${timeStr} nữa (${_fmtOpenAt(hw.open_at)})`, false);
       return;
     }
   }
@@ -6996,7 +7014,8 @@ function _startOpenAtCountdown(hwId, openAt) {
     const h = Math.floor(diff/3600000);
     const m = Math.floor((diff%3600000)/60000);
     const s = Math.floor((diff%60000)/1000);
-    el.textContent = h>0 ? `⏰ Mở sau ${h}h ${m}p ${s}s` : m>0 ? `⏰ Mở sau ${m}p ${s}s` : `⏰ Mở sau ${s}s`;
+    const cdStr = h>0 ? `${h}h ${m}p ${s}s` : m>0 ? `${m}p ${s}s` : `${s}s`;
+    el.innerHTML = `⏰ Mở sau <b>${cdStr}</b> <span style="font-size:.7rem;opacity:.7">(${_fmtOpenAt(openAt)})</span>`;
   };
   update();
   _openAtTimers[hwId] = setInterval(update, 1000);
