@@ -2863,7 +2863,7 @@ async function adminForceSubmit(hwId, username, studentName) {
   const ok = await showConfirm({
     icon: '📤',
     title: 'Buộc nộp bài',
-    msg: `Buộc nộp bài của "${studentName}"?\nHọc sinh sẽ bị nộp ngay lập tức, không thể tiếp tục làm bài.`,
+    msg: `Buộc nộp bài của "${studentName}"?\nHọc sinh sẽ bị nộp ngay lập tức, không thể tiếp tục làm bài và không thể làm lại dù xóa bài.`,
     okText: 'Buộc nộp',
     okColor: '#ef4444',
     cancelText: 'Hủy',
@@ -2873,7 +2873,7 @@ async function adminForceSubmit(hwId, username, studentName) {
   if (!ok) return;
   try {
     await sb.from('exam_progress')
-      .update({ force_submit: true, updated_at: new Date().toISOString() })
+      .update({ force_submit: true, force_stopped: true, updated_at: new Date().toISOString() })
       .eq('homework_id', parseInt(hwId))
       .eq('username', username);
     showToast(`✅ Đã gửi lệnh buộc nộp cho ${studentName}`);
@@ -4933,6 +4933,21 @@ async function openDoHW(hwId) {
     }
   }
 
+  // ── Kiểm tra bị buộc dừng (force_stopped) ───────────────
+  // Nếu admin đã buộc nộp bài trước đó, học sinh không được làm lại
+  // dù bài làm đã bị xóa trong homework_submissions
+  try {
+    const { data: epData } = await sb.from('exam_progress')
+      .select('force_stopped')
+      .eq('homework_id', hwId)
+      .eq('username', currentUser.username)
+      .maybeSingle();
+    if (epData?.force_stopped === true) {
+      showToast('🚫 Giáo viên đã buộc dừng bài thi của bạn — không thể làm lại.', false);
+      return;
+    }
+  } catch(e) { /* Lỗi mạng — bỏ qua, cho phép tiếp tục */ }
+
   // ── Kiểm tra số lần làm ─────────────────────────────────
   // Dùng null-safe: nếu cột max_attempts chưa có trong DB thì mặc định = 1
   const maxAttempts = (hw.max_attempts !== undefined && hw.max_attempts !== null)
@@ -5230,12 +5245,11 @@ async function _pushExamProgress() {
   if (!realQs.length) return;
   const visibleIdx = _getVisibleQuestionIndex();
   _examProgressCurrentQ = visibleIdx;
-  // Ưu tiên: cdUsedSecs (khi có time limit), fallback _examProgressElapsed
   const elapsed = cdUsedSecs > 0 ? cdUsedSecs : _examProgressElapsed;
 
-  const payload = {
-    homework_id:       doHWId,
-    username:          currentUser.username,
+  // Chỉ update các trường theo dõi — KHÔNG bao gồm force_stopped
+  // để tránh upsert ghi đè reset force_stopped về false
+  const updatePayload = {
     student_name:      currentUser.full_name || currentUser.username,
     class_name:        currentUser.class_name || null,
     current_question:  visibleIdx,
@@ -5245,37 +5259,31 @@ async function _pushExamProgress() {
     updated_at:        new Date().toISOString(),
     status:            'active',
     tab_violations:    _tabSwitchCount || 0,
-    // Danh sách câu đánh dấu: "1,3,5" (số thứ tự thực tế 1-indexed)
     flagged_questions: [...doHWFlagged].map(qId => {
       const idx = realQs.findIndex(q => q.id === qId);
       return idx >= 0 ? idx + 1 : null;
     }).filter(Boolean).sort((a,b)=>a-b).join(',')
   };
 
-  // Thử upsert trước
-  const { error } = await sb.from('exam_progress')
-    .upsert(payload, { onConflict: 'homework_id,username' });
+  // Thử update trước (record đã tồn tại)
+  const { error: updErr, data: updData } = await sb.from('exam_progress')
+    .update(updatePayload)
+    .eq('homework_id', doHWId)
+    .eq('username', currentUser.username)
+    .select('id');
 
-  if (error) {
-    console.warn('[ExamProgress] upsert error:', error.message);
-    // Fallback: thử update nếu upsert lỗi do constraint
-    const { error: updErr } = await sb.from('exam_progress')
-      .update({
-        current_question: payload.current_question,
-        answered_count:   payload.answered_count,
-        total_questions:  payload.total_questions,
-        elapsed_secs:     payload.elapsed_secs,
-        updated_at:       payload.updated_at,
-        tab_violations:   payload.tab_violations,
-        flagged_questions:payload.flagged_questions,
-        status:           'active'
-      })
-      .eq('homework_id', doHWId)
-      .eq('username', currentUser.username);
-
-    if (updErr) {
-      // Lần đầu: chưa có row → insert
-      await sb.from('exam_progress').insert(payload);
+  // Nếu update không trúng row nào (data rỗng) → insert mới
+  if (!updErr && (!updData || updData.length === 0)) {
+    // INSERT lần đầu — force_stopped = false (default) — đúng
+    try {
+      await sb.from('exam_progress').insert({
+        homework_id: doHWId,
+        username:    currentUser.username,
+        ...updatePayload
+      });
+    } catch(e) {
+      // Race condition — bỏ qua
+      console.warn('[ExamProgress] insert error:', e?.message);
     }
   }
 }
@@ -6539,18 +6547,81 @@ async function saveGrade() {
 async function deleteSubmission(subId, studentName) {
   const sub = allSubmissions.find(s=>s.id===subId);
   const hw  = sub ? allHomework.find(h=>h.id===sub.homework_id) : null;
-  const ok  = await showConfirm({
-    icon: '🗑️',
-    title: 'Xóa bài làm?',
-    msg: `Xóa bài nộp của <b>${studentName}</b>${hw?` — "${hw.title}"`:''} sẽ cho phép học sinh làm lại.\nHành động này không thể hoàn tác.`,
-    okText: '🗑 Xóa bài',
-    okColor: '#ef4444',
-    cancelText: 'Hủy'
-  });
-  if (!ok) return;
-  const { error } = await sb.from('homework_submissions').delete().eq('id', subId);
-  if (error) { showToast('Lỗi: '+error.message, false); return; }
-  showToast(`🗑 Đã xóa bài làm của ${studentName}`);
+
+  // Kiểm tra xem học sinh có bị force_stopped không
+  let isForceStopped = false;
+  if (sub) {
+    try {
+      const { data: epData } = await sb.from('exam_progress')
+        .select('force_stopped')
+        .eq('homework_id', sub.homework_id)
+        .eq('username', sub.username)
+        .maybeSingle();
+      isForceStopped = epData?.force_stopped === true;
+    } catch(e) {}
+  }
+
+  const extraNote = isForceStopped
+    ? '\n\n⚠️ Học sinh này đã bị buộc dừng. Chọn "Xóa & Cho làm lại" để đồng thời gỡ khóa buộc dừng.'
+    : '\nHành động này không thể hoàn tác.';
+
+  // Dùng confirm dialog tuỳ chỉnh với 2 nút khi có force_stopped
+  if (isForceStopped) {
+    const choice = await new Promise(resolve => {
+      // Tạo custom modal nhỏ
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:1.5rem 1.75rem;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.25)">
+          <div style="font-size:1.5rem;margin-bottom:.5rem">🗑️</div>
+          <div style="font-weight:800;font-size:1rem;margin-bottom:.5rem">Xóa bài làm?</div>
+          <div style="font-size:.88rem;color:#374151;line-height:1.6;margin-bottom:1.25rem">
+            Xóa bài nộp của <b>${studentName}</b>${hw?` — "${hw.title}"`:''}<br/>
+            <span style="color:#dc2626;font-weight:700">⚠️ Học sinh này đã bị buộc dừng.</span><br/>
+            Chọn cách xóa bên dưới:
+          </div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+            <button id="_delOnly" style="flex:1;min-width:120px;background:#ef4444;color:#fff;border:none;border-radius:10px;padding:.55rem .9rem;font-size:.83rem;font-weight:700;cursor:pointer">🗑 Chỉ xóa bài<br/><span style="font-size:.72rem;font-weight:400;opacity:.85">(vẫn không được làm lại)</span></button>
+            <button id="_delAndUnlock" style="flex:1;min-width:120px;background:#10b981;color:#fff;border:none;border-radius:10px;padding:.55rem .9rem;font-size:.83rem;font-weight:700;cursor:pointer">✅ Xóa & Cho làm lại<br/><span style="font-size:.72rem;font-weight:400;opacity:.85">(gỡ khóa buộc dừng)</span></button>
+            <button id="_delCancel" style="width:100%;background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:.5rem;font-size:.85rem;font-weight:600;cursor:pointer">Hủy</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#_delOnly').addEventListener('click',    () => { document.body.removeChild(overlay); resolve('only'); });
+      overlay.querySelector('#_delAndUnlock').addEventListener('click',() => { document.body.removeChild(overlay); resolve('unlock'); });
+      overlay.querySelector('#_delCancel').addEventListener('click',  () => { document.body.removeChild(overlay); resolve(null); });
+    });
+
+    if (!choice) return;
+
+    const { error } = await sb.from('homework_submissions').delete().eq('id', subId);
+    if (error) { showToast('Lỗi: '+error.message, false); return; }
+
+    if (choice === 'unlock' && sub) {
+      // Reset force_stopped để học sinh có thể làm lại
+      await sb.from('exam_progress')
+        .update({ force_stopped: false, force_submit: false, status: 'submitted', updated_at: new Date().toISOString() })
+        .eq('homework_id', sub.homework_id)
+        .eq('username', sub.username);
+      showToast(`✅ Đã xóa bài và mở lại quyền làm bài cho ${studentName}`);
+    } else {
+      showToast(`🗑 Đã xóa bài làm của ${studentName} (vẫn bị khóa buộc dừng)`);
+    }
+  } else {
+    const ok = await showConfirm({
+      icon: '🗑️',
+      title: 'Xóa bài làm?',
+      msg: `Xóa bài nộp của <b>${studentName}</b>${hw?` — "${hw.title}"`:''} sẽ cho phép học sinh làm lại.\nHành động này không thể hoàn tác.`,
+      okText: '🗑 Xóa bài',
+      okColor: '#ef4444',
+      cancelText: 'Hủy'
+    });
+    if (!ok) return;
+    const { error } = await sb.from('homework_submissions').delete().eq('id', subId);
+    if (error) { showToast('Lỗi: '+error.message, false); return; }
+    showToast(`🗑 Đã xóa bài làm của ${studentName}`);
+  }
+
   await loadAdminData();
   renderAdminSubmissions();
 }
