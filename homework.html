@@ -1076,6 +1076,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderTopbar();
   renderSidebarNav();
   if (currentUser.role === 'admin') {
+    // Xin quyền Browser Notification
+    _requestBrowserNotifPermission();
+
     document.getElementById('adminTabs').style.display = 'none'; // tabs đã chuyển vào sidebar
     document.getElementById('hwHeaderActions').innerHTML =
       `<button onclick="exportScoresCSV()" style="display:inline-flex;align-items:center;gap:.4rem;background:#10b981;border:none;color:#fff;font-weight:700;font-size:.85rem;padding:.5rem 1rem;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(16,185,129,.4);transition:all .15s" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">⬇ Xuất điểm CSV</button>
@@ -1084,6 +1087,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadClasses();
     await loadAdminData();
     renderAdminList();
+    // Cập nhật badge thùng rác
+    _updateTrashBadge();
 
     // ── Realtime đã xử lý cập nhật tức thì ──
     // Polling backup 30s (phòng khi realtime mất kết nối tạm thời)
@@ -1272,6 +1277,9 @@ function renderSidebarNav() {
         <a href="#" class="slink" id="sideTab_live" onclick="switchAdminTab('live',this);setSideTab('live');return false" data-label="Đang làm bài">
           <span class="slink-icon">🔴</span><span class="slink-label">Đang làm bài <span id="liveBadge" style="display:none;background:#ef4444;color:#fff;border-radius:20px;padding:.05rem .42rem;font-size:.68rem;font-weight:800;margin-left:.2rem">0</span></span>
         </a>
+        <a href="#" class="slink" id="sideTab_trash" onclick="switchAdminTab('trash',this);setSideTab('trash');return false" data-label="Thùng rác">
+          <span class="slink-icon">🗑</span><span class="slink-label">Thùng rác <span id="trashBadge" style="display:none;background:#94a3b8;color:#fff;border-radius:20px;padding:.05rem .42rem;font-size:.68rem;font-weight:800;margin-left:.2rem">0</span></span>
+        </a>
       </div>`;
   } else {
     // Học sinh
@@ -1289,7 +1297,7 @@ function renderSidebarNav() {
 }
 
 function setSideTab(tab) {
-  ['list','notdone','submissions','ranking','live'].forEach(t => {
+  ['list','notdone','submissions','ranking','live','trash'].forEach(t => {
     const el = document.getElementById('sideTab_' + t);
     if (el) el.classList.toggle('active', t === tab);
   });
@@ -1311,7 +1319,8 @@ let allStudentCodes = {}; // username → student_code
 
 async function loadAdminData() {
   const [hwR,subR] = await Promise.all([
-    sb.from('homework').select('*').order('created_at',{ascending:false}),
+    // Chỉ lấy bài chưa xóa (deleted_at IS NULL)
+    sb.from('homework').select('*').is('deleted_at', null).order('created_at',{ascending:false}),
     sb.from('homework_submissions').select('*').order('submitted_at',{ascending:false})
   ]);
   allHomework    = hwR.data  || [];
@@ -1352,7 +1361,11 @@ async function loadStudentData() {
   const myClasses = cn.split(',').map(c => c.trim()).filter(Boolean);
 
   // Build or-filter: bài cho tất cả (null) OR bài cho bất kỳ lớp nào của mình
-  let hwQuery = sb.from('homework').select('*').eq('is_draft', false).order('created_at',{ascending:false});
+  // Lọc bỏ bài đã xóa vào thùng rác
+  let hwQuery = sb.from('homework').select('*')
+    .eq('is_draft', false)
+    .is('deleted_at', null)
+    .order('created_at',{ascending:false});
   if (myClasses.length > 0) {
     const classFilters = myClasses.map(c => `class_name.eq.${c}`).join(',');
     hwQuery = hwQuery.or(`class_name.is.null,${classFilters}`);
@@ -1445,16 +1458,12 @@ function calcScoreBreakdown(sub) {
 // ═══════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════
-function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
 
 // ── Timezone helpers cho open_at ────────────────────────────
 // Convert UTC ISO string → "YYYY-MM-DDTHH:MM" (local time) cho datetime-local input
 function _utcToLocalInput(isoStr) {
   if (!isoStr) return '';
   const d = new Date(isoStr);
-  // Lấy local time components
   const pad = n => String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -1462,9 +1471,15 @@ function _utcToLocalInput(isoStr) {
 // Format open_at để hiển thị đẹp: "15/01/2025 10:00"
 function _fmtOpenAt(isoStr) {
   if (!isoStr) return '';
-  const d = new Date(isoStr);
-  return d.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12: false });
+  return new Date(isoStr).toLocaleString('vi-VN', {
+    day:'2-digit', month:'2-digit', year:'numeric',
+    hour:'2-digit', minute:'2-digit', hour12: false
+  });
 }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
 }
 function isOverdue(d) { return d ? new Date(d) < new Date(new Date().toDateString()) : false; }
 function getStatusLabel(s) { return {submitted:'Đã nộp',graded:'Đã chấm',returned:'Trả bài'}[s]||'Đã nộp'; }
@@ -1545,15 +1560,23 @@ function esc(s) {
 // ═══════════════════════════════════════════
 // ADMIN TABS
 // ═══════════════════════════════════════════
+// Token chống race condition khi chuyển tab
+let _adminTabToken = 0;
+
 function switchAdminTab(tab, btn) {
   adminTab = tab;
-  // Sync active state sidebar
+  _adminTabToken++;
+  const myToken = _adminTabToken;
+
   setSideTab(tab);
-  if (tab==='list') renderAdminList();
+
+  if (tab==='list')        renderAdminList();
   else if (tab==='submissions') renderAdminSubmissions();
-  else if (tab==='ranking') renderAdminRanking();
-  else if (tab==='notdone') renderAdminNotDone();
-  else if (tab==='live') renderAdminLive();
+  else if (tab==='ranking')     renderAdminRanking();
+  else if (tab==='notdone')     renderAdminNotDone();
+  else if (tab==='live')        renderAdminLive();
+  else if (tab==='trash')       renderAdminTrash();
+
   if (tab==='submissions') _clearSubmissionBadge();
 }
 
@@ -1573,8 +1596,12 @@ function _clearSubmissionBadge() {
   const el = document.getElementById('sideTab_submissions');
   if (el) { const label = el.querySelector('.slink-label'); if (label) label.textContent = 'Bài nộp'; }
 }
+// Token chống race condition khi chuyển tab học sinh
+let _studentTabToken = 0;
+
 function switchStudentTab(tab,btn) {
   studentTab=tab;
+  _studentTabToken++; // hủy render đang chạy của tab cũ
   document.querySelectorAll('#studentTabs .tab-hw button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   // Dừng ranking interval nếu rời tab ranking
@@ -1706,11 +1733,13 @@ function renderAdminList() {
 // ═══════════════════════════════════════════
 async function renderAdminNotDone() {
   const el = document.getElementById('hwContent');
+  const myToken = _adminTabToken; // snapshot token khi bắt đầu
   el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">⏳</div><p>Đang tải...</p></div>`;
 
   // Fetch tất cả học sinh — dùng nhiều batch để vượt giới hạn 1000 rows của Supabase
   let allFetched = [], from = 0, batchSize = 1000;
   while (true) {
+    if (_adminTabToken !== myToken) return; // tab đã đổi → dừng
     const { data: batch } = await sb.from('students')
       .select('username,full_name,class_name,student_code,active,id')
       .neq('active', false)
@@ -1884,6 +1913,9 @@ async function renderAdminNotDone() {
     }
 
     html += `</tbody></table></div>`;
+
+    // Check token trước khi ghi — tab có thể đã đổi
+    if (_adminTabToken !== myToken) return;
     el.innerHTML = html;
 
     // Gắn window vars cho button onchange
@@ -2453,6 +2485,7 @@ function viewSubmissionsFor(hwId) {
 // ═══════════════════════════════════════════
 async function renderAdminLive() {
   const el = document.getElementById('hwContent');
+  const myToken = _adminTabToken;
 
   // Dừng interval cũ nếu có
   if (_liveRefreshInterval) { clearInterval(_liveRefreshInterval); _liveRefreshInterval = null; }
@@ -2537,6 +2570,9 @@ async function renderAdminLive() {
       });
     }
   } catch(e) {}
+
+  // Check token trước khi render - tab có thể đã đổi trong lúc fetch class
+  if (_adminTabToken !== myToken) return;
 
   // Render lần đầu
   await _renderLiveTable();
@@ -2881,6 +2917,11 @@ function _checkNewStudents(rows) {
           'start'
         );
         _showLiveNotif(`🟢 ${r.student_name || r.username} bắt đầu: ${hwTitle}`);
+        // Browser notification khi tab ở nền
+        _browserNotify(
+          '✏️ Học sinh bắt đầu làm bài',
+          `${r.student_name || r.username} vừa vào làm — ${hwTitle}`
+        );
       }
       _liveKnownIds.add(uid);
     }
@@ -2910,6 +2951,10 @@ function _checkTabViolationAlert(r) {
         'warning'
       );
       _showLiveNotif(`⚠️ ${r.student_name || r.username} vi phạm tab lần ${cur}`, 'warn');
+      _browserNotify(
+        `⚠️ Vi phạm tab lần ${cur}`,
+        `${r.student_name || r.username} — ${hwTitle}`
+      );
     }
   }
 }
@@ -3320,7 +3365,11 @@ function renderStudentList() {
   if (studentTab==='submitted') hw=hw.filter(h=>submittedIds.has(h.id));
   if (!hw.length) {
     const msgs={pending:'Không còn bài tập chưa nộp! 🎉',submitted:'Chưa nộp bài nào.',all:'Chưa có bài tập nào.'};
-    el.innerHTML=`<div class="hw-empty"><div class="hw-empty-icon">${studentTab==='pending'?'🎉':'📭'}</div><p>${msgs[studentTab]}</p></div>`;
+    const emptyHtml = `<div class="hw-empty"><div class="hw-empty-icon">${studentTab==='pending'?'🎉':'📭'}</div><p>${msgs[studentTab]}</p></div>`;
+    if (el.dataset.lastHash !== 'empty_' + studentTab) {
+      el.dataset.lastHash = 'empty_' + studentTab;
+      el.innerHTML = emptyHtml;
+    }
     return;
   }
 
@@ -3417,9 +3466,11 @@ function renderStudentList() {
 
   // Smart update — chỉ replace innerHTML nếu nội dung thực sự thay đổi
   // Tránh scroll nhảy về đầu khi polling tự động
+  // Dùng cả studentTab trong key để đảm bảo đổi tab luôn render lại
   const newHash = newHTML.split('').reduce((h,c) => (Math.imul(31,h) + c.charCodeAt(0)) | 0, 0);
-  if (el.dataset.lastHash !== String(newHash)) {
-    el.dataset.lastHash = String(newHash);
+  const hashKey = studentTab + '_' + newHash;
+  if (el.dataset.lastHash !== hashKey) {
+    el.dataset.lastHash = hashKey;
     el.innerHTML = newHTML;
   }
 
@@ -4359,12 +4410,28 @@ function _shuffleQList(qs, seed, shuffleQ, shuffleA) {
   let result = [...qs];
 
   if (shuffleQ) {
-    // Tách sections và câu thường, chỉ xáo câu thường, giữ nguyên sections ở đầu
-    const realQs = result.filter(q => q.question_type !== 'section');
-    const shuffledReal = _shuffleArr(realQs, rng);
-    // Ghép lại: sections giữ đầu, câu thường theo thứ tự mới
-    const sectionHeaders = result.filter(q => q.question_type === 'section');
-    result = [...sectionHeaders, ...shuffledReal];
+    // Tách thành các nhóm: mỗi section header + câu hỏi theo sau nó
+    // Cấu trúc: [section?, q, q, q, section?, q, q, ...]
+    const groups = [];   // mỗi phần tử: { section: q|null, questions: [q,...] }
+    let currentGroup = { section: null, questions: [] };
+
+    result.forEach(q => {
+      if (q.question_type === 'section') {
+        // Lưu nhóm hiện tại, bắt đầu nhóm mới
+        groups.push(currentGroup);
+        currentGroup = { section: q, questions: [] };
+      } else {
+        currentGroup.questions.push(q);
+      }
+    });
+    groups.push(currentGroup); // nhóm cuối
+
+    // Xáo câu hỏi bên trong từng nhóm, giữ nguyên thứ tự các nhóm
+    result = [];
+    groups.forEach(g => {
+      if (g.section) result.push(g.section);           // giữ section header
+      result.push(..._shuffleArr(g.questions, rng));    // xáo câu trong nhóm
+    });
   }
 
   if (shuffleA) {
@@ -4618,6 +4685,9 @@ async function saveHomework(isDraft=false) {
   if (isDraft) showToast('📋 Đã lưu nháp — học sinh chưa thấy bài này');
   else showToast(editId ? '✅ Đã cập nhật & giao bài' : '🚀 Đã tạo và giao bài thành công');
   await loadAdminData();
+  // Luôn switch về tab Danh sách sau khi lưu
+  adminTab = 'list';
+  setSideTab('list');
   renderAdminList();
 }
 
@@ -4638,6 +4708,8 @@ async function publishHW(id) {
   if (error) { showToast('Lỗi: '+error.message, false); return; }
   showToast('🚀 Đã giao bài cho học sinh!');
   await loadAdminData();
+  adminTab = 'list';
+  setSideTab('list');
   renderAdminList();
 }
 
@@ -4662,24 +4734,32 @@ async function toggleLockHW(id) {
   if (error) { showToast('Lỗi: '+error.message, false); return; }
   showToast(locking ? '🔒 Đã khóa bài — học sinh không thể làm thêm' : '🔓 Đã mở khóa bài');
   await loadAdminData();
+  adminTab = 'list'; setSideTab('list');
   renderAdminList();
 }
 
 async function deleteHW(id) {
+  const hw = allHomework.find(h=>h.id===id);
   const ok = await showConfirm({
     icon: '🗑️',
-    title: 'Xóa bài tập?',
-    msg: 'Toàn bộ câu hỏi và bài nộp cũng sẽ bị xóa vĩnh viễn.\nHành động này không thể hoàn tác.',
-    okText: 'Xóa',
+    title: 'Chuyển vào thùng rác?',
+    msg: `Bài "${hw?.title||''}" sẽ vào thùng rác.\nSau 5 ngày không khôi phục sẽ xóa vĩnh viễn.`,
+    okText: '🗑 Vào thùng rác',
     okColor: '#ef4444',
-    cancelText: 'Hủy'
+    cancelText: 'Hủy',
+    iconBg: '#fee2e2',
+    accent: 'linear-gradient(90deg,#ef4444,#dc2626)'
   });
   if (!ok) return;
-  const{error}=await sb.from('homework').delete().eq('id',id);
-  if(error){showToast('Lỗi: '+error.message,false);return;}
+  // Soft delete — chỉ set deleted_at, KHÔNG xóa thật
+  const { error } = await sb.from('homework')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { showToast('Lỗi: ' + error.message, false); return; }
   delete allQuestions[id];
-  showToast('Đã xóa bài tập');
+  showToast('🗑 Đã chuyển vào thùng rác — có thể khôi phục trong 5 ngày');
   await loadAdminData();
+  adminTab = 'list'; setSideTab('list');
   renderAdminList();
 }
 
@@ -6785,6 +6865,40 @@ document.addEventListener('visibilitychange', function() {
 });
 
 // ═══════════════════════════════════════════
+// BROWSER NOTIFICATION (admin)
+// ═══════════════════════════════════════════
+function _requestBrowserNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    // Hỏi lần đầu sau 2s để trang load xong
+    setTimeout(() => {
+      Notification.requestPermission();
+    }, 2000);
+  }
+}
+
+// Gửi browser notification — chỉ khi tab không active
+function _browserNotify(title, body, icon = 'icons/icon-192.png') {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  // Chỉ hiện khi tab đang không được focus
+  if (document.visibilityState === 'visible') return;
+  try {
+    const n = new Notification(title, {
+      body,
+      icon,
+      badge: icon,
+      tag: 'hw-lms-' + Date.now(),   // unique tag để không bị gộp
+      requireInteraction: false,
+    });
+    // Click vào notification → focus tab
+    n.onclick = () => { window.focus(); n.close(); };
+    // Tự đóng sau 6s
+    setTimeout(() => n.close(), 6000);
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
 // REALTIME — nhận bài tập mới & bài nộp mới ngay lập tức
 // ═══════════════════════════════════════════
 let _rtChannel = null;
@@ -6796,6 +6910,7 @@ let _rankingRefreshInterval = null;
 
 async function renderStudentRanking() {
   const el = document.getElementById('hwContent');
+  const myToken = _studentTabToken; // snapshot token
   el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">⏳</div><p>Đang tải xếp hạng...</p></div>`;
 
   // Dừng interval cũ
@@ -6803,6 +6918,7 @@ async function renderStudentRanking() {
 
   const doRender = async () => {
     if (studentTab !== 'ranking') { clearInterval(_rankingRefreshInterval); _rankingRefreshInterval = null; return; }
+    if (_studentTabToken !== myToken) { clearInterval(_rankingRefreshInterval); _rankingRefreshInterval = null; return; }
 
     try {
       const cn = currentUser.class_name || '';
@@ -7544,6 +7660,165 @@ async function openStudentHistory() {
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 }
 
+// ═══════════════════════════════════════════
+// THÙNG RÁC BÀI TẬP
+// ═══════════════════════════════════════════
+async function renderAdminTrash() {
+  const el = document.getElementById('hwContent');
+  const myToken = _adminTabToken;
+  el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">⏳</div><p>Đang tải thùng rác...</p></div>`;
+
+  try {
+    // Lấy bài đã xóa
+    const { data: trashed, error } = await sb.from('homework')
+      .select('*')
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false });
+
+    if (_adminTabToken !== myToken) return;
+    if (error) throw error;
+
+    // Tự động xóa vĩnh viễn bài quá 5 ngày
+    const now = new Date();
+    const toDelete = (trashed||[]).filter(h => {
+      const daysAgo = (now - new Date(h.deleted_at)) / 86400000;
+      return daysAgo >= 5;
+    });
+    if (toDelete.length) {
+      await Promise.all(toDelete.map(h => sb.from('homework').delete().eq('id', h.id)));
+    }
+    const valid = (trashed||[]).filter(h => {
+      const daysAgo = (now - new Date(h.deleted_at)) / 86400000;
+      return daysAgo < 5;
+    });
+
+    // Cập nhật badge
+    const badge = document.getElementById('trashBadge');
+    if (badge) {
+      badge.textContent = valid.length;
+      badge.style.display = valid.length > 0 ? 'inline' : 'none';
+    }
+
+    if (!valid.length) {
+      el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">🗑</div><p>Thùng rác trống.<br/><span style="font-size:.8rem;color:var(--muted)">Bài tập bị xóa sẽ giữ 5 ngày trước khi xóa vĩnh viễn.</span></p></div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <div style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <div style="font-size:.95rem;font-weight:900">🗑 Thùng rác</div>
+          <div style="font-size:.72rem;opacity:.65;margin-top:.1rem">${valid.length} bài · Tự xóa vĩnh viễn sau 5 ngày</div>
+        </div>
+        <button onclick="emptyTrash()" style="background:rgba(239,68,68,.25);border:1.5px solid rgba(239,68,68,.5);color:#fca5a5;border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:700;cursor:pointer">🗑 Xóa tất cả vĩnh viễn</button>
+      </div>
+      ${valid.map(hw => {
+        const deletedAt = new Date(hw.deleted_at);
+        const daysAgo = (now - deletedAt) / 86400000;
+        const daysLeft = Math.max(0, Math.ceil(5 - daysAgo));
+        const pct = Math.min(100, Math.round(daysAgo / 5 * 100));
+        const urgentColor = daysLeft <= 1 ? '#ef4444' : daysLeft <= 2 ? '#f59e0b' : '#10b981';
+        return `<div class="hw-card" style="opacity:.92;border-color:var(--border)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.5rem">
+            <div style="font-weight:800;font-size:.95rem;flex:1">${esc(hw.title)}</div>
+            <span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:.18rem .65rem;font-size:.75rem;font-weight:800;flex-shrink:0;white-space:nowrap">🗑 Đã xóa</span>
+          </div>
+          ${hw.description?`<p style="font-size:.82rem;color:var(--muted);margin-bottom:.4rem">${esc(hw.description)}</p>`:''}
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;font-size:.75rem;color:var(--muted);margin-bottom:.65rem">
+            <span>📅 Xóa lúc: ${deletedAt.toLocaleString('vi-VN')}</span>
+            ${hw.class_name?`<span>🏫 ${esc(hw.class_name)}</span>`:''}
+          </div>
+          <!-- Thanh đếm ngược 5 ngày -->
+          <div style="margin-bottom:.75rem">
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;font-weight:700;margin-bottom:.25rem">
+              <span style="color:${urgentColor}">⏳ Còn ${daysLeft} ngày để khôi phục</span>
+              <span style="color:var(--muted)">${Math.round(daysAgo * 10) / 10} / 5 ngày</span>
+            </div>
+            <div style="background:var(--bg);border-radius:20px;height:6px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:${urgentColor};border-radius:20px;transition:width .6s"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <button onclick="restoreHW(${hw.id})" style="display:inline-flex;align-items:center;gap:.35rem;background:#10b981;border:none;color:#fff;border-radius:8px;padding:.45rem .9rem;font-size:.83rem;font-weight:700;cursor:pointer">
+              ♻️ Khôi phục
+            </button>
+            <button onclick="permanentDeleteHW(${hw.id},'${esc(hw.title).replace(/'/g,"&#39;")}')" style="display:inline-flex;align-items:center;gap:.35rem;background:none;border:1.5px solid #ef4444;color:#ef4444;border-radius:8px;padding:.45rem .9rem;font-size:.83rem;font-weight:700;cursor:pointer">
+              🗑 Xóa vĩnh viễn
+            </button>
+          </div>
+        </div>`;
+      }).join('')}`;
+
+  } catch(e) {
+    if (_adminTabToken !== myToken) return;
+    el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">⚠️</div><p>Lỗi tải thùng rác: ${e.message}</p></div>`;
+  }
+}
+
+async function restoreHW(id) {
+  const { error } = await sb.from('homework')
+    .update({ deleted_at: null })
+    .eq('id', id);
+  if (error) { showToast('Lỗi: ' + error.message, false); return; }
+  showToast('♻️ Đã khôi phục bài tập thành công');
+  await loadAdminData();
+  _updateTrashBadge();
+  renderAdminTrash();
+}
+
+async function permanentDeleteHW(id, title) {
+  const ok = await showConfirm({
+    icon: '⚠️',
+    title: 'Xóa vĩnh viễn?',
+    msg: `Bài "${title}" và toàn bộ câu hỏi, bài nộp sẽ bị xóa vĩnh viễn.\nHành động này KHÔNG THỂ hoàn tác.`,
+    okText: '🗑 Xóa vĩnh viễn',
+    okColor: '#ef4444',
+    cancelText: 'Hủy',
+    iconBg: '#fee2e2',
+    accent: 'linear-gradient(90deg,#ef4444,#dc2626)'
+  });
+  if (!ok) return;
+  const { error } = await sb.from('homework').delete().eq('id', id);
+  if (error) { showToast('Lỗi: ' + error.message, false); return; }
+  delete allQuestions[id];
+  showToast('🗑 Đã xóa vĩnh viễn');
+  _updateTrashBadge();
+  renderAdminTrash();
+}
+
+async function emptyTrash() {
+  const ok = await showConfirm({
+    icon: '🗑',
+    title: 'Xóa toàn bộ thùng rác?',
+    msg: 'Tất cả bài trong thùng rác sẽ bị xóa vĩnh viễn.\nHành động này KHÔNG THỂ hoàn tác.',
+    okText: '🗑 Xóa tất cả',
+    okColor: '#ef4444',
+    cancelText: 'Hủy'
+  });
+  if (!ok) return;
+  const { data: trashed } = await sb.from('homework').select('id').not('deleted_at','is',null);
+  if (trashed?.length) {
+    await Promise.all(trashed.map(h => sb.from('homework').delete().eq('id', h.id)));
+  }
+  showToast('🗑 Đã dọn sạch thùng rác');
+  _updateTrashBadge();
+  renderAdminTrash();
+}
+
+// ── Cập nhật badge thùng rác ─────────────────────────────
+async function _updateTrashBadge() {
+  try {
+    const now = new Date();
+    const { data } = await sb.from('homework').select('id,deleted_at').not('deleted_at','is',null);
+    const valid = (data||[]).filter(h => (now - new Date(h.deleted_at)) / 86400000 < 5);
+    const badge = document.getElementById('trashBadge');
+    if (badge) {
+      badge.textContent = valid.length;
+      badge.style.display = valid.length > 0 ? 'inline' : 'none';
+    }
+  } catch(e) {}
+}
+
 function initRealtime() {
   if (_rtChannel) { sb.removeChannel(_rtChannel); _rtChannel=null; }
 
@@ -7641,6 +7916,11 @@ function initRealtime() {
             '📬 Học sinh nộp bài',
             `<b>${nw.student_name||nw.username}</b> vừa nộp${hwTitle?'<br/>📝 '+hwTitle:''}${sc10!=null?' · <b>'+sc10+'/10</b>':''}`,
             'submit'
+          );
+          // Browser notification khi tab ở nền
+          _browserNotify(
+            '📬 Học sinh nộp bài',
+            `${nw.student_name||nw.username} vừa nộp${hwTitle?' — '+hwTitle:''}${sc10!=null?' · '+sc10+'/10':''}`
           );
         }
       } else {

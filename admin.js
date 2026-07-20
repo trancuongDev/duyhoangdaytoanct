@@ -4,6 +4,28 @@ const db = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
 );
 
+// ── Browser Notification cho admin ──────────────────────────────
+(function _initAdminNotif() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    // Hỏi quyền sau khi trang load xong
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => Notification.requestPermission(), 2500);
+    });
+  }
+})();
+
+function _adminBrowserNotify(title, body, icon = 'icons/icon-192.png') {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return; // tab đang active → dùng popup trong trang
+  try {
+    const n = new Notification(title, { body, icon, badge: icon, requireInteraction: false });
+    n.onclick = () => { window.focus(); n.close(); };
+    setTimeout(() => n.close(), 6000);
+  } catch(e) {}
+}
+
 // ---- Hash mật khẩu SHA-256 (dùng chung toàn file) ----
 async function hashPw(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -3298,6 +3320,8 @@ db.channel('realtime-online')
     if (payload.eventType === 'UPDATE' && payload.new?.is_online && !payload.old?.is_online) {
       _adminNotify('🟢 Học sinh online',
         `${payload.new.full_name || payload.new.username} vừa đăng nhập`, 'info');
+      _adminBrowserNotify('🟢 Học sinh online',
+        `${payload.new.full_name || payload.new.username} vừa đăng nhập`);
     }
   })
   .subscribe();
@@ -3374,6 +3398,11 @@ db.channel('realtime-alerts')
     _adminNotify('🚨 Cảnh báo mới', payload.new?.student_name
       ? `${payload.new.student_name} — ${(payload.new.reason||'').slice(0,60)}`
       : 'Có cảnh báo bảo mật mới', 'warn');
+    // Browser notification khi tab nền
+    _adminBrowserNotify('🚨 Cảnh báo mới',
+      payload.new?.student_name
+        ? `${payload.new.student_name} — ${(payload.new.reason||'').slice(0,80)}`
+        : 'Có cảnh báo bảo mật mới');
   })
   .subscribe();
 
@@ -3395,6 +3424,8 @@ db.channel('realtime-homework-admin')
       if (nw?.student_name) {
         _adminNotify('📬 Học sinh nộp bài',
           `${nw.student_name} vừa nộp bài`, 'submit');
+        // Browser notification khi tab nền
+        _adminBrowserNotify('📬 Học sinh nộp bài', `${nw.student_name} vừa nộp bài`);
       }
     }
   )
