@@ -646,8 +646,20 @@
         <input type="text" id="hwTitle" placeholder="VD: Bài tập chương 3 — Phương trình bậc 2"/>
       </div>
       <div>
-        <label>Gửi đến lớp <span style="color:var(--muted);font-weight:400">(trống = tất cả)</span></label>
-        <select id="hwClass"><option value="">-- Tất cả học sinh --</option></select>
+        <label>Gửi đến lớp <span style="color:var(--muted);font-weight:400">(trống = tất cả · có thể chọn nhiều lớp)</span></label>
+        <!-- Multi-select lớp với tags -->
+        <div id="hwClassWrap" style="position:relative">
+          <div id="hwClassTags" onclick="document.getElementById('hwClassDropdown').style.display=document.getElementById('hwClassDropdown').style.display==='none'?'block':'none'"
+            style="min-height:40px;padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;user-select:none"
+            onfocus="this.style.borderColor='var(--primary)'" tabindex="0">
+            <span id="hwClassPlaceholder" style="color:var(--muted);font-size:.9rem">-- Tất cả học sinh --</span>
+          </div>
+          <div id="hwClassDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:999;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)">
+            <div style="padding:.35rem .6rem;font-size:.75rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Chọn một hoặc nhiều lớp</div>
+            <div id="hwClassOptions"></div>
+          </div>
+        </div>
+        <input type="hidden" id="hwClass"/>
       </div>
       <div>
         <label>Hạn nộp</label>
@@ -1308,11 +1320,86 @@ function setSideTab(tab) {
 // ═══════════════════════════════════════════
 // LOAD DATA
 // ═══════════════════════════════════════════
+// Danh sách lớp đã chọn cho multi-select
+let _hwSelectedClasses = [];
+
 async function loadClasses() {
   const { data } = await sb.from('classes').select('name').order('name');
-  const sel = document.getElementById('hwClass');
-  sel.innerHTML = '<option value="">-- Tất cả học sinh --</option>';
-  (data||[]).forEach(c => { const o=document.createElement('option');o.value=c.name;o.textContent=c.name;sel.appendChild(o); });
+  const opts = document.getElementById('hwClassOptions');
+  if (!opts) return;
+  opts.innerHTML = '';
+  (data||[]).forEach(c => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:.45rem .85rem;cursor:pointer;font-size:.88rem;display:flex;align-items:center;gap:.5rem;transition:background .12s';
+    item.dataset.val = c.name;
+    item.innerHTML = `<span class="_cls-check" style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s"></span>${c.name}`;
+    item.addEventListener('mouseenter', () => item.style.background = 'var(--primary-light)');
+    item.addEventListener('mouseleave', () => item.style.background = '');
+    item.addEventListener('click', () => _toggleHwClass(c.name));
+    opts.appendChild(item);
+  });
+  // Đóng dropdown khi click ngoài
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('hwClassWrap')?.contains(e.target)) {
+      const dd = document.getElementById('hwClassDropdown');
+      if (dd) dd.style.display = 'none';
+    }
+  }, { capture: true });
+}
+
+function _toggleHwClass(name) {
+  const idx = _hwSelectedClasses.indexOf(name);
+  if (idx >= 0) _hwSelectedClasses.splice(idx, 1);
+  else _hwSelectedClasses.push(name);
+  _renderHwClassTags();
+}
+
+function _renderHwClassTags() {
+  const tagsEl = document.getElementById('hwClassTags');
+  const ph     = document.getElementById('hwClassPlaceholder');
+  const hidden = document.getElementById('hwClass');
+  const opts   = document.getElementById('hwClassOptions');
+
+  // Cập nhật hidden input (lưu dạng "12A,12B")
+  if (hidden) hidden.value = _hwSelectedClasses.join(',');
+
+  // Cập nhật checkmarks trong dropdown
+  if (opts) {
+    opts.querySelectorAll('[data-val]').forEach(item => {
+      const check = item.querySelector('._cls-check');
+      const selected = _hwSelectedClasses.includes(item.dataset.val);
+      if (check) {
+        check.style.background = selected ? 'var(--primary)' : '';
+        check.style.borderColor = selected ? 'var(--primary)' : 'var(--border)';
+        check.innerHTML = selected ? '<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>' : '';
+      }
+    });
+  }
+
+  // Cập nhật tags hiển thị
+  if (!tagsEl) return;
+  // Xóa tags cũ (giữ placeholder)
+  tagsEl.querySelectorAll('._cls-tag').forEach(t => t.remove());
+  if (ph) ph.style.display = _hwSelectedClasses.length ? 'none' : '';
+
+  _hwSelectedClasses.forEach(name => {
+    const tag = document.createElement('span');
+    tag.className = '_cls-tag';
+    tag.style.cssText = 'display:inline-flex;align-items:center;gap:.3rem;background:var(--primary);color:#fff;border-radius:20px;padding:.18rem .55rem .18rem .65rem;font-size:.78rem;font-weight:700';
+    tag.innerHTML = `${name}<button type="button" style="background:rgba(255,255,255,.25);border:none;color:#fff;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:.1rem" onclick="event.stopPropagation();_toggleHwClass('${name}')">✕</button>`;
+    tagsEl.insertBefore(tag, ph);
+  });
+}
+
+function _resetHwClassSelect() {
+  _hwSelectedClasses = [];
+  _renderHwClassTags();
+}
+
+function _setHwClassSelect(value) {
+  // value: "12A" hoặc "12A,12B"
+  _hwSelectedClasses = (value||'').split(',').map(c=>c.trim()).filter(Boolean);
+  _renderHwClassTags();
 }
 
 let allStudentCodes = {}; // username → student_code
@@ -1377,7 +1464,13 @@ async function loadStudentData() {
     hwQuery,
     sb.from('homework_submissions').select('*').eq('username', currentUser.username)
   ]);
-  allHomework    = hwR.data  || [];
+  // Filter phía client để hỗ trợ class_name dạng "12A,12B" (nhiều lớp)
+  const rawHomework = hwR.data || [];
+  allHomework = rawHomework.filter(h => {
+    if (!h.class_name) return true; // giao tất cả
+    const hwClasses = h.class_name.split(',').map(c => c.trim()).filter(Boolean);
+    return myClasses.some(mc => hwClasses.includes(mc));
+  });
   allSubmissions = subR.data || [];
 
   // Load điểm cao nhất mỗi bài của cả lớp (chỉ lấy score, không lộ tên)
@@ -1567,6 +1660,8 @@ function switchAdminTab(tab, btn) {
   adminTab = tab;
   _adminTabToken++;
   const myToken = _adminTabToken;
+  // Reset live tracking khi rời tab live để lần sau vào lại không bị trùng
+  if (tab !== 'live') _liveInitialized = false;
 
   setSideTab(tab);
 
@@ -2555,9 +2650,13 @@ async function renderAdminLive() {
   window._liveHwId = 'all';
   window._liveCls  = 'all';
 
-  // Reset tracking khi mở tab mới
-  _liveKnownIds.clear();
-  _lastTabViolations = {};
+  // Reset tracking — chỉ clear khi vào tab lần đầu
+  // Các lần re-render sau KHÔNG reset để tránh thông báo trùng
+  if (!_liveInitialized) {
+    _liveInitialized = true;
+    _liveKnownIds.clear();
+    _lastTabViolations = {};
+  }
 
   // Load lớp vào filter
   try {
@@ -2885,6 +2984,7 @@ async function adminForceSubmit(hwId, username, studentName) {
 // ─── Thông báo âm thanh khi HS mới bắt đầu ──────────────
 let _liveKnownIds = new Set();   // uid đã biết
 let _liveAlertEnabled = true;    // bật/tắt thông báo
+let _liveInitialized = false;    // đã khởi tạo tab live chưa
 
 function _playNewStudentSound() {
   try {
@@ -3507,6 +3607,7 @@ function openModalHW() {
   document.getElementById('hwShuffleA').checked = false;
   document.getElementById('hwAntiPaste').checked = false;
   document.getElementById('hwOpenAt').value = '';
+  _resetHwClassSelect();
   window._hwAttachExistingUrl = null;
   document.getElementById('modalHWTitle').textContent='➕ Giao bài tập mới';
   renderQuestionList();
@@ -3519,7 +3620,6 @@ async function openEditHW(hwId) {
   document.getElementById('hwEditId').value=hwId;
   document.getElementById('hwTitle').value=hw.title||'';
   document.getElementById('hwDesc').value=hw.description||'';
-  document.getElementById('hwClass').value=hw.class_name||'';
   document.getElementById('hwDue').value=hw.due_date||'';
   document.getElementById('hwTimeLimit').value=hw.time_limit||'';
   // Fill max_attempts
@@ -3538,6 +3638,7 @@ async function openEditHW(hwId) {
   document.getElementById('hwShuffleA').checked = !!hw.shuffle_answers;
   document.getElementById('hwAntiPaste').checked = !!hw.anti_paste;
   document.getElementById('hwOpenAt').value = hw.open_at ? _utcToLocalInput(hw.open_at) : '';
+  _setHwClassSelect(hw.class_name || '');
   window._hwAttachExistingUrl = null;
   document.getElementById('modalHWTitle').textContent='✏️ Sửa bài tập';
   // Load questions
@@ -4569,7 +4670,8 @@ async function saveHomework(isDraft=false) {
   const payload={
     title,
     description:document.getElementById('hwDesc').value.trim()||null,
-    class_name:document.getElementById('hwClass').value||null,
+    // class_name: lưu dạng "12A,12B" hoặc null nếu tất cả
+    class_name: document.getElementById('hwClass').value.trim() || null,
     due_date:document.getElementById('hwDue').value||null,
     time_limit:parseInt(document.getElementById('hwTimeLimit').value)||null,
     max_attempts: _getMaxAttempts(),

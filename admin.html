@@ -49,6 +49,7 @@
       <a href="#" class="slink" data-page="login-history" data-label="Đăng nhập"><span class="slink-icon">🕐</span><span class="slink-label">Lịch sử đăng nhập</span></a>
       <a href="#" class="slink" data-page="announcements" data-label="Thông báo"><span class="slink-icon">📢</span><span class="slink-label">Thông báo</span></a>
       <a href="homework.html" class="slink" data-label="Bài Tập"><span class="slink-icon">📝</span><span class="slink-label">Bài Tập</span></a>
+      <a href="#" class="slink" data-page="files" data-label="Lưu trữ"><span class="slink-icon">🗂️</span><span class="slink-label">Lưu trữ tài liệu</span></a>
       <a href="#" class="slink" data-page="schedule" data-label="Lịch học"><span class="slink-icon">📅</span><span class="slink-label">Lịch học</span></a>
       <a href="#" class="slink" data-page="profile" data-label="Hồ sơ"><span class="slink-icon">�</span><span class="slink-label">Hồ sơ</span></a>/
     </nav>
@@ -244,8 +245,19 @@
             <input type="text" id="csPassword" placeholder="Tự động theo mã học viên" style="width:100%;background:var(--bg,#f8fafc);color:var(--muted,#94a3b8)" readonly/>
           </div>
 
-          <label>Lớp</label>
-          <select id="csClassSelect"><option value="">-- Chọn lớp --</option></select>
+          <label>Lớp <span style="color:var(--muted);font-weight:400">(có thể chọn nhiều lớp)</span></label>
+          <!-- Multi-select lớp -->
+          <div id="csClassWrap" style="position:relative">
+            <div id="csClassTags" onclick="document.getElementById('csClassDropdown').style.display=document.getElementById('csClassDropdown').style.display==='none'?'block':'none'"
+              style="min-height:40px;padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;user-select:none">
+              <span id="csClassPlaceholder" style="color:var(--muted);font-size:.9rem">-- Chọn lớp --</span>
+            </div>
+            <div id="csClassDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)">
+              <div style="padding:.3rem .6rem;font-size:.75rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Chọn một hoặc nhiều lớp</div>
+              <div id="csClassOptions"></div>
+            </div>
+          </div>
+          <input type="hidden" id="csClassSelect"/>
 
           <div id="csExpiryGroup">
           <label>Ngày hết hạn <span class="muted">(để trống = không giới hạn)</span></label>
@@ -543,7 +555,197 @@
       <div class="empty-state" id="emptySchedule" style="display:none">Tuần này chưa có lịch nào.</div>
     </section>
 
-  <!-- MODAL: Thêm / Sửa slot lịch -->
+    <!-- PAGE: LƯU TRỮ TÀI LIỆU -->
+    <section class="page" id="pageFiles">
+      <div class="page-header">
+        <h1 class="page-title">🗂️ Lưu trữ tài liệu</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn-outline" id="fileTrashBtn" onclick="toggleFileTrash()">🗑 Thùng rác</button>
+          <button class="btn-outline" id="createFolderBtn" onclick="openFolderModal()">📁 Tạo thư mục</button>
+          <button class="btn-primary" id="uploadFileBtn" onclick="openUploadModal()">⬆ Tải lên</button>
+        </div>
+      </div>
+
+      <!-- Breadcrumb -->
+      <div id="fileBreadcrumb" style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin-bottom:.85rem;font-size:.85rem;font-weight:600;color:var(--muted)"></div>
+
+      <!-- Thanh công cụ -->
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+        <div style="position:relative;flex:1;max-width:320px">
+          <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--muted)">🔍</span>
+          <input id="fileSearch" type="text" placeholder="Tìm tên file, tag..."
+            style="width:100%;padding:.5rem 1rem .5rem 2.2rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg)"
+            oninput="renderFileManager()"/>
+        </div>
+        <select id="fileTagFilter" onchange="renderFileManager()"
+          style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg)">
+          <option value="">🏷 Tất cả tag</option>
+        </select>
+        <select id="fileSortBy" onchange="renderFileManager()"
+          style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg)">
+          <option value="name">Sắp xếp: Tên</option>
+          <option value="date">Sắp xếp: Ngày</option>
+          <option value="size">Sắp xếp: Dung lượng</option>
+          <option value="downloads">Sắp xếp: Lượt tải</option>
+        </select>
+        <div style="display:flex;gap:.25rem">
+          <button onclick="setFileView('grid')" id="fileViewGrid" title="Dạng lưới"
+            style="padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:8px;background:var(--primary);color:#fff;cursor:pointer;font-size:.9rem">⊞</button>
+          <button onclick="setFileView('list')" id="fileViewList" title="Dạng danh sách"
+            style="padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--muted);cursor:pointer;font-size:.9rem">☰</button>
+        </div>
+      </div>
+
+      <!-- Stats bar -->
+      <div id="fileStatsBar" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+
+      <!-- Nội dung file manager -->
+      <div id="fileManagerContent"></div>
+    </section>
+
+  <!-- MODAL: Tạo/Sửa thư mục -->
+  <div class="modal-overlay" id="folderModal">
+    <div class="modal" style="max-width:440px">
+      <h3 id="folderModalTitle" style="font-weight:800;margin-bottom:1rem">📁 Tạo thư mục</h3>
+      <input type="hidden" id="folderEditId"/>
+      <label>Tên thư mục *</label>
+      <input type="text" id="folderName" placeholder="VD: Đề thi thử VSAT 2025"/>
+      <label>Icon</label>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem" id="folderIconPicker">
+        <span>📁</span><span>📂</span><span>📚</span><span>📝</span><span>🎯</span>
+        <span>🔥</span><span>⭐</span><span>💡</span><span>🏆</span><span>📊</span>
+        <span>🎓</span><span>📐</span><span>🔢</span><span>💎</span><span>🚀</span>
+      </div>
+      <input type="hidden" id="folderIcon" value="📁"/>
+      <label>Màu sắc</label>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem" id="folderColorPicker">
+        <span data-color="#6366f1" style="width:24px;height:24px;border-radius:50%;background:#6366f1;cursor:pointer;border:3px solid transparent"></span>
+        <span data-color="#10b981" style="width:24px;height:24px;border-radius:50%;background:#10b981;cursor:pointer;border:3px solid transparent"></span>
+        <span data-color="#f59e0b" style="width:24px;height:24px;border-radius:50%;background:#f59e0b;cursor:pointer;border:3px solid transparent"></span>
+        <span data-color="#ef4444" style="width:24px;height:24px;border-radius:50%;background:#ef4444;cursor:pointer;border:3px solid transparent"></span>
+        <span data-color="#0ea5e9" style="width:24px;height:24px;border-radius:50%;background:#0ea5e9;cursor:pointer;border:3px solid transparent"></span>
+        <span data-color="#8b5cf6" style="width:24px;height:24px;border-radius:50%;background:#8b5cf6;cursor:pointer;border:3px solid transparent"></span>
+        <span data-color="#ec4899" style="width:24px;height:24px;border-radius:50%;background:#ec4899;cursor:pointer;border:3px solid transparent"></span>
+        <span data-color="#64748b" style="width:24px;height:24px;border-radius:50%;background:#64748b;cursor:pointer;border:3px solid transparent"></span>
+      </div>
+      <input type="hidden" id="folderColor" value="#6366f1"/>
+      <label>Hiển thị cho lớp</label>
+      <select id="folderClass" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem">
+        <option value="">🌐 Tất cả học sinh</option>
+        <option value="private">🔒 Chỉ admin (riêng tư)</option>
+      </select>
+      <div id="folderError" class="error-msg"></div>
+      <div class="form-actions" style="margin-top:1rem">
+        <button class="btn-outline" onclick="document.getElementById('folderModal').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveFolder()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Upload file -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal" style="max-width:500px">
+      <h3 style="font-weight:800;margin-bottom:1rem">⬆ Tải lên tài liệu</h3>
+      <!-- Drag & Drop Zone -->
+      <div id="dropZone"
+        ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='var(--primary-light)'"
+        ondragleave="this.style.borderColor='var(--border)';this.style.background=''"
+        ondrop="handleFileDrop(event)"
+        style="border:2px dashed var(--border);border-radius:14px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1rem"
+        onclick="document.getElementById('fileUploadInput').click()">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">📎</div>
+        <div style="font-weight:700;color:var(--text)">Kéo thả file hoặc bấm để chọn</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">PDF, Word, Excel, ảnh, ZIP — tối đa 50MB</div>
+        <input type="file" id="fileUploadInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.zip,.rar" hidden onchange="handleFileSelect(this.files)"/>
+      </div>
+      <!-- Hoặc nhập link ngoài -->
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem">
+        <hr style="flex:1;border-color:var(--border)"/>
+        <span style="font-size:.8rem;color:var(--muted);font-weight:600">HOẶC NHẬP LINK</span>
+        <hr style="flex:1;border-color:var(--border)"/>
+      </div>
+      <input type="text" id="uploadLinkUrl" placeholder="https://drive.google.com/... hoặc link tài liệu"
+        style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem;margin-bottom:.75rem"/>
+      <!-- Danh sách file đã chọn -->
+      <div id="uploadFileList" style="display:flex;flex-direction:column;gap:.4rem;max-height:200px;overflow-y:auto;margin-bottom:.75rem"></div>
+      <label>Tên hiển thị</label>
+      <input type="text" id="uploadDisplayName" placeholder="Tên hiển thị (để trống = tên file gốc)"/>
+      <label>Thư mục</label>
+      <select id="uploadFolder" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem">
+        <option value="">📁 Không có thư mục</option>
+      </select>
+      <label>Tags <span style="color:var(--muted);font-weight:400">(phân cách bằng dấu phẩy)</span></label>
+      <input type="text" id="uploadTags" placeholder="VD: Đề thi, VSAT, Chương 3"/>
+      <label>Hiển thị cho lớp</label>
+      <select id="uploadClass" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem">
+        <option value="">🌐 Tất cả học sinh</option>
+        <option value="private">🔒 Chỉ admin (riêng tư)</option>
+      </select>
+      <div id="uploadProgress" style="display:none;margin:.75rem 0">
+        <div style="background:var(--bg);border-radius:20px;height:8px;overflow:hidden">
+          <div id="uploadProgressBar" style="height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);width:0%;transition:width .3s;border-radius:20px"></div>
+        </div>
+        <div id="uploadProgressText" style="font-size:.8rem;color:var(--muted);margin-top:.3rem;text-align:center">Đang tải lên...</div>
+      </div>
+      <div id="uploadError" class="error-msg"></div>
+      <div class="form-actions" style="margin-top:1rem">
+        <button class="btn-outline" onclick="closeUploadModal()">Hủy</button>
+        <button class="btn-primary" id="doUploadBtn" onclick="doUpload()">⬆ Tải lên</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Sửa file -->
+  <div class="modal-overlay" id="editFileModal">
+    <div class="modal" style="max-width:440px">
+      <h3 style="font-weight:800;margin-bottom:1rem">✏️ Sửa thông tin file</h3>
+      <input type="hidden" id="editFileId"/>
+      <label>Tên hiển thị *</label>
+      <input type="text" id="editFileName" placeholder="Tên hiển thị"/>
+      <label>Thư mục</label>
+      <select id="editFileFolder" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem">
+        <option value="">📁 Không có thư mục</option>
+      </select>
+      <label>Tags</label>
+      <input type="text" id="editFileTags" placeholder="Đề thi, VSAT, Chương 3"/>
+      <label>Hiển thị cho lớp</label>
+      <select id="editFileClass" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem">
+        <option value="">🌐 Tất cả học sinh</option>
+        <option value="private">🔒 Chỉ admin (riêng tư)</option>
+      </select>
+      <div id="editFileError" class="error-msg"></div>
+      <div class="form-actions" style="margin-top:1rem">
+        <button class="btn-outline" onclick="document.getElementById('editFileModal').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveFileEdit()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Xem lịch sử tải -->
+  <div class="modal-overlay" id="fileHistoryModal">
+    <div class="modal" style="max-width:560px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="font-weight:800" id="fileHistoryTitle">📊 Lịch sử tải xuống</h3>
+        <button onclick="document.getElementById('fileHistoryModal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+      </div>
+      <div id="fileHistoryContent"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Tạo link chia sẻ -->
+  <div class="modal-overlay" id="shareFileModal">
+    <div class="modal" style="max-width:440px">
+      <h3 style="font-weight:800;margin-bottom:1rem">🔗 Chia sẻ link</h3>
+      <input type="hidden" id="shareFileId"/>
+      <div id="shareLinkBox" style="background:var(--bg);border-radius:10px;padding:.75rem 1rem;font-size:.85rem;font-family:monospace;word-break:break-all;margin-bottom:.75rem;border:1.5px solid var(--border)"></div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn-primary" onclick="copyShareLink()" style="flex:1">📋 Sao chép link</button>
+        <button class="btn-outline" onclick="document.getElementById('shareFileModal').classList.remove('open')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Thêm slot lịch -->
   <div class="modal-overlay" id="addScheduleModal">
     <div class="modal" style="max-width:500px;padding:0;overflow:hidden;border-radius:22px">
 

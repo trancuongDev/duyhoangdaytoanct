@@ -5,352 +5,488 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chính sách bảo mật & Điều khoản sử dụng - DHDT LMS</title>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="style.css"/>
   <meta name="theme-color" content="#4f46e5"/>
   <style>
-    body { background: var(--bg, #f8fafc); color: var(--text, #1e293b); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-    .policy-wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
-    .policy-header { background: linear-gradient(135deg, #0a0820 0%, #1e1b4b 45%, #312e81 80%, #1e3a5f 100%); border-radius: 20px; padding: 2.25rem 1.75rem; color: #fff; margin-bottom: 2rem; position: relative; overflow: hidden; }
-    .policy-header::before { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; background: rgba(255,255,255,.05); border-radius: 50%; }
-    .policy-header::after  { content: ''; position: absolute; bottom: -60px; left: -20px; width: 220px; height: 220px; background: rgba(255,255,255,.03); border-radius: 50%; }
-    .policy-header h1 { font-size: 1.45rem; font-weight: 900; margin: 0 0 .3rem; letter-spacing: -.3px; position: relative; z-index: 1; }
-    .policy-header p  { font-size: .82rem; opacity: .65; margin: 0; position: relative; z-index: 1; }
-    .toc { background: #fff; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border: 1.5px solid #e2e8f0; }
-    .toc h3 { font-size: .88rem; font-weight: 800; color: #3730a3; margin: 0 0 .75rem; }
-    .toc ol { padding-left: 1.35rem; margin: 0; }
-    .toc li { font-size: .83rem; line-height: 2; color: #4f46e5; }
-    .toc a { color: #4f46e5; text-decoration: none; font-weight: 600; }
-    .toc a:hover { text-decoration: underline; }
-    .policy-section { background: #fff; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; border: 1.5px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.04); scroll-margin-top: 1rem; }
-    .policy-section h2 { font-size: 1rem; font-weight: 800; color: #3730a3; margin: 0 0 .85rem; display: flex; align-items: center; gap: .5rem; }
-    .policy-section p, .policy-section li { font-size: .88rem; line-height: 1.9; color: #374151; margin: 0 0 .5rem; }
-    .policy-section ul, .policy-section ol { padding-left: 1.35rem; margin: .35rem 0; }
-    .policy-section li { margin-bottom: .35rem; }
-    .highlight { background: #eef2ff; border-left: 4px solid #6366f1; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #3730a3; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
-    .success  { background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #065f46; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
-    .warn     { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #991b1b; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
-    .info     { background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 10px; padding: .75rem 1rem; font-size: .85rem; color: #0369a1; font-weight: 600; margin-top: .75rem; line-height: 1.7; }
-    .back-btn { display: inline-flex; align-items: center; gap: .5rem; text-decoration: none; color: #6366f1; font-weight: 700; font-size: .88rem; margin-bottom: 1.25rem; padding: .5rem .9rem; border: 1.5px solid #c7d2fe; border-radius: 10px; transition: all .2s; background: #fff; }
-    .back-btn:hover { background: #eef2ff; }
-    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .75rem; margin-top: .85rem; }
-    .feature-card { background: var(--bg, #f8fafc); border: 1.5px solid #e2e8f0; border-radius: 12px; padding: .85rem 1rem; }
-    .feature-card .fc-icon { font-size: 1.4rem; margin-bottom: .4rem; }
-    .feature-card .fc-title { font-size: .85rem; font-weight: 800; color: #1e293b; margin-bottom: .25rem; }
-    .feature-card .fc-desc  { font-size: .78rem; color: #64748b; line-height: 1.6; }
-    .stat-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .85rem; }
-    .stat-box { flex: 1; min-width: 120px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 12px; padding: .85rem 1rem; color: #fff; text-align: center; }
-    .stat-box .sb-num  { font-size: 1.5rem; font-weight: 900; }
-    .stat-box .sb-label{ font-size: .72rem; opacity: .8; margin-top: .2rem; }
-    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr 1fr; } .stat-row { gap: .6rem; } }
-    @media (prefers-color-scheme: dark) {
-      body { background: #0f172a; color: #e2e8f0; }
-      .toc, .policy-section { background: #1e293b; border-color: #334155; }
-      .toc li, .toc a { color: #a5b4fc; }
-      .policy-section p, .policy-section li { color: #cbd5e1; }
-      .feature-card { background: #0f172a; border-color: #334155; }
-      .feature-card .fc-title { color: #e2e8f0; }
-      .back-btn { background: #1e293b; border-color: #334155; color: #a5b4fc; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --primary:#6366f1;--primary-dark:#4f46e5;--primary-light:#eef2ff;
+      --green:#10b981;--red:#ef4444;--yellow:#f59e0b;--blue:#0ea5e9;--purple:#8b5cf6;
+      --text:#1e293b;--muted:#64748b;--border:#e2e8f0;--bg:#f8fafc;--card:#fff;
+      --shadow:0 4px 24px rgba(0,0,0,.08);
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.6}
+    /* SCROLL */
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:99px}
+    /* LAYOUT */
+    .pw{max-width:900px;margin:0 auto;padding:2rem 1.25rem 6rem}
+    /* BACK BTN */
+    .back{display:inline-flex;align-items:center;gap:.45rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.88rem;margin-bottom:1.5rem;padding:.5rem 1rem;border:1.5px solid #c7d2fe;border-radius:12px;background:var(--card);transition:all .2s;box-shadow:0 2px 8px rgba(99,102,241,.1)}
+    .back:hover{background:var(--primary-light);transform:translateX(-2px)}
+    /* HERO HEADER */
+    .ph{background:linear-gradient(135deg,#050314 0%,#0f0c29 30%,#1e1b4b 60%,#16213e 100%);border-radius:24px;padding:3rem 2.5rem 2.5rem;color:#fff;margin-bottom:2rem;position:relative;overflow:hidden}
+    .ph::before{content:'';position:absolute;top:-80px;right:-80px;width:320px;height:320px;background:radial-gradient(circle,rgba(99,102,241,.25) 0%,transparent 70%);border-radius:50%}
+    .ph::after{content:'';position:absolute;bottom:-100px;left:-60px;width:280px;height:280px;background:radial-gradient(circle,rgba(139,92,246,.15) 0%,transparent 70%);border-radius:50%}
+    .ph-badge{display:inline-flex;align-items:center;gap:.4rem;background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.4);border-radius:99px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;color:#a5b4fc;letter-spacing:.4px;text-transform:uppercase;margin-bottom:1rem;position:relative;z-index:1}
+    .ph h1{font-size:1.7rem;font-weight:900;margin:0 0 .5rem;letter-spacing:-.5px;position:relative;z-index:1;line-height:1.2}
+    .ph h1 span{background:linear-gradient(135deg,#a5b4fc,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ph .sub{font-size:.88rem;opacity:.65;margin:0 0 .3rem;position:relative;z-index:1}
+    .ph .warn-box{background:rgba(245,158,11,.15);border:1.5px solid rgba(245,158,11,.4);border-radius:12px;padding:.75rem 1.1rem;font-size:.83rem;color:#fde68a;font-weight:600;margin-top:1.1rem;position:relative;z-index:1;line-height:1.7;display:flex;align-items:flex-start;gap:.5rem}
+    .ph .ver{font-size:.73rem;opacity:.45;margin-top:.75rem;position:relative;z-index:1}
+    /* STAT BOXES */
+    .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-top:1.5rem;position:relative;z-index:1}
+    .stat-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.8rem .6rem;text-align:center;backdrop-filter:blur(8px);transition:background .2s}
+    .stat-box:hover{background:rgba(255,255,255,.12)}
+    .stat-box .sn{font-size:1rem;font-weight:900;color:#fff;letter-spacing:-.3px}
+    .stat-box .sl{font-size:.62rem;opacity:.55;margin-top:.2rem;color:#e0e7ff;font-weight:600}
+    /* TOC */
+    .toc{background:var(--card);border-radius:20px;padding:1.5rem;margin-bottom:1.75rem;border:1.5px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .toc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),var(--purple))}
+    .toc h3{font-size:.88rem;font-weight:800;color:var(--primary-dark);margin:0 0 1rem;display:flex;align-items:center;gap:.4rem;padding-top:.15rem}
+    .toc ol{padding-left:1.35rem;margin:0;columns:2;column-gap:1.5rem}
+    .toc li{font-size:.83rem;line-height:2.1;break-inside:avoid}
+    .toc a{color:var(--primary);text-decoration:none;font-weight:600;transition:color .15s}
+    .toc a:hover{color:var(--primary-dark);text-decoration:underline}
+    /* SECTIONS */
+    .sec{background:var(--card);border-radius:20px;padding:1.75rem;margin-bottom:1.25rem;border:1.5px solid var(--border);box-shadow:var(--shadow);scroll-margin-top:1rem;position:relative;overflow:hidden;transition:box-shadow .2s}
+    .sec:hover{box-shadow:0 8px 32px rgba(99,102,241,.1)}
+    .sec-accent{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px}
+    .sec h2{font-size:1.02rem;font-weight:800;color:var(--primary-dark);margin:0 0 1rem;display:flex;align-items:center;gap:.5rem;padding-left:.25rem}
+    .sec h2 .icon{font-size:1.15rem}
+    .sec p,.sec li{font-size:.88rem;line-height:1.9;color:#374151;margin:0 0 .45rem}
+    .sec ul,.sec ol{padding-left:1.35rem;margin:.4rem 0}
+    .sec li{margin-bottom:.35rem}
+    .sec li::marker{color:var(--primary)}
+    .sec strong{color:var(--text)}
+    /* NOTES */
+    .note{border-radius:12px;padding:.8rem 1.1rem;font-size:.85rem;font-weight:600;margin:.85rem 0;line-height:1.7;display:flex;align-items:flex-start;gap:.6rem}
+    .note .ni{font-size:1rem;flex-shrink:0;margin-top:.05rem}
+    .note.blue{background:#eef2ff;border:1.5px solid #c7d2fe;color:#3730a3}
+    .note.green{background:#f0fdf4;border:1.5px solid #bbf7d0;color:#065f46}
+    .note.red{background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b}
+    .note.yellow{background:#fefce8;border:1.5px solid #fde68a;color:#92400e}
+    .note.sky{background:#f0f9ff;border:1.5px solid #bae6fd;color:#0369a1}
+    .note.purple{background:#faf5ff;border:1.5px solid #e9d5ff;color:#5b21b6}
+    .note.dark{background:#1e1b4b;border:none;color:#e0e7ff}
+    /* LAW */
+    .law{background:linear-gradient(135deg,#0f0c29,#1e1b4b);border-radius:14px;padding:1.1rem 1.35rem;color:#fff;margin:.85rem 0;border:1px solid rgba(99,102,241,.3)}
+    .law .lt{font-size:.7rem;font-weight:800;letter-spacing:.6px;opacity:.55;text-transform:uppercase;margin-bottom:.4rem;display:flex;align-items:center;gap:.35rem}
+    .law .lb{font-size:.84rem;line-height:1.8;opacity:.88}
+    /* FEATURE GRID */
+    .fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:.75rem;margin:.9rem 0}
+    .fc{background:linear-gradient(135deg,var(--primary-light),#f5f3ff);border:1.5px solid #ddd6fe;border-radius:14px;padding:1rem 1.1rem;transition:transform .18s,box-shadow .18s}
+    .fc:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(99,102,241,.15)}
+    .fc .fi{font-size:1.6rem;margin-bottom:.4rem}
+    .fc .ft{font-size:.85rem;font-weight:800;color:var(--primary-dark);margin-bottom:.2rem}
+    .fc .fd{font-size:.78rem;color:var(--muted);line-height:1.6}
+    /* TABLE */
+    .vtable{width:100%;border-collapse:separate;border-spacing:0;font-size:.85rem;margin:.85rem 0;border-radius:14px;overflow:hidden;border:1.5px solid var(--border)}
+    .vtable thead tr{background:linear-gradient(135deg,var(--primary-light),#f5f3ff)}
+    .vtable th{padding:.65rem .9rem;text-align:left;font-weight:800;color:var(--primary-dark);border-bottom:2px solid #ddd6fe}
+    .vtable td{padding:.55rem .9rem;border-bottom:1px solid var(--border)}
+    .vtable tr:last-child td{border-bottom:none}
+    .vtable tr:nth-child(even) td{background:#fafafa}
+    .vtable tr:hover td{background:var(--primary-light)}
+    /* TAGS */
+    .tag{display:inline-flex;align-items:center;background:var(--primary-light);color:var(--primary-dark);border-radius:8px;padding:.12rem .55rem;font-size:.72rem;font-weight:700;margin:.1rem .15rem;border:1px solid #ddd6fe}
+    /* CONTACT */
+    .contact-row{display:flex;gap:.85rem;flex-wrap:wrap;margin:.85rem 0}
+    .contact-card{flex:1;min-width:175px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);border:1.5px solid #ddd6fe;border-radius:16px;padding:1.25rem 1rem;text-align:center;transition:transform .18s,box-shadow .18s}
+    .contact-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(99,102,241,.18)}
+    .contact-card .cc-icon{font-size:1.85rem;margin-bottom:.5rem}
+    .contact-card .cc-name{font-size:.92rem;font-weight:800;color:var(--primary-dark);margin-bottom:.12rem}
+    .contact-card .cc-role{font-size:.75rem;color:var(--primary);font-weight:600;margin-bottom:.6rem}
+    .contact-card a{display:inline-flex;align-items:center;gap:.3rem;background:var(--primary);color:#fff;border-radius:10px;padding:.42rem .9rem;font-size:.8rem;font-weight:700;text-decoration:none;transition:background .15s,transform .1s;box-shadow:0 2px 8px rgba(99,102,241,.35)}
+    .contact-card a:hover{background:var(--primary-dark);transform:scale(1.03)}
+    /* FOOTER */
+    .footer-note{text-align:center;font-size:.77rem;color:var(--muted);margin-top:2.5rem;padding-top:1.5rem;border-top:1.5px dashed var(--border);line-height:2}
+    .footer-home{display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;color:var(--primary);font-weight:700;padding:.5rem 1.1rem;border:1.5px solid #c7d2fe;border-radius:12px;background:var(--card);transition:all .2s;margin-top:.75rem;font-size:.88rem}
+    .footer-home:hover{background:var(--primary-light)}
+    /* RESPONSIVE */
+    @media(max-width:640px){
+      .pw{padding:1rem .85rem 5rem}
+      .ph{padding:2rem 1.4rem 2rem}
+      .ph h1{font-size:1.3rem}
+      .stat-row{grid-template-columns:repeat(2,1fr)}
+      .toc ol{columns:1}
+      .fg{grid-template-columns:1fr 1fr}
+      .contact-row{flex-direction:column}
+    }
+    /* DARK MODE */
+    @media(prefers-color-scheme:dark){
+      :root{--text:#e2e8f0;--muted:#94a3b8;--border:#334155;--bg:#0f172a;--card:#1e293b}
+      .toc,.sec,.fc,.contact-card{background:#1e293b;border-color:#334155}
+      .fc{background:linear-gradient(135deg,#1e1b4b,#1e293b)}
+      .contact-card{background:linear-gradient(135deg,#1e1b4b,#1e293b)}
+      .vtable tr:nth-child(even) td{background:#0f172a}
+      .vtable tr:hover td{background:#1e1b4b}
+      .vtable thead tr{background:linear-gradient(135deg,#1e1b4b,#1e293b)}
+      .note.blue{background:#1e1b4b;border-color:#4338ca;color:#a5b4fc}
+      .note.green{background:#064e3b;border-color:#059669;color:#a7f3d0}
+      .note.red{background:#7f1d1d;border-color:#dc2626;color:#fecaca}
+      .note.yellow{background:#78350f;border-color:#d97706;color:#fde68a}
+      .note.sky{background:#0c4a6e;border-color:#0284c7;color:#bae6fd}
+      .note.purple{background:#2e1065;border-color:#7c3aed;color:#ddd6fe}
+      .back,.footer-home{background:#1e293b;border-color:#334155;color:#a5b4fc}
+      .sec h2,.toc h3{color:#a5b4fc}
+      .toc a{color:#a5b4fc}
+      .tag{background:#1e1b4b;color:#a5b4fc;border-color:#4338ca}
     }
   </style>
 </head>
 <body>
-  <div class="policy-wrap">
+<div class="pw">
+  <a href="index.html" class="back">← Về trang chủ</a>
 
-    <a href="index.html" class="back-btn">🏠 Về trang chủ</a>
-
-    <!-- ===== HEADER ===== -->
-    <div class="policy-header">
-      <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:1rem;position:relative;z-index:1">
-        <div style="width:56px;height:56px;background:rgba(255,255,255,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0;border:1.5px solid rgba(255,255,255,.2)">🔒</div>
-        <div>
-          <h1>Chính sách bảo mật & Điều khoản sử dụng</h1>
-          <p>DHDT LMS — dành cho học viên đã đăng ký</p>
-        </div>
-      </div>
-      <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:.7rem 1.1rem;font-size:.82rem;color:rgba(255,255,255,.85);line-height:1.7;position:relative;z-index:1">
-        ⚠️ Vui lòng đọc kỹ trước khi sử dụng hệ thống. Việc đăng nhập đồng nghĩa bạn đã đọc, hiểu và <b>đồng ý toàn bộ</b> nội dung dưới đây.
-      </div>
-      <div style="font-size:.73rem;color:rgba(255,255,255,.4);margin-top:.65rem;position:relative;z-index:1">Cập nhật lần cuối: Tháng 6 năm 2026 &nbsp;•&nbsp; Phiên bản v1.4.9</div>
+  <!-- HERO -->
+  <div class="ph">
+    <div class="ph-badge">📋 Chính sách & Điều khoản</div>
+    <h1>Chính sách bảo mật &<br/><span>Điều khoản sử dụng</span></h1>
+    <p class="sub">DHDT LMS — dành cho học viên đã đăng ký</p>
+    <div class="warn-box">
+      <span>⚠️</span>
+      <span>Vui lòng đọc kỹ trước khi sử dụng hệ thống. Việc đăng nhập đồng nghĩa bạn đã đọc, hiểu và <strong>đồng ý toàn bộ</strong> nội dung dưới đây.</span>
     </div>
-
-    <!-- ===== MỤC LỤC ===== -->
-    <div class="toc">
-      <h3>📋 Mục lục</h3>
-      <ol>
-        <li><a href="#intro">Giới thiệu về DHDT LMS</a></li>
-        <li><a href="#collect">Thông tin thu thập</a></li>
-        <li><a href="#purpose">Mục đích sử dụng thông tin</a></li>
-        <li><a href="#terms">Điều khoản sử dụng</a></li>
-        <li><a href="#security">Bảo mật tài khoản</a></li>
-        <li><a href="#copyright">Nội dung & Bản quyền</a></li>
-        <li><a href="#monitor">Giám sát & Ghi nhận hoạt động</a></li>
-        <li><a href="#device">Chính sách thiết bị</a></li>
-        <li><a href="#expiry">Chính sách hết hạn tài khoản</a></li>
-        <li><a href="#conduct">Quy tắc ứng xử</a></li>
-        <li><a href="#data">Lưu trữ & Xóa dữ liệu</a></li>
-        <li><a href="#update">Thay đổi chính sách</a></li>
-        <li><a href="#contact">Liên hệ hỗ trợ</a></li>
-      </ol>
+    <p class="ver">Cập nhật lần cuối: Tháng 7 năm 2026 &nbsp;•&nbsp; Phiên bản v1.4.9</p>
+    <div class="stat-row">
+      <div class="stat-box"><div class="sn">100%</div><div class="sl">Nội dung độc quyền</div></div>
+      <div class="stat-box"><div class="sn">24/7</div><div class="sl">Giám sát bảo mật</div></div>
+      <div class="stat-box"><div class="sn">AES-256</div><div class="sl">Mã hóa nội dung</div></div>
+      <div class="stat-box"><div class="sn">SHA-256</div><div class="sl">Mã hóa mật khẩu</div></div>
     </div>
-
-    <!-- ===== 1. GIỚI THIỆU ===== -->
-    <div class="policy-section" id="intro">
-      <h2>🏫 1. Giới thiệu về DHDT LMS</h2>
-      <p><b>DHDT LMS (Learning Management System)</b> là hệ thống quản lý học tập trực tuyến được xây dựng riêng cho lớp học của <b>Duy Hoàng</b> — giáo viên dạy Toán luyện thi đại học và VSAT.</p>
-      <p>Hệ thống cung cấp môi trường học tập số an toàn, hiệu quả và được bảo mật chặt chẽ, bao gồm:</p>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="fc-icon">🎬</div>
-          <div class="fc-title">Video bài giảng HD</div>
-          <div class="fc-desc">Kho video chất lượng cao, được phân loại theo từng chuyên đề và lớp học.</div>
-        </div>
-        <div class="feature-card">
-          <div class="fc-icon">📄</div>
-          <div class="fc-title">Tài liệu chọn lọc</div>
-          <div class="fc-desc">Đề thi, bài tập, tóm tắt lý thuyết được biên soạn kỹ lưỡng bởi giáo viên.</div>
-        </div>
-        <div class="feature-card">
-          <div class="fc-icon">📅</div>
-          <div class="fc-title">Lịch học trực tuyến</div>
-          <div class="fc-desc">Cập nhật lịch học, buổi học live và các sự kiện học tập theo thời gian thực.</div>
-        </div>
-        <div class="feature-card">
-          <div class="fc-icon">📢</div>
-          <div class="fc-title">Thông báo từ giáo viên</div>
-          <div class="fc-desc">Nhận thông báo, nhắc nhở và hướng dẫn trực tiếp từ Duy Hoàng.</div>
-        </div>
-        <div class="feature-card">
-          <div class="fc-icon">🏆</div>
-          <div class="fc-title">Thi đua học tập</div>
-          <div class="fc-desc">Hệ thống điểm, streak, huy chương khuyến khích học viên học đều và chăm chỉ.</div>
-        </div>
-        <div class="feature-card">
-          <div class="fc-icon">🔒</div>
-          <div class="fc-title">Bảo mật cao</div>
-          <div class="fc-desc">Mã hóa nội dung, giám sát 24/7, chống sao chép và bảo vệ bản quyền tuyệt đối.</div>
-        </div>
-      </div>
-      <div class="stat-row">
-        <div class="stat-box" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
-          <div class="sb-num">100%</div>
-          <div class="sb-label">Nội dung độc quyền</div>
-        </div>
-        <div class="stat-box" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">
-          <div class="sb-num">24/7</div>
-          <div class="sb-label">Giám sát bảo mật</div>
-        </div>
-        <div class="stat-box" style="background:linear-gradient(135deg,#10b981,#059669)">
-          <div class="sb-num">AES-256</div>
-          <div class="sb-label">Mã hóa nội dung</div>
-        </div>
-        <div class="stat-box" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
-          <div class="sb-num">SHA-256</div>
-          <div class="sb-label">Mã hóa mật khẩu</div>
-        </div>
-      </div>
-      <div class="success" style="margin-top:1rem">✅ Hệ thống chỉ dành cho học viên đã đăng ký chính thức. Mọi truy cập trái phép đều bị ghi nhận và xử lý.</div>
-    </div>
-
-    <!-- ===== 2. THU THẬP THÔNG TIN ===== -->
-    <div class="policy-section" id="collect">
-      <h2>📋 2. Thông tin thu thập</h2>
-      <p>Hệ thống thu thập các thông tin sau khi học viên đăng ký tài khoản:</p>
-      <ul>
-        <li>Họ và tên đầy đủ</li>
-        <li>Địa chỉ Gmail (dùng làm tên đăng nhập)</li>
-        <li>Số điện thoại liên hệ</li>
-        <li>Tên lớp học đã đăng ký (VD: vsat 6)</li>
-        <li>Mã học viên (do hệ thống tự tạo)</li>
-        <li>Ngày hết hạn tài khoản (nếu có)</li>
-        <li>Ghi chú riêng từ giáo viên/trợ lý</li>
-      </ul>
-      <p>Hệ thống tự động ghi nhận thêm:</p>
-      <ul>
-        <li>Lịch sử đăng nhập — thời gian, địa điểm, thiết bị</li>
-        <li>Hoạt động xem bài học, video, tài liệu (thời điểm, tần suất)</li>
-        <li>Số lần nhập sai mật khẩu</li>
-        <li>Thông tin thiết bị truy cập (fingerprint thiết bị)</li>
-        <li>Các hành vi bất thường bị cảnh báo</li>
-        <li>Điểm thi đua và chuỗi ngày học liên tiếp (streak)</li>
-      </ul>
-      <div class="highlight">Tất cả dữ liệu được lưu trữ an toàn trên nền tảng <b>Supabase</b> với tiêu chuẩn bảo mật quốc tế. Không lưu trữ thông tin thanh toán hay tài chính cá nhân.</div>
-    </div>
-
-    <!-- ===== 3. MỤC ĐÍCH SỬ DỤNG ===== -->
-    <div class="policy-section" id="purpose">
-      <h2>🎯 3. Mục đích sử dụng thông tin</h2>
-      <p>Thông tin thu thập được sử dụng cho các mục đích sau:</p>
-      <ul>
-        <li>Cung cấp và quản lý tài khoản học tập cá nhân</li>
-        <li>Kiểm soát quyền truy cập nội dung đúng lớp đã đăng ký</li>
-        <li>Giám sát hoạt động học tập và phát hiện vi phạm bảo mật</li>
-        <li>Gửi thông báo học tập từ giáo viên đến học viên</li>
-        <li>Thống kê và cải thiện chất lượng nội dung dạy học</li>
-        <li>Xây dựng hệ thống thi đua, khuyến khích học tập</li>
-        <li>Hỗ trợ xử lý sự cố kỹ thuật và khôi phục tài khoản</li>
-      </ul>
-      <div class="highlight">🔵 Thông tin của bạn <b>KHÔNG</b> được chia sẻ, bán hoặc chuyển giao cho bên thứ ba vì bất kỳ mục đích thương mại nào.</div>
-    </div>
-
-    <!-- ===== 4. ĐIỀU KHOẢN SỬ DỤNG ===== -->
-    <div class="policy-section" id="terms">
-      <h2>📜 4. Điều khoản sử dụng</h2>
-      <p>Khi sử dụng hệ thống, bạn cam kết tuân thủ đầy đủ các điều khoản sau:</p>
-      <ul>
-        <li>Mỗi tài khoản chỉ được sử dụng bởi <b>01 người duy nhất</b> là chính chủ tài khoản đã đăng ký.</li>
-        <li>Mỗi tài khoản chỉ được đăng nhập trên <b>01 thiết bị</b> tại một thời điểm.</li>
-        <li><b>Nghiêm cấm</b> chia sẻ, cho mượn, bán hoặc chuyển nhượng tài khoản dưới bất kỳ hình thức nào.</li>
-        <li><b>Nghiêm cấm</b> chụp màn hình, quay màn hình, ghi âm nội dung bài giảng.</li>
-        <li><b>Nghiêm cấm</b> phát tán, đăng tải, chia sẻ nội dung học tập lên mạng xã hội hoặc các kênh khác.</li>
-        <li>Không sử dụng công cụ tự động, bot, script để truy cập hoặc tải nội dung từ hệ thống.</li>
-        <li>Không sử dụng VPN, proxy hoặc các công cụ che giấu danh tính khi truy cập hệ thống.</li>
-        <li>Không cố tình phá hoại, xâm nhập, khai thác lỗ hổng bảo mật của hệ thống.</li>
-        <li>Không mạo danh học viên khác hoặc giả mạo thông tin để chiếm quyền truy cập.</li>
-        <li>Cung cấp thông tin chính xác khi đăng ký và liên hệ hỗ trợ.</li>
-      </ul>
-      <div class="warn">⛔ Vi phạm bất kỳ điều khoản nào có thể dẫn đến tài khoản bị <b>khóa vĩnh viễn</b> mà không cần thông báo trước. Bằng chứng vi phạm được lưu trữ và có thể được xử lý theo quy định pháp luật.</div>
-    </div>
-
-    <!-- ===== 5. BẢO MẬT TÀI KHOẢN ===== -->
-    <div class="policy-section" id="security">
-      <h2>🔐 5. Bảo mật tài khoản</h2>
-      <ul>
-        <li>Mật khẩu được mã hóa bằng <b>SHA-256</b> trước khi lưu trữ — hệ thống không thể đọc mật khẩu gốc của bạn.</li>
-        <li>Link video và tài liệu được mã hóa bằng <b>AES-GCM</b> — không thể truy cập trực tiếp khi không đăng nhập.</li>
-        <li>Sau <b>5 lần nhập sai mật khẩu</b>, tài khoản sẽ tự động bị khóa để ngăn chặn tấn công brute-force.</li>
-        <li>Mọi lần đăng nhập từ thiết bị mới đều được ghi lại và thông báo đến giáo viên quản lý ngay lập tức.</li>
-        <li>Hệ thống giám sát 24/7 — các hành vi bất thường được phát hiện và cảnh báo tự động.</li>
-        <li>Bạn có trách nhiệm bảo mật thông tin đăng nhập và không tiết lộ cho bất kỳ ai kể cả trợ lý.</li>
-        <li>Khi phát hiện tài khoản bị truy cập trái phép, hãy liên hệ trợ lý ngay để được xử lý kịp thời.</li>
-      </ul>
-      <div class="info">💡 Hệ thống không hỗ trợ tự đặt lại mật khẩu. Mọi yêu cầu đổi mật khẩu phải thực hiện qua trợ lý chính thức và cung cấp đầy đủ thông tin xác minh.</div>
-    </div>
-
-    <!-- ===== 6. NỘI DUNG & BẢN QUYỀN ===== -->
-    <div class="policy-section" id="copyright">
-      <h2>©️ 6. Nội dung & Bản quyền</h2>
-      <p>Toàn bộ nội dung trên hệ thống bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và mã nguồn đều thuộc quyền sở hữu trí tuệ của <b>DHDT LMS</b> và được pháp luật bảo hộ.</p>
-      <ul>
-        <li>Học viên chỉ được phép xem nội dung phục vụ mục đích học tập cá nhân.</li>
-        <li>Mọi hành vi sao chép, chỉnh sửa, phân phối lại, tái bản đều bị nghiêm cấm.</li>
-        <li>Link nội dung được mã hóa và thay đổi định kỳ — không thể chia sẻ hoặc sử dụng lại.</li>
-        <li>Video không hỗ trợ tải xuống dưới bất kỳ hình thức nào.</li>
-        <li>Hành vi vi phạm bản quyền sẽ bị xử lý theo Luật Sở hữu trí tuệ Việt Nam.</li>
-      </ul>
-      <div class="warn">🎥 Hệ thống có khả năng phát hiện hành vi quay màn hình và chụp ảnh. Mọi vi phạm đều được ghi nhận bằng chứng và báo cáo đến giáo viên ngay lập tức.</div>
-    </div>
-
-    <!-- ===== 7. GIÁM SÁT ===== -->
-    <div class="policy-section" id="monitor">
-      <h2>👁 7. Giám sát & Ghi nhận hoạt động</h2>
-      <p>Để đảm bảo tính bảo mật và bản quyền nội dung, hệ thống thực hiện các hoạt động giám sát sau:</p>
-      <ul>
-        <li>Ghi lại toàn bộ lịch sử đăng nhập bao gồm thời gian, thiết bị và địa điểm truy cập.</li>
-        <li>Theo dõi hoạt động xem video và tài liệu (bài nào, lúc nào, bao lâu).</li>
-        <li>Phát hiện đăng nhập đồng thời trên nhiều thiết bị và cảnh báo ngay lập tức.</li>
-        <li>Ghi nhận khi người dùng chuyển tab, ẩn cửa sổ trình duyệt hoặc mất tập trung.</li>
-        <li>Cảnh báo khi phát hiện hành vi bất thường như mở DevTools, cố tải nội dung trái phép.</li>
-        <li>Thống kê điểm thi đua, chuỗi ngày học và thời gian học tập thực tế của từng học viên.</li>
-      </ul>
-      <div class="info">📊 Dữ liệu giám sát chỉ được sử dụng nội bộ để quản lý học tập và bảo vệ bản quyền. Không dùng để theo dõi cá nhân ngoài phạm vi học tập.</div>
-    </div>
-
-    <!-- ===== 8. CHÍNH SÁCH THIẾT BỊ ===== -->
-    <div class="policy-section" id="device">
-      <h2>📱 8. Chính sách thiết bị</h2>
-      <ul>
-        <li>Mỗi tài khoản chỉ được sử dụng trên <b>01 thiết bị chính</b> tại một thời điểm.</li>
-        <li>Khi đăng nhập từ thiết bị mới, thiết bị cũ sẽ bị đăng xuất và giáo viên được thông báo.</li>
-        <li>Thiết bị được nhận diện qua <b>fingerprint trình duyệt</b> — không thể thay đổi bằng cách xóa cookie.</li>
-        <li>Đăng nhập quá nhiều thiết bị trong thời gian ngắn sẽ kích hoạt cảnh báo bảo mật.</li>
-        <li>Nên sử dụng <b>máy tính hoặc tablet</b> để có trải nghiệm học tập tốt nhất.</li>
-        <li>Khi đổi thiết bị học tập, liên hệ trợ lý để được hỗ trợ chuyển đổi đúng quy trình.</li>
-      </ul>
-      <div class="highlight">💻 Khuyến nghị sử dụng trình duyệt Chrome hoặc Edge phiên bản mới nhất để đảm bảo trải nghiệm tốt nhất và ổn định nhất.</div>
-    </div>
-
-    <!-- ===== 9. CHÍNH SÁCH HẾT HẠN ===== -->
-    <div class="policy-section" id="expiry">
-      <h2>⏰ 9. Chính sách hết hạn tài khoản</h2>
-      <ul>
-        <li>Tài khoản có thể được cài đặt ngày hết hạn theo từng khóa học.</li>
-        <li>Hệ thống tự động gửi nhắc nhở khi tài khoản còn <b>7 ngày, 14 ngày hoặc 30 ngày</b> đến hạn.</li>
-        <li>Khi hết hạn, tài khoản sẽ bị khóa tự động và không thể đăng nhập.</li>
-      </ul>
-      <div class="warn">⛔ Tài khoản khi hết hạn, Admin <b>không hỗ trợ gia hạn</b> dưới bất kỳ hình thức nào.</div>
-      <div class="info">📅 Một số tài khoản đặc biệt không có ngày hết hạn (không giới hạn thời gian) tùy theo từng học viên.</div>
-    </div>
-
-    <!-- ===== 10. QUY TẮC ỨNG XỬ ===== -->
-    <div class="policy-section" id="conduct">
-      <h2>🤝 10. Quy tắc ứng xử</h2>
-      <p>Học viên khi sử dụng hệ thống cần tuân thủ các quy tắc ứng xử sau:</p>
-      <ul>
-        <li>Tôn trọng giáo viên, trợ lý và các học viên khác trong mọi tương tác.</li>
-        <li>Không đăng nội dung không phù hợp, phản cảm hoặc gây ảnh hưởng đến môi trường học tập.</li>
-        <li>Liên hệ hỗ trợ theo đúng quy trình — cung cấp đầy đủ thông tin khi yêu cầu hỗ trợ.</li>
-        <li>Không xúc phạm, đe dọa hoặc có hành vi tiêu cực với bộ phận quản lý hệ thống.</li>
-        <li>Báo cáo ngay khi phát hiện lỗi kỹ thuật hoặc hành vi vi phạm của người dùng khác.</li>
-        <li>Sử dụng hệ thống với mục đích học tập nghiêm túc, không lạm dụng tài nguyên.</li>
-      </ul>
-    </div>
-
-    <!-- ===== 11. LƯU TRỮ & XÓA DỮ LIỆU ===== -->
-    <div class="policy-section" id="data">
-      <h2>🗄️ 11. Lưu trữ & Xóa dữ liệu</h2>
-      <ul>
-        <li>Dữ liệu cá nhân được lưu trữ an toàn trên hệ thống <b>Supabase</b> với mã hóa đầu cuối.</li>
-        <li>Lịch sử đăng nhập và nhật ký hoạt động được lưu trữ trong tối đa <b>12 tháng</b>.</li>
-        <li>Khi tài khoản bị xóa, toàn bộ dữ liệu cá nhân sẽ bị xóa vĩnh viễn khỏi hệ thống.</li>
-        <li>Học viên có quyền yêu cầu xem, chỉnh sửa hoặc xóa thông tin cá nhân của mình.</li>
-        <li>Yêu cầu xóa dữ liệu cần được gửi qua trợ lý chính thức và được xử lý trong vòng 7 ngày.</li>
-        <li>Một số dữ liệu có thể được giữ lại theo yêu cầu pháp lý hoặc để giải quyết tranh chấp.</li>
-      </ul>
-      <div class="highlight">🔵 Chúng tôi cam kết bảo vệ quyền riêng tư của bạn theo quy định của Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân tại Việt Nam.</div>
-    </div>
-
-    <!-- ===== 12. THAY ĐỔI CHÍNH SÁCH ===== -->
-    <div class="policy-section" id="update">
-      <h2>🔄 12. Thay đổi chính sách</h2>
-      <p>Chúng tôi có quyền cập nhật, chỉnh sửa chính sách này bất cứ lúc nào mà không cần thông báo trước. Các thay đổi sẽ có hiệu lực ngay khi được đăng tải trên trang này.</p>
-      <p>Việc tiếp tục sử dụng hệ thống sau khi chính sách được cập nhật đồng nghĩa với việc bạn chấp nhận toàn bộ các thay đổi đó.</p>
-      <div class="info">💡 Khuyến nghị kiểm tra trang này định kỳ để cập nhật các thay đổi mới nhất về chính sách và điều khoản.</div>
-    </div>
-
-    <!-- ===== 13. LIÊN HỆ ===== -->
-    <div class="policy-section" id="contact">
-      <h2>📞 13. Liên hệ hỗ trợ</h2>
-      <p>Nếu có thắc mắc về chính sách bảo mật, điều khoản sử dụng hoặc cần hỗ trợ kỹ thuật, vui lòng liên hệ:</p>
-      <ul>
-        <li><b>Hỗ trợ kỹ thuật & Tài khoản:</b> Trợ Lý - Trần Cường hoặc Quốc Toàn</li>
-        <li><b>Thắc mắc chuyên môn & Học tập:</b> Duy Hoàng Giáo viên</li>
-        <li><b>Kênh liên hệ:</b> Nhắn tin Zalo theo đúng quy trình hướng dẫn</li>
-        <li><b>Thời gian hỗ trợ:</b> Thứ 2 – Chủ nhật, 7:00 – 22:00</li>
-      </ul>
-      <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap">
-        <a href="https://zalo.me/84869573231" target="_blank" style="display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;background:linear-gradient(135deg,#0068ff,#0052cc);color:#fff;font-size:.88rem;font-weight:700;padding:.65rem 1.25rem;border-radius:12px;box-shadow:0 4px 12px rgba(0,104,255,.3);transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-          <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="white" fill-opacity="0.2"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="900" fill="white" font-family="Arial,sans-serif">Z</text></svg>
-          Zalo Trần Cường
-        </a>
-        <a href="https://zalo.me/84969795482" target="_blank" style="display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;background:linear-gradient(135deg,#0068ff,#0052cc);color:#fff;font-size:.88rem;font-weight:700;padding:.65rem 1.25rem;border-radius:12px;box-shadow:0 4px 12px rgba(0,104,255,.3);transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-          <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="white" fill-opacity="0.2"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="900" fill="white" font-family="Arial,sans-serif">Z</text></svg>
-          Zalo Quốc Toàn
-        </a>
-        <a href="index.html" style="display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;background:#f1f5f9;color:#475569;font-size:.88rem;font-weight:700;padding:.65rem 1.25rem;border-radius:12px;border:1.5px solid #e2e8f0;transition:all .15s" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
-          🏠 Về trang chủ
-        </a>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div style="text-align:center;margin-top:2.5rem;padding-top:1.5rem;border-top:1.5px solid #e2e8f0">
-      <div style="font-size:.8rem;font-weight:700;color:#6366f1;margin-bottom:.35rem">DHDT LMS</div>
-      <div style="font-size:.72rem;color:#94a3b8;line-height:1.8">
-        © 2026 Bản quyền thuộc về DHDT LMS.<br/>
-        Thiết kế & Phát triển bởi <b>Tr.Cường08</b> & <b>Quốc Toàn</b> &nbsp;•&nbsp; Phiên bản v1.4.9
-      </div>
-    </div>
-
   </div>
 
+  <!-- TOC -->
+  <div class="toc">
+    <h3>📑 Mục lục</h3>
+    <ol>
+      <li><a href="#s1">Giới thiệu về DHDT LMS</a></li>
+      <li><a href="#s2">Thông tin thu thập</a></li>
+      <li><a href="#s3">Mục đích sử dụng thông tin</a></li>
+      <li><a href="#s4">Điều khoản sử dụng</a></li>
+      <li><a href="#s5">Bảo mật tài khoản</a></li>
+      <li><a href="#s6">Nội dung & Bản quyền</a></li>
+      <li><a href="#s7">Giám sát & Ghi nhận hoạt động</a></li>
+      <li><a href="#s8">Chính sách thiết bị</a></li>
+      <li><a href="#s9">Hết hạn tài khoản</a></li>
+      <li><a href="#s10">Quy định bài kiểm tra trực tuyến</a></li>
+      <li><a href="#s11">Quy tắc ứng xử</a></li>
+      <li><a href="#s12">Lưu trữ & Xóa dữ liệu</a></li>
+      <li><a href="#s13">Xử lý vi phạm</a></li>
+      <li><a href="#s14">Căn cứ pháp lý</a></li>
+      <li><a href="#s15">Trách nhiệm nhà phát triển</a></li>
+      <li><a href="#s16">Thay đổi chính sách</a></li>
+      <li><a href="#s17">Liên hệ hỗ trợ</a></li>
+    </ol>
+  </div>
+
+  <!-- S1 -->
+  <div class="sec" id="s1">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#6366f1,#8b5cf6)"></div>
+    <h2><span class="icon">🏫</span> 1. Giới thiệu về DHDT LMS</h2>
+    <p><strong>DHDT LMS</strong> (Learning Management System) là hệ thống quản lý học tập trực tuyến được xây dựng riêng cho lớp học của <strong>Duy Hoàng</strong> — giáo viên dạy Toán luyện thi đại học và VSAT.</p>
+    <div class="fg">
+      <div class="fc"><div class="fi">🎬</div><div class="ft">Video bài giảng HD</div><div class="fd">Kho video chất lượng cao, phân loại theo chuyên đề và lớp học.</div></div>
+      <div class="fc"><div class="fi">📄</div><div class="ft">Tài liệu chọn lọc</div><div class="fd">Đề thi, bài tập, tóm tắt lý thuyết được biên soạn kỹ lưỡng.</div></div>
+      <div class="fc"><div class="fi">📅</div><div class="ft">Lịch học trực tuyến</div><div class="fd">Cập nhật lịch học, buổi live và sự kiện học tập realtime.</div></div>
+      <div class="fc"><div class="fi">📢</div><div class="ft">Thông báo từ giáo viên</div><div class="fd">Nhận thông báo, nhắc nhở và hướng dẫn trực tiếp từ Duy Hoàng.</div></div>
+      <div class="fc"><div class="fi">📝</div><div class="ft">Kiểm tra online</div><div class="fd">Hệ thống thi trực tuyến có giám sát, xáo đề, chống gian lận.</div></div>
+      <div class="fc"><div class="fi">🔒</div><div class="ft">Bảo mật cao cấp</div><div class="fd">Mã hóa nội dung, giám sát 24/7, chống sao chép và bảo vệ bản quyền.</div></div>
+    </div>
+    <div class="note green"><span class="ni">✅</span><span>Hệ thống chỉ dành cho học viên đã đăng ký chính thức. Mọi truy cập trái phép đều bị ghi nhận và xử lý.</span></div>
+  </div>
+
+  <!-- S2 -->
+  <div class="sec" id="s2">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#0ea5e9,#6366f1)"></div>
+    <h2><span class="icon">🔍</span> 2. Thông tin thu thập</h2>
+    <p>Hệ thống thu thập các thông tin sau khi học viên đăng ký:</p>
+    <ul>
+      <li>Họ và tên đầy đủ; địa chỉ Gmail (dùng làm tên đăng nhập)</li>
+      <li>Số điện thoại liên hệ; tên lớp học đã đăng ký</li>
+      <li>Mã học viên (do hệ thống tự tạo); ngày hết hạn tài khoản (nếu có)</li>
+      <li>Ghi chú riêng từ giáo viên/trợ lý</li>
+    </ul>
+    <p>Hệ thống tự động ghi nhận thêm:</p>
+    <ul>
+      <li>Lịch sử đăng nhập — thời gian, địa điểm, thiết bị</li>
+      <li>Hoạt động xem video, tài liệu (thời điểm, tần suất)</li>
+      <li>Số lần nhập sai mật khẩu; fingerprint thiết bị</li>
+      <li>Vi phạm bảo mật, hành vi bất thường được cảnh báo</li>
+      <li>Điểm thi đua, chuỗi ngày học; kết quả bài kiểm tra</li>
+    </ul>
+    <div class="note sky"><span class="ni">ℹ️</span><span>Tất cả dữ liệu được lưu trữ an toàn trên <strong>Supabase</strong> với tiêu chuẩn bảo mật quốc tế. <strong>Không</strong> lưu trữ thông tin thanh toán hay tài chính cá nhân.</span></div>
+  </div>
+
+  <!-- S3 -->
+  <div class="sec" id="s3">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#10b981,#0ea5e9)"></div>
+    <h2><span class="icon">🎯</span> 3. Mục đích sử dụng thông tin</h2>
+    <ul>
+      <li>Cung cấp và quản lý tài khoản học tập cá nhân</li>
+      <li>Kiểm soát quyền truy cập nội dung đúng lớp đã đăng ký</li>
+      <li>Giám sát hoạt động học tập và phát hiện vi phạm bảo mật</li>
+      <li>Gửi thông báo học tập từ giáo viên đến học viên</li>
+      <li>Thống kê, cải thiện chất lượng nội dung dạy học</li>
+      <li>Xây dựng hệ thống thi đua, khuyến khích học tập</li>
+      <li>Hỗ trợ xử lý sự cố kỹ thuật và khôi phục tài khoản</li>
+    </ul>
+    <div class="note blue"><span class="ni">🔵</span><span>Thông tin của bạn <strong>KHÔNG được</strong> chia sẻ, bán hoặc chuyển giao cho bên thứ ba vì bất kỳ mục đích thương mại nào.</span></div>
+  </div>
+
+  <!-- S4 -->
+  <div class="sec" id="s4">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#f59e0b,#ef4444)"></div>
+    <h2><span class="icon">📜</span> 4. Điều khoản sử dụng</h2>
+    <p>Khi sử dụng hệ thống, bạn cam kết tuân thủ đầy đủ:</p>
+    <ul>
+      <li>Mỗi tài khoản chỉ được sử dụng bởi <strong>01 người duy nhất</strong> là chính chủ đã đăng ký.</li>
+      <li>Mỗi tài khoản chỉ được đăng nhập trên <strong>01 thiết bị</strong> tại một thời điểm.</li>
+      <li>Nghiêm cấm chia sẻ, cho mượn, bán hoặc chuyển nhượng tài khoản.</li>
+      <li>Nghiêm cấm chụp màn hình, quay màn hình, ghi âm nội dung bài giảng.</li>
+      <li>Nghiêm cấm phát tán, đăng tải, chia sẻ nội dung học tập lên mạng xã hội.</li>
+      <li>Không sử dụng công cụ tự động, bot, script để truy cập hoặc tải nội dung.</li>
+      <li>Không sử dụng VPN, proxy hoặc các công cụ che giấu danh tính.</li>
+      <li>Không cố tình phá hoại, xâm nhập, khai thác lỗ hổng bảo mật.</li>
+      <li>Không mạo danh học viên khác hoặc giả mạo thông tin để chiếm quyền truy cập.</li>
+    </ul>
+    <div class="note red"><span class="ni">⛔</span><span>Vi phạm bất kỳ điều khoản nào có thể dẫn đến tài khoản bị <strong>khóa vĩnh viễn</strong> mà không cần thông báo trước. Bằng chứng vi phạm được lưu trữ và có thể xử lý theo pháp luật.</span></div>
+  </div>
+
+  <!-- S5 -->
+  <div class="sec" id="s5">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#6366f1,#0ea5e9)"></div>
+    <h2><span class="icon">🔐</span> 5. Bảo mật tài khoản</h2>
+    <ul>
+      <li>Mật khẩu được mã hóa bằng <strong>SHA-256</strong> — hệ thống không thể đọc mật khẩu gốc của bạn.</li>
+      <li>Link video và tài liệu được mã hóa bằng <strong>AES-GCM</strong> — không thể truy cập trực tiếp khi chưa đăng nhập.</li>
+      <li>Sau <strong>5 lần nhập sai mật khẩu</strong>, tài khoản tự động bị khóa để ngăn tấn công brute-force.</li>
+      <li>Mọi lần đăng nhập từ thiết bị mới đều được ghi lại và thông báo đến giáo viên ngay lập tức.</li>
+      <li>Hệ thống giám sát 24/7 — các hành vi bất thường được phát hiện và cảnh báo tự động.</li>
+      <li>Bạn có trách nhiệm bảo mật thông tin đăng nhập và không tiết lộ cho bất kỳ ai.</li>
+      <li>Khi phát hiện tài khoản bị truy cập trái phép, liên hệ trợ lý ngay để xử lý kịp thời.</li>
+    </ul>
+    <div class="note yellow"><span class="ni">💡</span><span>Hệ thống <strong>không hỗ trợ tự đặt lại mật khẩu</strong>. Mọi yêu cầu đổi mật khẩu phải thực hiện qua trợ lý chính thức với đầy đủ thông tin xác minh.</span></div>
+    <div class="law"><div class="lt">⚖️ Luật An ninh mạng 2018 — Điều 8</div><div class="lb">Nghiêm cấm hành vi chiếm đoạt tài khoản, xâm nhập trái phép vào hệ thống thông tin. Vi phạm có thể bị xử lý hình sự theo Điều 289, 290 BLHS 2015.</div></div>
+  </div>
+
+  <!-- S6 -->
+  <div class="sec" id="s6">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#8b5cf6,#ec4899)"></div>
+    <h2><span class="icon">©️</span> 6. Nội dung & Bản quyền</h2>
+    <p>Toàn bộ nội dung trên hệ thống — video bài giảng, tài liệu, đề thi, giao diện và mã nguồn — đều thuộc <strong>quyền sở hữu trí tuệ của DHDT LMS</strong> và được pháp luật bảo hộ.</p>
+    <ul>
+      <li>Học viên chỉ được phép xem nội dung phục vụ mục đích học tập cá nhân.</li>
+      <li>Mọi hành vi sao chép, chỉnh sửa, phân phối lại, tái bản đều bị nghiêm cấm.</li>
+      <li>Link nội dung được mã hóa và thay đổi định kỳ — không thể chia sẻ hoặc sử dụng lại.</li>
+      <li>Video không hỗ trợ tải xuống dưới bất kỳ hình thức nào.</li>
+      <li>Hành vi vi phạm bản quyền sẽ bị xử lý theo Luật Sở hữu trí tuệ Việt Nam.</li>
+    </ul>
+    <div class="note red"><span class="ni">🎥</span><span>Hệ thống có khả năng <strong>phát hiện hành vi quay màn hình và chụp ảnh</strong>. Mọi vi phạm đều được ghi nhận bằng chứng và báo cáo đến giáo viên ngay lập tức.</span></div>
+    <div class="law"><div class="lt">⚖️ BLHS 2015 — Điều 225 &amp; Luật SHTT 2005 sửa đổi 2022</div><div class="lb">Người nào vì mục đích thương mại mà xâm phạm quyền tác giả đang được bảo hộ có thể bị phạt tiền từ 50 triệu đến 1 tỷ đồng hoặc phạt cải tạo không giam giữ đến 3 năm.</div></div>
+  </div>
+
+  <!-- S7 -->
+  <div class="sec" id="s7">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#0ea5e9,#10b981)"></div>
+    <h2><span class="icon">👁</span> 7. Giám sát & Ghi nhận hoạt động</h2>
+    <p>Để bảo mật hệ thống và bảo vệ bản quyền nội dung, hệ thống thực hiện:</p>
+    <ul>
+      <li>Ghi lại toàn bộ lịch sử đăng nhập: thời gian, thiết bị và địa điểm truy cập.</li>
+      <li>Theo dõi hoạt động xem video và tài liệu (bài nào, lúc nào, bao lâu).</li>
+      <li>Phát hiện đăng nhập đồng thời trên nhiều thiết bị và cảnh báo ngay lập tức.</li>
+      <li>Ghi nhận khi người dùng chuyển tab, ẩn cửa sổ trình duyệt hoặc mất tập trung.</li>
+      <li>Cảnh báo khi phát hiện hành vi bất thường như mở DevTools, cố tải nội dung trái phép.</li>
+      <li>Thống kê điểm thi đua, chuỗi ngày học và thời gian học tập của từng học viên.</li>
+      <li>Ghi lại toàn bộ hành vi trong kỳ thi: số câu làm, thời gian, vi phạm chuyển tab.</li>
+    </ul>
+    <div class="note sky"><span class="ni">📊</span><span>Dữ liệu giám sát chỉ được sử dụng nội bộ để quản lý học tập và bảo vệ bản quyền. Không dùng để theo dõi cá nhân ngoài phạm vi học tập.</span></div>
+  </div>
+
+  <!-- S8 -->
+  <div class="sec" id="s8">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#f59e0b,#10b981)"></div>
+    <h2><span class="icon">📱</span> 8. Chính sách thiết bị</h2>
+    <ul>
+      <li>Mỗi tài khoản chỉ được sử dụng trên <strong>01 thiết bị chính</strong> tại một thời điểm.</li>
+      <li>Khi đăng nhập từ thiết bị mới, thiết bị cũ sẽ bị đăng xuất và giáo viên được thông báo.</li>
+      <li>Thiết bị được nhận diện qua fingerprint trình duyệt — không thể thay đổi bằng cách xóa cookie.</li>
+      <li>Đăng nhập quá nhiều thiết bị trong thời gian ngắn sẽ kích hoạt cảnh báo bảo mật.</li>
+      <li>Nên sử dụng máy tính hoặc tablet để có trải nghiệm học tập tốt nhất.</li>
+      <li>Khi đổi thiết bị học tập, liên hệ trợ lý để được hỗ trợ chuyển đổi đúng quy trình.</li>
+    </ul>
+    <div class="note blue"><span class="ni">💻</span><span>Khuyến nghị sử dụng <strong>Chrome</strong> hoặc <strong>Edge</strong> phiên bản mới nhất để đảm bảo trải nghiệm tốt nhất và ổn định nhất.</span></div>
+  </div>
+
+  <!-- S9 -->
+  <div class="sec" id="s9">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#ef4444,#f59e0b)"></div>
+    <h2><span class="icon">⏰</span> 9. Chính sách hết hạn tài khoản</h2>
+    <ul>
+      <li>Tài khoản có thể được cài đặt ngày hết hạn theo từng khóa học.</li>
+      <li>Hệ thống tự động gửi nhắc nhở khi tài khoản còn <strong>7 ngày, 14 ngày</strong> hoặc <strong>30 ngày</strong> đến hạn.</li>
+      <li>Khi hết hạn, tài khoản sẽ bị khóa tự động và không thể đăng nhập.</li>
+      <li>Một số tài khoản đặc biệt không có ngày hết hạn tùy theo từng học viên.</li>
+    </ul>
+    <div class="note red"><span class="ni">⛔</span><span>Tài khoản khi hết hạn, <strong>Admin không hỗ trợ gia hạn</strong> dưới bất kỳ hình thức nào. Vui lòng liên hệ trợ lý để được tư vấn trước khi hết hạn.</span></div>
+  </div>
+
+  <!-- S10 -->
+  <div class="sec" id="s10">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#6366f1,#ef4444)"></div>
+    <h2><span class="icon">📝</span> 10. Quy định bài kiểm tra trực tuyến</h2>
+    <p>Khi tham gia làm bài kiểm tra trực tuyến, học viên phải tuân thủ nghiêm ngặt:</p>
+    <ul>
+      <li><strong>Nghiêm cấm chuyển tab</strong> hoặc mở cửa sổ khác — hệ thống ghi lại tự động.</li>
+      <li>Vi phạm <strong>3 lần</strong> chuyển tab → bài tự động nộp ngay lập tức.</li>
+      <li>Không sử dụng thiết bị hỗ trợ khác (điện thoại, tablet) đồng thời.</li>
+      <li>Không tra cứu internet, tài liệu hoặc nhờ người khác giải hộ.</li>
+      <li>Kết quả bài làm là kết quả thực, không thể khiếu nại sau khi nộp.</li>
+      <li>Thứ tự câu hỏi và đáp án được <strong>xáo trộn riêng</strong> cho từng học sinh.</li>
+    </ul>
+    <p><strong>Quyền của hệ thống trong kỳ thi:</strong></p>
+    <ul>
+      <li>Giáo viên có thể <strong>buộc nộp bài</strong> bất kỳ lúc nào nếu phát hiện vi phạm.</li>
+      <li>Khi bị buộc dừng, học viên <strong>không thể làm lại</strong> dù bài làm bị xóa (trừ khi admin mở lại).</li>
+      <li>Bài thi có thể được hẹn giờ mở — học viên chỉ làm được sau thời điểm được chỉ định.</li>
+    </ul>
+    <div class="note red"><span class="ni">🚫</span><span>Sao chép đề thi, chia sẻ câu hỏi lên mạng xã hội hoặc cho học sinh khác là <strong>vi phạm bản quyền</strong> và có thể bị xử lý theo pháp luật.</span></div>
+    <div class="law"><div class="lt">⚖️ Luật SHTT 2005 sửa đổi 2022 — Điều 28</div><div class="lb">Hành vi sao chép, phân phối, truyền đạt tác phẩm đến công chúng mà không được phép của chủ sở hữu quyền tác giả có thể bị xử phạt hành chính hoặc truy cứu trách nhiệm hình sự.</div></div>
+  </div>
+
+  <!-- S11 -->
+  <div class="sec" id="s11">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#10b981,#6366f1)"></div>
+    <h2><span class="icon">🤝</span> 11. Quy tắc ứng xử</h2>
+    <ul>
+      <li>Tôn trọng giáo viên, trợ lý và các học viên khác trong mọi tương tác.</li>
+      <li>Không đăng nội dung không phù hợp, phản cảm hoặc ảnh hưởng đến môi trường học tập.</li>
+      <li>Liên hệ hỗ trợ theo đúng quy trình — cung cấp đầy đủ thông tin khi yêu cầu hỗ trợ.</li>
+      <li>Không xúc phạm, đe dọa hoặc có hành vi tiêu cực với bộ phận quản lý hệ thống.</li>
+      <li>Báo cáo ngay khi phát hiện lỗi kỹ thuật hoặc hành vi vi phạm của người dùng khác.</li>
+      <li>Sử dụng hệ thống với mục đích học tập nghiêm túc, không lạm dụng tài nguyên.</li>
+    </ul>
+  </div>
+
+  <!-- S12 -->
+  <div class="sec" id="s12">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#0ea5e9,#8b5cf6)"></div>
+    <h2><span class="icon">🗄️</span> 12. Lưu trữ & Xóa dữ liệu</h2>
+    <ul>
+      <li>Dữ liệu cá nhân được lưu trữ an toàn trên hệ thống Supabase với mã hóa đầu cuối.</li>
+      <li>Lịch sử đăng nhập và nhật ký hoạt động được lưu trữ trong tối đa <strong>12 tháng</strong>.</li>
+      <li>Khi tài khoản bị xóa, toàn bộ dữ liệu cá nhân sẽ bị xóa vĩnh viễn khỏi hệ thống.</li>
+      <li>Học viên có quyền yêu cầu xem, chỉnh sửa hoặc xóa thông tin cá nhân của mình.</li>
+      <li>Yêu cầu xóa dữ liệu cần gửi qua trợ lý chính thức và được xử lý trong vòng <strong>7 ngày</strong>.</li>
+      <li>Một số dữ liệu có thể được giữ lại theo yêu cầu pháp lý hoặc để giải quyết tranh chấp.</li>
+    </ul>
+    <div class="note blue"><span class="ni">🔵</span><span>Chúng tôi cam kết bảo vệ quyền riêng tư của bạn theo quy định của <strong>Nghị định 13/2023/NĐ-CP</strong> về bảo vệ dữ liệu cá nhân tại Việt Nam.</span></div>
+  </div>
+
+  <!-- S13 -->
+  <div class="sec" id="s13">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#ef4444,#8b5cf6)"></div>
+    <h2><span class="icon">⚡</span> 13. Xử lý vi phạm</h2>
+    <table class="vtable">
+      <thead><tr><th>Vi phạm</th><th>Hình thức xử lý</th></tr></thead>
+      <tbody>
+        <tr><td>Chuyển tab 1–2 lần trong khi thi</td><td>Cảnh báo, ghi nhật ký</td></tr>
+        <tr><td>Chuyển tab lần 3</td><td>Tự động nộp bài ngay lập tức</td></tr>
+        <tr><td>Gian lận trong bài kiểm tra</td><td>Hủy điểm, cảnh báo phụ huynh</td></tr>
+        <tr><td>Cho mượn / chia sẻ tài khoản</td><td>Khóa tài khoản, yêu cầu xác minh lại danh tính</td></tr>
+        <tr><td>Chia sẻ tài liệu, đề thi ra ngoài</td><td>Khóa vĩnh viễn, xem xét xử lý pháp lý</td></tr>
+        <tr><td>Tấn công, xâm nhập hệ thống</td><td>Báo cáo cơ quan chức năng theo Luật An ninh mạng</td></tr>
+      </tbody>
+    </table>
+    <div class="note red"><span class="ni">🚨</span><span>Hệ thống có thể buộc nộp bài hoặc khóa tài khoản ngay lập tức mà không cần thông báo trước nếu phát hiện vi phạm nghiêm trọng.</span></div>
+  </div>
+
+  <!-- S14 -->
+  <div class="sec" id="s14">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#6366f1,#10b981)"></div>
+    <h2><span class="icon">⚖️</span> 14. Căn cứ pháp lý</h2>
+    <p>Hệ thống DHDT LMS hoạt động theo các quy định pháp luật Việt Nam hiện hành:</p>
+    <ul>
+      <li><span class="tag">Giáo dục</span> <strong>Luật Giáo dục 2019</strong> (Luật số 43/2019/QH14) — Điều 69</li>
+      <li><span class="tag">Dữ liệu</span> <strong>Nghị định 13/2023/NĐ-CP</strong> về Bảo vệ dữ liệu cá nhân — Điều 17, 38</li>
+      <li><span class="tag">An ninh mạng</span> <strong>Luật An ninh mạng 2018</strong> (Luật số 24/2018/QH14) — Điều 8</li>
+      <li><span class="tag">Bản quyền</span> <strong>Luật Sở hữu trí tuệ 2005</strong> sửa đổi 2009, 2019, 2022 — Điều 28</li>
+      <li><span class="tag">Hình sự</span> <strong>BLHS 2015</strong> sửa đổi 2017 — Điều 225, 285, 289, 290</li>
+      <li><span class="tag">CNTT</span> <strong>Luật Giao dịch điện tử 2023</strong> (Luật số 20/2023/QH15)</li>
+      <li><span class="tag">Internet</span> <strong>Nghị định 72/2013/NĐ-CP</strong> về Quản lý, cung cấp, sử dụng dịch vụ internet</li>
+    </ul>
+    <div class="note green"><span class="ni">✅</span><span>Mọi tranh chấp phát sinh từ việc sử dụng hệ thống sẽ được giải quyết theo pháp luật Việt Nam tại tòa án có thẩm quyền.</span></div>
+  </div>
+
+  <!-- S15 -->
+  <div class="sec" id="s15">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#8b5cf6,#6366f1)"></div>
+    <h2><span class="icon">👨‍💻</span> 15. Trách nhiệm nhà phát triển</h2>
+    <p><em>Mục này dành riêng cho đội ngũ phát triển và bảo trì hệ thống DHDT LMS.</em></p>
+    <p><strong>Bắt buộc tuân thủ khi phát triển:</strong></p>
+    <ul>
+      <li>Mã hóa toàn bộ mật khẩu — tuyệt đối <strong>không</strong> lưu mật khẩu dạng plain text.</li>
+      <li>Áp dụng HTTPS cho mọi kết nối — không truyền dữ liệu nhạy cảm qua HTTP.</li>
+      <li>Không log hoặc in ra console các thông tin nhạy cảm (token, password, CCCD...).</li>
+      <li>Xóa dữ liệu test, tài khoản demo trước khi deploy lên production.</li>
+      <li>Sao lưu dữ liệu định kỳ tối thiểu 7 ngày/lần.</li>
+      <li>Thông báo ngay cho quản trị viên khi phát hiện lỗ hổng bảo mật.</li>
+      <li>Không tự ý thay đổi cấu trúc DB mà không có migration script được phê duyệt.</li>
+      <li>Không deploy vào giờ cao điểm học (17:00–22:00).</li>
+    </ul>
+    <div class="note yellow"><span class="ni">⚠️</span><span>Nhà phát triển chịu trách nhiệm pháp lý nếu cố ý tạo backdoor, rò rỉ dữ liệu học sinh hoặc xâm phạm quyền riêng tư của người dùng.</span></div>
+    <div class="law"><div class="lt">⚖️ Nghị định 13/2023/NĐ-CP — Điều 38 (Trách nhiệm bên xử lý dữ liệu)</div><div class="lb">Bên xử lý dữ liệu cá nhân phải thực hiện các biện pháp kỹ thuật cần thiết để bảo vệ dữ liệu cá nhân. Chịu trách nhiệm bồi thường thiệt hại khi để xảy ra vi phạm bảo vệ dữ liệu cá nhân.</div></div>
+  </div>
+
+  <!-- S16 -->
+  <div class="sec" id="s16">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#f59e0b,#6366f1)"></div>
+    <h2><span class="icon">🔄</span> 16. Thay đổi chính sách</h2>
+    <p>Chúng tôi có quyền cập nhật, chỉnh sửa chính sách này bất cứ lúc nào mà không cần thông báo trước. Các thay đổi sẽ có hiệu lực ngay khi được đăng tải trên trang này.</p>
+    <p>Việc tiếp tục sử dụng hệ thống sau khi chính sách được cập nhật đồng nghĩa với việc bạn chấp nhận toàn bộ các thay đổi đó.</p>
+    <div class="note purple"><span class="ni">💡</span><span>Khuyến nghị kiểm tra trang này định kỳ để cập nhật các thay đổi mới nhất về chính sách và điều khoản.</span></div>
+  </div>
+
+  <!-- S17 -->
+  <div class="sec" id="s17">
+    <div class="sec-accent" style="background:linear-gradient(180deg,#10b981,#0ea5e9)"></div>
+    <h2><span class="icon">📞</span> 17. Liên hệ hỗ trợ</h2>
+    <p>Nếu có thắc mắc về chính sách bảo mật, điều khoản sử dụng hoặc cần hỗ trợ kỹ thuật, vui lòng liên hệ:</p>
+    <div class="contact-row">
+      <div class="contact-card">
+        <div class="cc-icon">🛠️💻</div>
+        <div class="cc-name">Trần Cường</div>
+        <div class="cc-role">Hỗ trợ kỹ thuật, Tài Khoản, Lịch học, nội dung wed, Bản quyền hệ thống DHDT LMS và Bản quyền nội dung của wed này.</div>
+        <a href="#">Z Zalo Trần Cường</a>
+      </div>
+      <div class="contact-card">
+        <div class="cc-icon">💻</div>
+        <div class="cc-name">Quốc Toàn</div>
+        <div class="cc-role">Hỗ trợ kỹ thuật Video </div>
+        <a href="#">Z Zalo Quốc Toàn</a>
+      </div>
+      <div class="contact-card">
+        <div class="cc-icon">👨‍🏫</div>
+        <div class="cc-name">Duy Hoàng</div>
+        <div class="cc-role">Thắc mắc chuyên môn & Học tập</div>
+        <a href="#">Z Zalo Duy Hoàng</a>
+      </div>
+    </div>
+    <div class="note green"><span class="ni">🕐</span><span>Thời gian hỗ trợ: <strong>Thứ 2 – Chủ nhật, 7:00 – 22:00</strong> · Kênh liên hệ: Nhắn tin Zalo theo đúng quy trình hướng dẫn.</span></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-note">
+    <div style="font-size:2rem;margin-bottom:.5rem">🏠</div>
+    <div><strong>DHDT LMS</strong> — Hệ thống học tập & kiểm tra trực tuyến</div>
+    <div>© 2026 Bản quyền thuộc về DHDT LMS</div>
+    <div>Thiết kế & Phát triển bởi <strong>Tr.Cường08</strong> & <strong>Quốc Toàn</strong></div>
+    <div style="margin-top:.35rem;font-size:.7rem;opacity:.6">Phiên bản v1.4.9 · Cập nhật tháng 7/2026 · Áp dụng theo pháp luật Việt Nam</div>
+    <div style="margin-top:1rem">
+      <a href="index.html" class="footer-home">🏠 Về trang chủ</a>
+    </div>
+  </div>
+
+</div>
 </body>
+</html>
