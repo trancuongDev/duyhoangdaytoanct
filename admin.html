@@ -16,6 +16,8 @@
   <meta name="apple-mobile-web-app-title" content="DHDTCT LMS"/>
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- EmailJS để gửi email tự động -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -23,6 +25,9 @@
     .sortable-ghost { opacity: .4; background: var(--primary-light) !important; border: 2px dashed var(--primary) !important; }
     .sortable-chosen { box-shadow: 0 8px 24px rgba(99,102,241,.3) !important; }
     .drag-handle:active { cursor: grabbing; }
+    /* Dropdown công cụ */
+    #toolsDropdownMenu button:hover { background: var(--bg) !important; }
+    #toolsDropdownBtn:hover { border-color: var(--primary); color: var(--primary); }
   </style>
 </head>
 <body class="dashboard-page">
@@ -294,15 +299,58 @@
 
     <!-- PAGE: DANH SÁCH HỌC SINH -->
     <section class="page" id="pageStudents">
-      <div class="page-header">
-        <h1 class="page-title">Danh sách học sinh</h1>
-        <div style="display:flex;gap:.5rem">
-          <button class="btn-outline" id="genMissingCodesBtn" title="Tự động sinh mã cho học viên chưa có">🔧 Sinh mã còn thiếu</button>
-          <button class="btn-outline" id="syncExpiryBtn" title="Đồng bộ ngày hết hạn từ lớp" data-teacher-only>📅 Đồng bộ hết hạn</button>
-          <button class="btn-outline" id="syncClassNameBtn" title="Đồng bộ tên lớp từ student_classes vào cột Lớp" data-teacher-only>🔄 Đồng bộ lớp</button>
-          <button class="btn-outline" id="syncGmailBtn" title="Đồng bộ danh sách Gmail từ file Excel/CSV vào lớp phụ" data-teacher-only onclick="openGmailSyncModal()" style="background:#eef2ff;border-color:#c7d2fe;color:#4338ca;font-weight:700">📥 Đồng bộ Gmail → Lớp</button>
-          <button class="btn-outline" id="exportStudentsBtn">⬇ Xuất Excel</button>
-          <button class="btn-primary" id="openAddStudentBtn">➕ Thêm học sinh</button>
+      <div class="page-header" style="flex-wrap:wrap;gap:.75rem">
+        <h1 class="page-title" style="margin:0">Danh sách học sinh</h1>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+
+          <!-- Nhóm công cụ (dropdown gộp) -->
+          <div style="position:relative" id="toolsDropdownWrap">
+            <button class="btn-outline" id="toolsDropdownBtn"
+              style="display:flex;align-items:center;gap:.4rem;font-size:.83rem"
+              onclick="var m=document.getElementById('toolsDropdownMenu');m.style.display=m.style.display==='block'?'none':'block'">
+              🔧 Công cụ <span style="font-size:.65rem;opacity:.6">▼</span>
+            </button>
+            <div id="toolsDropdownMenu"
+              style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;min-width:210px;overflow:hidden">
+              <button class="btn-outline" id="genMissingCodesBtn"
+                title="Tự động sinh mã cho học viên chưa có"
+                style="width:100%;border:none;border-radius:0;text-align:left;padding:.65rem 1rem;font-size:.85rem;border-bottom:1px solid var(--border)">
+                🔧 Sinh mã còn thiếu
+              </button>
+              <button class="btn-outline" id="syncExpiryBtn"
+                title="Đồng bộ ngày hết hạn từ lớp" data-teacher-only
+                style="width:100%;border:none;border-radius:0;text-align:left;padding:.65rem 1rem;font-size:.85rem;border-bottom:1px solid var(--border)">
+                📅 Đồng bộ hết hạn
+              </button>
+              <button class="btn-outline" id="syncClassNameBtn"
+                title="Đồng bộ tên lớp từ student_classes vào cột Lớp" data-teacher-only
+                style="width:100%;border:none;border-radius:0;text-align:left;padding:.65rem 1rem;font-size:.85rem;border-bottom:1px solid var(--border)">
+                🔄 Đồng bộ lớp
+              </button>
+              <button class="btn-outline" id="syncGmailBtn"
+                title="Đồng bộ danh sách Gmail từ file Excel/CSV vào lớp" data-teacher-only
+                onclick="document.getElementById('toolsDropdownMenu').classList.remove('open');openGmailSyncModal()"
+                style="width:100%;border:none;border-radius:0;text-align:left;padding:.65rem 1rem;font-size:.85rem;border-bottom:1px solid var(--border);color:#4338ca;font-weight:700">
+                📥 Đồng bộ Gmail → Lớp
+              </button>
+              <button class="btn-outline" id="exportStudentsBtn"
+                style="width:100%;border:none;border-radius:0;text-align:left;padding:.65rem 1rem;font-size:.85rem">
+                ⬇ Xuất Excel
+              </button>
+            </div>
+          </div>
+
+          <!-- Nút chính -->
+          <button class="btn-outline" id="bulkCreateBtn"
+            onclick="openBulkCreateModal()"
+            style="background:#f0fdf4;border-color:#86efac;color:#166534;font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:.35rem">
+            📋 Tạo hàng loạt
+          </button>
+          <button class="btn-primary" id="openAddStudentBtn"
+            style="display:flex;align-items:center;gap:.35rem;font-size:.88rem">
+            ➕ Thêm học sinh
+          </button>
+
         </div>
       </div>
       <div class="filter-bar">
@@ -331,7 +379,10 @@
       <div id="classListView">
         <div class="page-header">
           <h1 class="page-title">Lớp học</h1>
-          <button class="btn-primary" id="openAddClassBtn">➕ Tạo lớp</button>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn-outline" id="cleanFakeClassesBtn" onclick="cleanFakeClasses()" style="color:#92400e;border-color:#fde68a;background:#fffbeb;font-weight:700" title="Dọn sạch tên lớp bị ghép lại (VD: Toán 12,Vsat k9)">🧹 Dọn lớp ảo</button>
+            <button class="btn-primary" id="openAddClassBtn">➕ Tạo lớp</button>
+          </div>
         </div>
         <div class="stat-grid" id="classGrid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))"></div>
         <div class="empty-state" id="emptyClasses">Chưa có lớp nào. Hãy thêm học sinh và gán lớp.</div>
@@ -608,7 +659,7 @@
   <div class="modal-overlay" id="gmailSyncModal">
     <div class="modal" style="max-width:680px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <h3 style="font-weight:800;margin:0">📥 Đồng bộ danh sách Gmail → Lớp phụ</h3>
+        <h3 style="font-weight:800;margin:0">📥 Đồng bộ danh sách Gmail → Lớp</h3>
         <button onclick="document.getElementById('gmailSyncModal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
       </div>
 
@@ -688,6 +739,98 @@
         <div class="form-actions" style="margin-top:1rem">
           <button class="btn-outline" onclick="document.getElementById('gmailSyncStep2').style.display='none';document.getElementById('gmailSyncStep1').style.display='block'">← Quay lại</button>
           <button class="btn-primary" id="gmailDoSyncBtn" onclick="doGmailSync()">✅ Đồng bộ tất cả</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Tạo tài khoản hàng loạt -->
+  <div class="modal-overlay" id="bulkCreateModal">
+    <div class="modal" style="max-width:780px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <h3 style="font-weight:800;margin:0">📋 Tạo tài khoản hàng loạt</h3>
+        <button onclick="document.getElementById('bulkCreateModal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+      </div>
+
+      <!-- Bước 1: Upload / Paste -->
+      <div id="bulkStep1">
+        <div style="background:#f0fdf4;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:.85rem;line-height:1.7;color:#166534">
+          <b>📋 Hướng dẫn:</b><br/>
+          Upload file Excel/CSV hoặc dán danh sách học sinh.<br/>
+          Các cột cần có: <b>Họ tên</b>, <b>Gmail</b> — tùy chọn: <b>SĐT</b>, <b>Lớp</b>, <b>Ghi chú</b><br/>
+          Hệ thống tự tạo mã học viên và mật khẩu, sau đó gửi email cho từng người.
+        </div>
+
+        <label>Lớp mặc định <span style="color:var(--muted);font-weight:400">(nếu file không có cột Lớp)</span></label>
+        <select id="bulkDefaultClass" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem;margin-bottom:.75rem">
+          <option value="">-- Không gán lớp --</option>
+        </select>
+
+        <label>Upload file Excel/CSV</label>
+        <div id="bulkDropZone"
+          ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
+          ondragleave="this.style.borderColor='var(--border)'"
+          ondrop="handleBulkDrop(event)"
+          onclick="document.getElementById('bulkFileInput').click()"
+          style="border:2px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:.75rem">
+          <div style="font-size:2rem;margin-bottom:.35rem">📎</div>
+          <div style="font-weight:700;color:var(--text)">Kéo thả hoặc bấm để chọn file</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Excel (.xlsx) hoặc CSV — cột: <b>Họ tên, Gmail</b> (bắt buộc), SĐT, Lớp, Ghi chú (tuỳ chọn)</div>
+          <input type="file" id="bulkFileInput" accept=".xlsx,.csv,.xls" hidden onchange="parseBulkFile(this.files[0])"/>
+        </div>
+        <div id="bulkFileInfo" style="display:none;margin-bottom:.5rem;font-size:.83rem;color:var(--muted)"></div>
+
+        <div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0">
+          <hr style="flex:1;border-color:var(--border)"/>
+          <span style="font-size:.78rem;color:var(--muted);font-weight:600;white-space:nowrap">HOẶC DÁN TRỰC TIẾP</span>
+          <hr style="flex:1;border-color:var(--border)"/>
+        </div>
+        <label>Dán danh sách <span style="color:var(--muted);font-weight:400">(mỗi dòng: Họ tên, Gmail, SĐT, Lớp — cách nhau bằng tab hoặc phẩy)</span></label>
+        <textarea id="bulkPasteBox" rows="5"
+          placeholder="Dán từ Excel, Google Sheets...&#10;VD:&#10;Nguyễn Văn A	nguyenvana@gmail.com	0901234567	Lớp 10A&#10;Trần Thị B	tranthib@gmail.com		Lớp 10B"
+          style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.85rem;outline:none;font-family:inherit;resize:vertical;background:var(--card);color:var(--text);transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+          oninput="parseBulkPaste(this.value)"></textarea>
+        <div id="bulkPasteInfo" style="font-size:.78rem;color:var(--muted);margin-top:.25rem"></div>
+
+        <div id="bulkStep1Error" class="error-msg" style="margin-top:.5rem"></div>
+        <div class="form-actions" style="margin-top:1rem">
+          <button class="btn-outline" onclick="document.getElementById('bulkCreateModal').classList.remove('open')">Hủy</button>
+          <button class="btn-primary" id="bulkPreviewBtn" onclick="previewBulkCreate()" disabled>🔍 Xem trước danh sách</button>
+        </div>
+      </div>
+
+      <!-- Bước 2: Preview & xác nhận -->
+      <div id="bulkStep2" style="display:none">
+        <div id="bulkPreviewStats" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+        <div style="overflow-x:auto;max-height:320px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px">
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+            <thead style="background:var(--bg);position:sticky;top:0">
+              <tr>
+                <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)">#</th>
+                <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)">Họ tên</th>
+                <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)">Gmail</th>
+                <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)">SĐT</th>
+                <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)">Lớp</th>
+                <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="bulkPreviewBody"></tbody>
+          </table>
+        </div>
+        <div id="bulkStep2Error" class="error-msg" style="margin-top:.5rem"></div>
+        <div id="bulkProgress" style="display:none;margin-top:.75rem">
+          <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;font-size:.82rem;font-weight:600">
+            <span id="bulkProgressText">Đang tạo...</span>
+            <span id="bulkProgressCount">0 / 0</span>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;overflow:hidden;height:8px">
+            <div id="bulkProgressBar" style="height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:10px;transition:width .3s;width:0%"></div>
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:1rem">
+          <button class="btn-outline" id="bulkBackBtn" onclick="document.getElementById('bulkStep2').style.display='none';document.getElementById('bulkStep1').style.display='block'">← Quay lại</button>
+          <button class="btn-primary" id="bulkDoCreateBtn" onclick="doBulkCreate()">✅ Tạo tất cả tài khoản</button>
         </div>
       </div>
     </div>

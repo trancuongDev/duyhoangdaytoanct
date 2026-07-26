@@ -225,6 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   ['csPhone', 'addPhone', 'esPhone'].forEach(attachPhoneDuplicateCheck);
   ['csUsername', 'addUsername', 'esUsername'].forEach(attachGmailValidation);
+
+  // Đóng dropdown Công cụ khi click ra ngoài
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('toolsDropdownWrap');
+    const menu = document.getElementById('toolsDropdownMenu');
+    if (wrap && menu && !wrap.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
 });
 
 // ---- Custom confirm popup ----
@@ -370,8 +379,11 @@ async function getClasses() {
     db.from('student_classes').select('class_name'),
   ]);
   const fromClasses  = (cls||[]).map(c => c.name);
-  const fromStudents = (sts||[]).map(s => s.class_name).filter(Boolean);
-  const fromSC       = (sc||[]).map(s => s.class_name).filter(Boolean);
+  // Split comma-separated class_name thành từng lớp riêng lẻ
+  const fromStudents = (sts||[])
+    .flatMap(s => (s.class_name||'').split(',').map(c => c.trim()))
+    .filter(Boolean);
+  const fromSC = (sc||[]).map(s => s.class_name).filter(Boolean);
   return [...new Set([...fromClasses, ...fromStudents, ...fromSC])].sort();
 }
 
@@ -1108,6 +1120,9 @@ document.getElementById('csSaveBtn').addEventListener('click', async () => {
     const { error } = await db.from('student_classes').insert({ student_id: parseInt(existingId), class_name: cls });
     if (error) { err.textContent = error.message; return; }
 
+    // Gửi email thông báo thêm lớp phụ (không chặn UI)
+    sendClassAddedEmail({ username, full_name: name }, cls).catch(() => {});
+
     // Hiện modal thông tin
     document.getElementById('naName').textContent     = name;
     document.getElementById('naCode').textContent     = document.getElementById('csCode').value.trim() || '—';
@@ -1190,6 +1205,17 @@ document.getElementById('csSaveBtn').addEventListener('click', async () => {
   });
 
   logAccountActivity('Tạo tài khoản', { full_name: name, username, class_name: cls });
+
+  // Gửi email thông tin tài khoản cho học sinh (không chặn UI)
+  sendWelcomeEmail({
+    full_name: name, username,
+    password_raw: password,  // mật khẩu gốc trước khi hash
+    class_name: cls || '',
+    student_code: document.getElementById('naCode').textContent
+  }).then(ok => {
+    if (ok) showToast(`📧 Đã gửi thông tin tài khoản về ${username}`);
+  });
+
   await renderMiniStudents();
   await populateClassFilters();
 });
@@ -1860,6 +1886,11 @@ document.getElementById('esAddClassBtn')?.addEventListener('click', async () => 
   if (!cls || !editingStudentId) return;
   const { error } = await db.from('student_classes').insert({ student_id: editingStudentId, class_name: cls });
   if (error && error.code === '23505') { alert('Học viên đã thuộc lớp này rồi.'); return; }
+
+  // Lấy thông tin học sinh để gửi email
+  const { data: stu } = await db.from('students').select('full_name,username').eq('id', editingStudentId).maybeSingle();
+  if (stu?.username) sendClassAddedEmail({ username: stu.username, full_name: stu.full_name }, cls).catch(() => {});
+
   renderEsClassList(editingStudentId);
   document.getElementById('esAddClassSelect').value = '';
 });
@@ -5533,19 +5564,54 @@ async function doGmailSync() {
 
   let successCount = 0;
   let errorCount   = 0;
+  const syncedUsernames = []; // username của những người được thêm thành công
 
   for (const cb of checked) {
     const studentId = parseInt(cb.dataset.id);
+    const studentName = cb.dataset.name || '';
     try {
-      // Kiểm tra trùng một lần nữa trước khi insert
+      // Kiểm tra trùng một lần nữa
       const { data: existing } = await db.from('student_classes')
         .select('id').eq('student_id', studentId).eq('class_name', cls).maybeSingle();
       if (existing) { successCount++; continue; }
 
       const { error } = await db.from('student_classes').insert({ student_id: studentId, class_name: cls });
       if (error) { errorCount++; console.warn('Sync error:', error.message); }
-      else successCount++;
+      else {
+        successCount++;
+        // Lấy username để gửi thông báo
+        const s = _gmailSyncResult.find(x => x.id === studentId);
+        if (s) syncedUsernames.push({ username: s.username, name: s.full_name });
+      }
     } catch(e) { errorCount++; }
+  }
+
+  // Gửi thông báo tự động cho từng học sinh được thêm vào lớp
+  if (syncedUsernames.length) {
+    const adminName = sessionStorage.getItem('dh_name') || 'Giáo viên';
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const timeStr = now.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+
+    // Gửi thông báo riêng cho từng học sinh (target_username)
+    const notifRows = syncedUsernames.map(({ username }) => ({
+      title: `🎉 Bạn đã được thêm vào lớp ${cls}`,
+      content: `Xin chào!\n\nBạn vừa được thêm vào lớp "${cls}" vào lúc ${timeStr} ngày ${dateStr}.\n\nTừ bây giờ bạn có thể truy cập tài liệu, bài giảng và bài tập của lớp ${cls}.\n\nChúc bạn học tốt! 🚀`,
+      class_name: null,
+      target_username: username,
+      pinned: false,
+      expires_at: null
+    }));
+
+    // Insert từng batch 20 cái
+    for (let i = 0; i < notifRows.length; i += 20) {
+      await db.from('announcements').insert(notifRows.slice(i, i + 20));
+    }
+
+    // Gửi email thông báo thêm lớp (song song)
+    syncedUsernames.forEach(({ username, name }) => {
+      sendClassAddedEmail({ username, full_name: name }, cls).catch(() => {});
+    });
   }
 
   btn.textContent = '✅ Đồng bộ tất cả';
@@ -5558,7 +5624,652 @@ async function doGmailSync() {
   if (errorCount) {
     showToast(`⚠️ Đồng bộ xong: ${successCount} thành công, ${errorCount} lỗi`, false);
   } else {
-    showToast(`✅ Đã thêm lớp phụ "${cls}" cho ${successCount} học sinh thành công`);
+    showToast(`✅ Đã thêm lớp "${cls}" cho ${successCount} học sinh + gửi thông báo`);
   }
   logAccountActivity(`Đồng bộ Gmail → Lớp ${cls}`, { full_name: `${successCount} học sinh`, username: '', class_name: cls });
+}
+
+
+// ============================================================
+// GỬI EMAIL TỰ ĐỘNG QUA EMAILJS
+// ============================================================
+// Cấu hình EmailJS — Thay bằng thông tin từ emailjs.com
+const _EMAIL_CONFIG = {
+  serviceId:             'service_wprta6m',   // ✅ Đã cấu hình
+  templateId:            'template_lg0qcnp', // ✅ Template Welcome (tạo tài khoản mới)
+  classAddedTemplateId:  'template_c0pnvxr', // ✅ Template thêm lớp phụ
+  publicKey:             'WfqYtIxP9-UDBoO0E', // ✅ Đã cấu hình
+};
+
+// Khởi tạo EmailJS (chạy 1 lần)
+let _emailJsReady = false;
+function _initEmailJs() {
+  if (_emailJsReady || !_EMAIL_CONFIG.publicKey || _EMAIL_CONFIG.publicKey === 'YOUR_PUBLIC_KEY') return;
+  try {
+    emailjs.init({ publicKey: _EMAIL_CONFIG.publicKey });
+    _emailJsReady = true;
+  } catch(e) { console.warn('EmailJS init failed:', e.message); }
+}
+
+/**
+ * Gửi email thông tin tài khoản cho học sinh mới
+ * @param {object} student - { full_name, username, password_raw, class_name, student_code }
+ */
+async function sendWelcomeEmail(student) {
+  _initEmailJs();
+  if (!_emailJsReady) {
+    console.warn('[Email] EmailJS chưa được cấu hình. Bỏ qua gửi email.');
+    return;
+  }
+  try {
+    await emailjs.send(_EMAIL_CONFIG.serviceId, _EMAIL_CONFIG.templateId, {
+      to_email:     student.username,           // Gmail học sinh
+      to_name:      student.full_name,
+      student_code: student.student_code || '—',
+      login_email:  student.username,
+      password:     student.password_raw,
+      class_name:   student.class_name || 'Chưa có lớp',
+      login_url:    window.location.origin + '/login.html',
+      school_name:  'DHDT LMS',
+      sent_by:      sessionStorage.getItem('dh_name') || 'Giáo viên',
+    });
+    console.info(`[Email] ✅ Đã gửi tài khoản cho ${student.username}`);
+    return true;
+  } catch(e) {
+    console.warn(`[Email] ❌ Lỗi gửi email cho ${student.username}:`, e);
+    return false;
+  }
+}
+
+/**
+ * Gửi email thông báo được thêm vào lớp mới
+ * Template riêng: thông báo lớp phụ (khác với Welcome email)
+ */
+async function sendClassAddedEmail(student, className) {
+  _initEmailJs();
+  if (!_emailJsReady) return;
+  try {
+    await emailjs.send(_EMAIL_CONFIG.serviceId, _EMAIL_CONFIG.classAddedTemplateId, {
+      to_email:    student.username,
+      to_name:     student.full_name,
+      class_name:  className,
+      login_url:   window.location.origin + '/login.html',
+      school_name: 'DHDT LMS',
+      sent_by:     sessionStorage.getItem('dh_name') || 'Giáo viên',
+    });
+    console.info(`[Email] ✅ Đã gửi thông báo thêm lớp cho ${student.username}`);
+    return true;
+  } catch(e) {
+    console.warn('[Email] Lỗi gửi email thêm lớp:', e);
+    return false;
+  }
+}
+
+// ============================================================
+// TẠO TÀI KHOẢN HÀNG LOẠT
+// ============================================================
+
+let _bulkRows = []; // danh sách học sinh đã parse
+
+// Mở modal tạo hàng loạt
+async function openBulkCreateModal() {
+  // Reset về bước 1
+  _bulkRows = [];
+  document.getElementById('bulkStep1').style.display = 'block';
+  document.getElementById('bulkStep2').style.display = 'none';
+  document.getElementById('bulkPasteBox').value = '';
+  document.getElementById('bulkPasteInfo').textContent = '';
+  document.getElementById('bulkFileInfo').style.display = 'none';
+  document.getElementById('bulkStep1Error').textContent = '';
+  document.getElementById('bulkPreviewBtn').disabled = true;
+  document.getElementById('bulkDropZone').innerHTML = `
+    <div style="font-size:2rem;margin-bottom:.35rem">📎</div>
+    <div style="font-weight:700;color:var(--text)">Kéo thả hoặc bấm để chọn file</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Excel (.xlsx) hoặc CSV — cột: <b>Họ tên, Gmail</b> (bắt buộc), SĐT, Lớp, Ghi chú (tuỳ chọn)</div>
+    <input type="file" id="bulkFileInput" accept=".xlsx,.csv,.xls" hidden onchange="parseBulkFile(this.files[0])"/>`;
+
+  // Populate lớp mặc định
+  const classes = await getClasses();
+  const sel = document.getElementById('bulkDefaultClass');
+  sel.innerHTML = '<option value="">-- Không gán lớp --</option>' +
+    classes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  document.getElementById('bulkCreateModal').classList.add('open');
+}
+
+// Kéo thả file
+function handleBulkDrop(e) {
+  e.preventDefault();
+  document.getElementById('bulkDropZone').style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file) parseBulkFile(file);
+}
+
+// Parse file Excel/CSV
+async function parseBulkFile(file) {
+  if (!file) return;
+  const errEl = document.getElementById('bulkStep1Error');
+  errEl.textContent = '';
+  try {
+    let rows = [];
+    const name = file.name.toLowerCase();
+
+    if (name.endsWith('.csv')) {
+      const text = await file.text();
+      rows = _parseBulkCsv(text);
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      rows = _normalizeBulkRows(data);
+    } else {
+      errEl.textContent = 'Chỉ hỗ trợ .xlsx, .xls hoặc .csv';
+      return;
+    }
+
+    if (!rows.length) { errEl.textContent = 'Không tìm thấy dữ liệu hợp lệ trong file.'; return; }
+
+    _bulkRows = rows;
+    document.getElementById('bulkFileInfo').style.display = 'block';
+    document.getElementById('bulkFileInfo').innerHTML = `✅ Đã đọc <b>${rows.length}</b> dòng từ <b>${file.name}</b>`;
+    document.getElementById('bulkDropZone').innerHTML = `
+      <div style="font-size:1.5rem;margin-bottom:.25rem">✅</div>
+      <div style="font-weight:700;color:#065f46">${file.name}</div>
+      <div style="font-size:.78rem;color:var(--muted)">${rows.length} dòng dữ liệu</div>
+      <input type="file" id="bulkFileInput" accept=".xlsx,.csv,.xls" hidden onchange="parseBulkFile(this.files[0])"/>`;
+    document.getElementById('bulkDropZone').style.borderColor = '#10b981';
+    document.getElementById('bulkDropZone').style.background = '#f0fdf4';
+    document.getElementById('bulkPreviewBtn').disabled = false;
+    // Xóa paste box
+    document.getElementById('bulkPasteBox').value = '';
+    document.getElementById('bulkPasteInfo').textContent = '';
+  } catch(e) {
+    errEl.textContent = 'Lỗi đọc file: ' + e.message;
+  }
+}
+
+// Chuẩn hóa header từ Excel (tìm cột tên/gmail/sđt/lớp/ghi chú)
+function _normalizeBulkRows(data) {
+  // Map tên cột tiếng Việt → key chuẩn
+  const colMap = {
+    'họ tên': 'name', 'ho ten': 'name', 'tên': 'name', 'ten': 'name',
+    'họ và tên': 'name', 'ho va ten': 'name', 'full name': 'name', 'fullname': 'name',
+    'gmail': 'username', 'email': 'username', 'tên đăng nhập': 'username',
+    'sdt': 'phone', 'số điện thoại': 'phone', 'so dien thoai': 'phone', 'phone': 'phone',
+    'lớp': 'class_name', 'lop': 'class_name', 'class': 'class_name', 'lớp học': 'class_name',
+    'ghi chú': 'notes', 'ghi chu': 'notes', 'notes': 'notes', 'note': 'notes',
+  };
+  return data.map(row => {
+    const out = {};
+    Object.entries(row).forEach(([k, v]) => {
+      const norm = k.toLowerCase().trim().replace(/\s+/g, ' ');
+      const mapped = colMap[norm];
+      if (mapped) out[mapped] = String(v||'').trim();
+    });
+    return out;
+  }).filter(r => r.name || r.username);
+}
+
+// Parse CSV text
+function _parseBulkCsv(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  // Phát hiện header
+  const header = lines[0].split(/[,;\t]/).map(h => h.trim().replace(/['"]/g,'').toLowerCase());
+  const colMap = {
+    'họ tên': 'name', 'ho ten': 'name', 'tên': 'name', 'ten': 'name',
+    'họ và tên': 'name', 'full name': 'name', 'fullname': 'name',
+    'gmail': 'username', 'email': 'username',
+    'sdt': 'phone', 'số điện thoại': 'phone', 'phone': 'phone',
+    'lớp': 'class_name', 'lop': 'class_name', 'class': 'class_name',
+    'ghi chú': 'notes', 'ghi chu': 'notes', 'notes': 'notes',
+  };
+  const idxMap = {};
+  header.forEach((h, i) => { if (colMap[h]) idxMap[colMap[h]] = i; });
+
+  // Nếu không có header → thử auto-detect theo thứ tự: name, username, phone, class_name
+  const hasHeader = Object.keys(idxMap).length >= 2;
+  if (!hasHeader) {
+    // Auto: cột 0=name, 1=username(gmail), 2=phone, 3=class_name
+    return lines.map(line => {
+      const cols = line.split(/[,;\t]/).map(c => c.trim().replace(/['"]/g,''));
+      const username = cols.find(c => /^[^\s@]+@gmail\.com$/i.test(c)) || cols[1] || '';
+      return { name: cols[0]||'', username, phone: cols[2]||'', class_name: cols[3]||'' };
+    }).filter(r => r.name || r.username);
+  }
+
+  return lines.slice(1).map(line => {
+    const cols = line.split(/[,;\t]/).map(c => c.trim().replace(/['"]/g,''));
+    const out = {};
+    Object.entries(idxMap).forEach(([key, idx]) => { out[key] = cols[idx] || ''; });
+    return out;
+  }).filter(r => r.name || r.username);
+}
+
+// Dán trực tiếp từ clipboard
+function parseBulkPaste(text) {
+  const infoEl = document.getElementById('bulkPasteInfo');
+  const previewBtn = document.getElementById('bulkPreviewBtn');
+  if (!text.trim()) {
+    _bulkRows = [];
+    infoEl.textContent = '';
+    previewBtn.disabled = true;
+    return;
+  }
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  // Kiểm tra xem có header không (dòng đầu chứa @gmail → không phải header)
+  const firstHasGmail = /gmail\.com/i.test(lines[0]);
+  const rows = [];
+
+  lines.forEach((line, idx) => {
+    if (idx === 0 && !firstHasGmail) {
+      // Có thể là header → bỏ qua nếu không có gmail
+      const cols = line.split(/[\t,;]/).map(c => c.trim());
+      if (!cols.some(c => /gmail\.com/i.test(c))) return;
+    }
+    const cols = line.split(/[\t,;]/).map(c => c.trim().replace(/['"]/g,''));
+    const gmail = cols.find(c => /^[^\s@]+@gmail\.com$/i.test(c));
+    if (!gmail && !cols[0]) return;
+    // Tìm họ tên: cột đầu không phải gmail và không phải số điện thoại
+    const name = cols.find(c => c && !/gmail\.com/i.test(c) && !/^\d{9,11}$/.test(c)) || '';
+    const phone = cols.find(c => /^\d{9,11}$/.test(c)) || '';
+    const cls = cols.find(c => c && c !== name && c !== gmail && c !== phone && c.length > 1) || '';
+    rows.push({ name, username: gmail || '', phone, class_name: cls });
+  });
+
+  const valid = rows.filter(r => r.username && isValidGmail(r.username));
+  if (!valid.length) {
+    infoEl.innerHTML = '<span style="color:#92400e">⚠️ Không tìm thấy dòng hợp lệ (cần có Gmail)</span>';
+    previewBtn.disabled = true;
+    _bulkRows = [];
+    return;
+  }
+  _bulkRows = rows;
+  infoEl.innerHTML = `<span style="color:#065f46">✅ Nhận được <b>${valid.length}</b> dòng hợp lệ</span>`;
+  previewBtn.disabled = false;
+  // Reset file info
+  document.getElementById('bulkFileInfo').style.display = 'none';
+}
+
+// Preview trước khi tạo
+async function previewBulkCreate() {
+  const errEl = document.getElementById('bulkStep1Error');
+  errEl.textContent = '';
+  if (!_bulkRows.length) { errEl.textContent = 'Không có dữ liệu.'; return; }
+
+  const defaultClass = document.getElementById('bulkDefaultClass').value;
+
+  // Lấy danh sách gmail đã có trong DB
+  const allUsernames = _bulkRows.map(r => r.username).filter(Boolean).map(u => u.toLowerCase());
+  const batchSize = 50;
+  let existingSet = new Set();
+  for (let i = 0; i < allUsernames.length; i += batchSize) {
+    const batch = allUsernames.slice(i, i + batchSize);
+    const { data } = await db.from('students').select('username').in('username', batch);
+    (data||[]).forEach(s => existingSet.add(s.username.toLowerCase()));
+  }
+
+  const tbody = document.getElementById('bulkPreviewBody');
+  tbody.innerHTML = '';
+  let validCount = 0, skipCount = 0, errorCount = 0;
+
+  _bulkRows.forEach((row, idx) => {
+    const gmail = (row.username||'').trim().toLowerCase();
+    const name  = (row.name||'').trim();
+    const cls   = (row.class_name||'').trim() || defaultClass;
+
+    let status = '', statusColor = '', skip = false;
+    if (!gmail || !isValidGmail(gmail)) {
+      status = '❌ Gmail không hợp lệ'; statusColor = '#ef4444'; skip = true; errorCount++;
+    } else if (existingSet.has(gmail)) {
+      status = '⚠️ Gmail đã tồn tại'; statusColor = '#f59e0b'; skip = true; skipCount++;
+    } else if (!name) {
+      status = '❌ Thiếu họ tên'; statusColor = '#ef4444'; skip = true; errorCount++;
+    } else {
+      // Heuristic check
+      const h = checkGmailHeuristic(gmail);
+      if (h.suspicious) {
+        status = `⚠️ Có vẻ ảo (${h.reason})`; statusColor = '#f59e0b'; validCount++;
+      } else {
+        status = '✅ Sẽ tạo mới'; statusColor = '#10b981'; validCount++;
+      }
+    }
+    // Đánh dấu row để doBulkCreate biết bỏ qua
+    row._skip = skip;
+    row._cls  = cls;
+    row._gmail = gmail;
+
+    const tr = document.createElement('tr');
+    tr.style.background = skip ? (existingSet.has(gmail) ? '#fffbeb' : '#fff5f5') : '';
+    tr.innerHTML = `
+      <td style="padding:.45rem .75rem;border-bottom:1px solid var(--border)">${idx+1}</td>
+      <td style="padding:.45rem .75rem;border-bottom:1px solid var(--border);font-weight:600">${name||'<span style="color:#94a3b8">—</span>'}</td>
+      <td style="padding:.45rem .75rem;border-bottom:1px solid var(--border)">${gmail}</td>
+      <td style="padding:.45rem .75rem;border-bottom:1px solid var(--border)">${row.phone||'—'}</td>
+      <td style="padding:.45rem .75rem;border-bottom:1px solid var(--border)">${cls||'<span style="color:#94a3b8">Chưa có</span>'}</td>
+      <td style="padding:.45rem .75rem;border-bottom:1px solid var(--border);font-weight:600;color:${statusColor}">${status}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Stats
+  const statsEl = document.getElementById('bulkPreviewStats');
+  statsEl.innerHTML = `
+    <div style="background:#d1fae5;color:#065f46;padding:.45rem .9rem;border-radius:8px;font-weight:700;font-size:.83rem">✅ Tạo mới: ${validCount}</div>
+    <div style="background:#fef3c7;color:#92400e;padding:.45rem .9rem;border-radius:8px;font-weight:700;font-size:.83rem">⚠️ Bỏ qua (đã có): ${skipCount}</div>
+    <div style="background:#fee2e2;color:#991b1b;padding:.45rem .9rem;border-radius:8px;font-weight:700;font-size:.83rem">❌ Lỗi: ${errorCount}</div>`;
+
+  document.getElementById('bulkDoCreateBtn').textContent = `✅ Tạo ${validCount} tài khoản`;
+  document.getElementById('bulkDoCreateBtn').disabled = validCount === 0;
+
+  document.getElementById('bulkStep1').style.display = 'none';
+  document.getElementById('bulkStep2').style.display = 'block';
+}
+
+// Thực hiện tạo tài khoản hàng loạt
+async function doBulkCreate() {
+  const toCreate = _bulkRows.filter(r => !r._skip);
+  if (!toCreate.length) return;
+
+  const btn = document.getElementById('bulkDoCreateBtn');
+  const backBtn = document.getElementById('bulkBackBtn');
+  btn.disabled = true;
+  backBtn.disabled = true;
+  document.getElementById('bulkProgress').style.display = 'block';
+  document.getElementById('bulkStep2Error').textContent = '';
+
+  let done = 0, failed = 0;
+  const total = toCreate.length;
+
+  for (const row of toCreate) {
+    try {
+      // Tạo mã học viên unique
+      const code = await genStudentCode();
+      const password = code;
+      const name  = row.name.trim();
+      const gmail = row._gmail;
+      const phone = (row.phone||'').replace(/\D/g,'').slice(0,10) || null;
+      const cls   = row._cls || null;
+      const notes = (row.notes||'').trim() || null;
+
+      // Insert vào DB
+      const { data: newStu, error } = await db.from('students').insert({
+        student_code: code,
+        full_name:    name,
+        phone,
+        username:     gmail,
+        password:     await hashPw(password),
+        class_name:   cls ? cls.split(',')[0].trim() : null,
+        active:       true,
+        notes
+      }).select('id').single();
+
+      if (error) { failed++; continue; }
+
+      // Thêm vào student_classes
+      if (cls && newStu?.id) {
+        const clsList = cls.split(',').map(c => c.trim()).filter(Boolean);
+        await Promise.all(clsList.map(c =>
+          db.from('student_classes').insert({ student_id: newStu.id, class_name: c }).catch(() => {})
+        ));
+      }
+
+      // Gửi email (không chặn vòng lặp)
+      sendWelcomeEmail({
+        full_name:    name,
+        username:     gmail,
+        password_raw: password,
+        class_name:   cls || '',
+        student_code: code
+      }).catch(() => {});
+
+      logAccountActivity('Tạo tài khoản', { full_name: name, username: gmail, class_name: cls||'' }).catch(() => {});
+
+      done++;
+    } catch(e) {
+      failed++;
+    }
+
+    // Cập nhật progress bar
+    const pct = Math.round(((done + failed) / total) * 100);
+    document.getElementById('bulkProgressBar').style.width = pct + '%';
+    document.getElementById('bulkProgressCount').textContent = `${done + failed} / ${total}`;
+    document.getElementById('bulkProgressText').textContent = `Đang tạo... (${done} thành công, ${failed} lỗi)`;
+  }
+
+  // Hoàn tất
+  document.getElementById('bulkProgressText').textContent = `✅ Hoàn tất! ${done} tài khoản đã tạo${failed ? `, ${failed} lỗi` : ''}.`;
+  document.getElementById('bulkProgressBar').style.background = '#10b981';
+  btn.textContent = '✅ Xong';
+  btn.disabled = false;
+  btn.onclick = () => {
+    document.getElementById('bulkCreateModal').classList.remove('open');
+    renderStudents();
+    populateClassFilters();
+  };
+  backBtn.disabled = false;
+  if (failed > 0) {
+    document.getElementById('bulkStep2Error').textContent = `⚠️ ${failed} dòng tạo thất bại (có thể Gmail đã tồn tại hoặc lỗi mạng).`;
+  }
+  showToast(`📋 Đã tạo ${done} tài khoản hàng loạt`);
+}
+
+// ============================================================
+// KIỂM TRA GMAIL THẬT / ẢO
+// ============================================================
+
+// ⚠️ AbstractAPI Email Validation key — https://app.abstractapi.com/api/email-validation
+const _ABSTRACT_EMAIL_KEY = '11ea460b7a2340ce82c50f41a8f5cb19';
+
+// Cache kết quả tránh gọi API nhiều lần cùng 1 gmail
+const _gmailCheckCache = {};
+
+/**
+ * Mức 1: Heuristic — phát hiện Gmail có vẻ ảo/random
+ * Trả về: { suspicious: bool, reason: string }
+ */
+function checkGmailHeuristic(email) {
+  const local = email.split('@')[0].toLowerCase();
+
+  // Quá ngắn
+  if (local.length < 4) return { suspicious: true, reason: 'Tên quá ngắn (< 4 ký tự)' };
+
+  // Toàn số
+  if (/^\d+$/.test(local)) return { suspicious: true, reason: 'Tên toàn số' };
+
+  // Chuỗi lặp ký tự: aaaa, 1111
+  if (/(.)\1{3,}/.test(local)) return { suspicious: true, reason: 'Ký tự lặp nhiều lần' };
+
+  // Keyboard pattern
+  const keyboards = ['qwerty','qwert','asdfg','asdf','zxcvb','zxcv','12345','23456','34567','45678','56789','abcde','abcd'];
+  if (keyboards.some(p => local.includes(p))) return { suspicious: true, reason: 'Dãy bàn phím liên tiếp' };
+
+  // Quá nhiều số liên tiếp (>= 6 số)
+  if (/\d{6,}/.test(local)) return { suspicious: true, reason: 'Dãy số dài (>= 6 chữ số liên tiếp)' };
+
+  // Chỉ có 1-2 từ + nhiều số ngẫu nhiên (VD: abc12847261)
+  if (/^[a-z]{1,4}\d{5,}$/.test(local)) return { suspicious: true, reason: 'Tên ngắn + nhiều số ngẫu nhiên' };
+
+  // Random string: tỉ lệ phụ âm liên tiếp cao (VD: xkqzjwpf)
+  const vowels = (local.match(/[aeiou]/g)||[]).length;
+  const letters = (local.match(/[a-z]/g)||[]).length;
+  if (letters >= 6 && vowels / letters < 0.1) return { suspicious: true, reason: 'Chuỗi ký tự ngẫu nhiên (ít nguyên âm)' };
+
+  return { suspicious: false, reason: '' };
+}
+
+/**
+ * Mức 2: AbstractAPI — verify mailbox thật sự
+ * Trả về: { valid: bool, quality: 'good'|'risky'|'bad', deliverable: bool, reason: string }
+ */
+async function checkGmailAbstractApi(email) {
+  if (!_ABSTRACT_EMAIL_KEY || _ABSTRACT_EMAIL_KEY === 'YOUR_ABSTRACT_API_KEY') {
+    return null; // Chưa cấu hình → bỏ qua
+  }
+  if (_gmailCheckCache[email]) return _gmailCheckCache[email];
+
+  try {
+    const res = await fetch(
+      `https://emailvalidation.abstractapi.com/v1/?api_key=${_ABSTRACT_EMAIL_KEY}&email=${encodeURIComponent(email)}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    const deliverable = data.deliverability === 'DELIVERABLE';
+    const quality     = data.quality_score >= 0.8 ? 'good' : data.quality_score >= 0.5 ? 'risky' : 'bad';
+    const isDisposable = data.is_disposable_email?.value === true;
+    const isFree      = data.is_free_email?.value === true;
+
+    let reason = '';
+    if (isDisposable)        reason = 'Email dùng 1 lần (disposable)';
+    else if (!deliverable)   reason = 'Hộp thư không tồn tại hoặc không nhận được email';
+    else if (quality === 'risky') reason = 'Email có độ tin cậy thấp';
+
+    const result = { valid: deliverable && !isDisposable, quality, deliverable, isDisposable, reason };
+    _gmailCheckCache[email] = result;
+    return result;
+  } catch(e) {
+    return null; // Timeout / lỗi mạng → bỏ qua
+  }
+}
+
+/**
+ * Kiểm tra tổng hợp: heuristic + AbstractAPI
+ * Trả về object kết quả để hiển thị UI
+ */
+async function verifyGmail(email) {
+  if (!email || !isValidGmail(email)) {
+    return { status: 'invalid', label: '❌ Gmail không hợp lệ', color: '#ef4444' };
+  }
+
+  // Bước 1: Heuristic
+  const h = checkGmailHeuristic(email);
+
+  // Bước 2: AbstractAPI (song song hoặc nếu heuristic nghi ngờ)
+  const api = await checkGmailAbstractApi(email);
+
+  if (api) {
+    // Có kết quả API → dùng kết quả API làm chính
+    if (api.isDisposable) {
+      return { status: 'fake', label: '🚫 Email dùng 1 lần (disposable)', color: '#ef4444', detail: api.reason };
+    }
+    if (!api.deliverable) {
+      return { status: 'fake', label: '❌ Hộp thư không tồn tại', color: '#ef4444', detail: api.reason };
+    }
+    if (api.quality === 'risky' || h.suspicious) {
+      return { status: 'risky', label: '⚠️ Email có vẻ không tin cậy', color: '#f59e0b', detail: h.reason || api.reason };
+    }
+    return { status: 'valid', label: '✅ Email hợp lệ & tồn tại', color: '#10b981', detail: '' };
+  }
+
+  // Không có API → chỉ dùng heuristic
+  if (h.suspicious) {
+    return { status: 'risky', label: '⚠️ Gmail có vẻ ảo', color: '#f59e0b', detail: h.reason };
+  }
+  return { status: 'valid', label: '✅ Gmail hợp lệ', color: '#10b981', detail: '(chưa xác minh hộp thư)' };
+}
+
+/**
+ * Gắn nút kiểm tra vào input Gmail
+ * Gọi: attachGmailVerifyBtn('csUsername')
+ */
+function attachGmailVerifyBtn(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input || input.dataset.verifyAttached) return;
+  input.dataset.verifyAttached = '1';
+
+  // Tạo container bọc
+  const wrap = input.parentElement;
+
+  // Nút kiểm tra
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = '🔍 Kiểm tra';
+  btn.style.cssText = 'margin-top:.35rem;padding:.3rem .8rem;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:.78rem;cursor:pointer;font-weight:600;transition:all .2s';
+  btn.title = 'Kiểm tra Gmail thật hay ảo';
+
+  // Vùng hiển thị kết quả
+  const result = document.createElement('div');
+  result.style.cssText = 'font-size:.78rem;margin-top:.25rem;display:none;padding:.3rem .7rem;border-radius:8px;font-weight:600';
+
+  input.insertAdjacentElement('afterend', result);
+  input.insertAdjacentElement('afterend', btn);
+
+  btn.addEventListener('click', async () => {
+    const email = input.value.trim().toLowerCase();
+    if (!email) return;
+    btn.textContent = '⏳ Đang kiểm tra...';
+    btn.disabled = true;
+    result.style.display = 'none';
+
+    const res = await verifyGmail(email);
+
+    result.style.display = 'block';
+    result.style.background = res.status === 'valid' ? '#d1fae5' : res.status === 'risky' ? '#fef3c7' : '#fee2e2';
+    result.style.color = res.color;
+    result.innerHTML = res.label + (res.detail ? `<span style="font-weight:400;margin-left:.4rem;opacity:.8">(${res.detail})</span>` : '');
+
+    btn.textContent = '🔍 Kiểm tra lại';
+    btn.disabled = false;
+  });
+}
+
+// Gắn vào các field Gmail khi DOM sẵn sàng
+document.addEventListener('DOMContentLoaded', () => {
+  ['csUsername', 'esUsername', 'addUsername'].forEach(attachGmailVerifyBtn);
+});
+
+// ============================================================
+// DỌN LỚP ẢO — normalize students.class_name
+// ============================================================
+async function cleanFakeClasses() {
+  const btn = document.getElementById('cleanFakeClassesBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang dọn...';
+
+  // Lấy danh sách lớp hợp lệ từ bảng classes + student_classes (từng lớp riêng lẻ)
+  const [{ data: clsData }, { data: scData }] = await Promise.all([
+    db.from('classes').select('name'),
+    db.from('student_classes').select('class_name'),
+  ]);
+  const validClasses = new Set([
+    ...(clsData||[]).map(c => c.name.trim()),
+    ...(scData||[]).map(c => c.class_name.trim()),
+  ]);
+
+  // Lấy tất cả học sinh có class_name chứa dấu phẩy (lớp ghép)
+  const { data: students } = await db.from('students').select('id, class_name').ilike('class_name', '%,%');
+
+  if (!students?.length) {
+    btn.disabled = false;
+    btn.textContent = '🧹 Dọn lớp ảo';
+    showToast('✅ Không có lớp ảo nào cần dọn!');
+    return;
+  }
+
+  let fixed = 0;
+  for (const s of students) {
+    const parts = (s.class_name||'').split(',').map(c => c.trim()).filter(Boolean);
+    // Chỉ giữ lớp đầu tiên hợp lệ làm class_name chính
+    const mainClass = parts.find(p => validClasses.has(p)) || parts[0] || null;
+    if (mainClass !== s.class_name) {
+      await db.from('students').update({ class_name: mainClass }).eq('id', s.id);
+
+      // Đảm bảo tất cả lớp trong chuỗi đều có trong student_classes
+      for (const cls of parts) {
+        if (!cls) continue;
+        await db.from('student_classes')
+          .upsert({ student_id: s.id, class_name: cls }, { onConflict: 'student_id,class_name' })
+          .catch(() => {});
+      }
+      fixed++;
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🧹 Dọn lớp ảo';
+  showToast(`✅ Đã dọn ${fixed} tài khoản có lớp bị ghép`);
+  renderClasses();
+  populateClassFilters();
 }
