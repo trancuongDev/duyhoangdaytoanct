@@ -5272,3 +5272,293 @@ db.channel('realtime-files')
     }
   })
   .subscribe();
+
+
+// ============================================================
+// ĐỒNG BỘ GMAIL → LỚP PHỤ
+// ============================================================
+let _gmailSyncEmails = [];  // danh sách gmail từ file
+let _gmailSyncResult = [];  // kết quả phân tích: { student, class }
+
+async function openGmailSyncModal() {
+  // Reset
+  _gmailSyncEmails = [];
+  _gmailSyncResult = [];
+  document.getElementById('gmailSyncClass').value = '';
+  document.getElementById('gmailFileInfo').style.display = 'none';
+  document.getElementById('gmailSyncError').textContent = '';
+  document.getElementById('gmailAnalyzeBtn').disabled = true;
+  document.getElementById('gmailFileInput').value = '';
+  // Reset textarea paste
+  const pasteBox = document.getElementById('gmailPasteBox');
+  if (pasteBox) pasteBox.value = '';
+  const pasteInfo = document.getElementById('gmailPasteInfo');
+  if (pasteInfo) pasteInfo.textContent = '';
+  document.getElementById('gmailSyncStep1').style.display = 'block';
+  document.getElementById('gmailSyncStep2').style.display = 'none';
+
+  // Populate class select
+  const classes = await getClasses();
+  const sel = document.getElementById('gmailSyncClass');
+  sel.innerHTML = '<option value="">-- Chọn lớp --</option>' +
+    classes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  document.getElementById('gmailSyncModal').classList.add('open');
+}
+
+function handleGmailDrop(e) {
+  e.preventDefault();
+  document.getElementById('gmailDropZone').style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file) parseGmailFile(file);
+}
+
+// Parse từ textarea paste
+function parseGmailPaste(text) {
+  const pasteInfo = document.getElementById('gmailPasteInfo');
+  if (!text || !text.trim()) {
+    pasteInfo.textContent = '';
+    // Nếu không có paste text, vẫn giữ emails từ file nếu có
+    if (!_gmailSyncEmails.length || document.getElementById('gmailFileInfo').style.display === 'none') {
+      document.getElementById('gmailAnalyzeBtn').disabled = !document.getElementById('gmailSyncClass').value;
+    }
+    return;
+  }
+  // Tách gmail bằng mọi loại separator
+  const raw = text.replace(/[\n\r\t,;|]/g, ' ').split(' ');
+  const emails = [...new Set(
+    raw.map(s => s.trim().toLowerCase().replace(/['"<>]/g,''))
+       .filter(s => /^[^\s@]+@gmail\.com$/.test(s))
+  )];
+  if (emails.length) {
+    _gmailSyncEmails = emails;
+    pasteInfo.innerHTML = `✅ Nhận được <b>${emails.length}</b> Gmail hợp lệ`;
+    pasteInfo.style.color = '#065f46';
+    document.getElementById('gmailAnalyzeBtn').disabled = !document.getElementById('gmailSyncClass').value;
+    // Reset file info vì đang dùng paste
+    document.getElementById('gmailFileInfo').style.display = 'none';
+  } else {
+    pasteInfo.innerHTML = '⚠️ Không tìm thấy Gmail hợp lệ trong nội dung dán';
+    pasteInfo.style.color = '#92400e';
+  }
+}
+
+async function parseGmailFile(file) {
+  if (!file) return;
+  const errEl = document.getElementById('gmailSyncError');
+  errEl.textContent = '';
+
+  try {
+    let emails = [];
+    const name = file.name.toLowerCase();
+
+    if (name.endsWith('.csv')) {
+      // Parse CSV
+      const text = await file.text();
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      // Tìm cột nào chứa gmail
+      lines.forEach(line => {
+        const cols = line.split(/[,;\t]/);
+        cols.forEach(col => {
+          const val = col.trim().replace(/['"]/g, '').toLowerCase();
+          if (val.includes('@gmail.com')) emails.push(val);
+        });
+      });
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      // Parse Excel với SheetJS
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      data.forEach(row => {
+        row.forEach(cell => {
+          const val = String(cell||'').trim().toLowerCase();
+          if (val.includes('@gmail.com')) emails.push(val);
+        });
+      });
+    } else {
+      errEl.textContent = 'Chỉ hỗ trợ file .xlsx, .xls hoặc .csv';
+      return;
+    }
+
+    // Loại trùng
+    emails = [...new Set(emails.map(e => e.trim()).filter(e => /^[^\s@]+@gmail\.com$/.test(e)))];
+
+    if (!emails.length) {
+      errEl.textContent = 'Không tìm thấy địa chỉ Gmail nào trong file. Hãy kiểm tra lại định dạng file.';
+      return;
+    }
+
+    _gmailSyncEmails = emails;
+    document.getElementById('gmailFileInfo').style.display = 'block';
+    document.getElementById('gmailFileInfo').innerHTML =
+      `✅ Đã đọc <b>${emails.length}</b> Gmail từ file <b>${file.name}</b>`;
+    document.getElementById('gmailDropZone').innerHTML =
+      `<div style="font-size:1.5rem;margin-bottom:.25rem">✅</div><div style="font-weight:700;color:#065f46">${file.name}</div><div style="font-size:.78rem;color:var(--muted)">${emails.length} Gmail được tìm thấy</div>`;
+    document.getElementById('gmailDropZone').style.borderColor = '#10b981';
+    document.getElementById('gmailDropZone').style.background = '#f0fdf4';
+
+    // Enable nút phân tích nếu đã chọn lớp
+    document.getElementById('gmailAnalyzeBtn').disabled = !document.getElementById('gmailSyncClass').value;
+
+  } catch(e) {
+    errEl.textContent = 'Lỗi đọc file: ' + e.message;
+  }
+}
+
+// Khi chọn lớp → enable nút analyze
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('gmailSyncClass')?.addEventListener('change', () => {
+    document.getElementById('gmailAnalyzeBtn').disabled =
+      !document.getElementById('gmailSyncClass').value || !_gmailSyncEmails.length;
+  });
+});
+
+async function analyzeGmailSync() {
+  const cls   = document.getElementById('gmailSyncClass').value;
+  const errEl = document.getElementById('gmailSyncError');
+  errEl.textContent = '';
+  if (!cls)   { errEl.textContent = 'Vui lòng chọn lớp.'; return; }
+  if (!_gmailSyncEmails.length) { errEl.textContent = 'Vui lòng upload file danh sách Gmail.'; return; }
+
+  document.getElementById('gmailAnalyzeBtn').textContent = '⏳ Đang phân tích...';
+  document.getElementById('gmailAnalyzeBtn').disabled = true;
+
+  try {
+    // Lấy tất cả học sinh có gmail trong danh sách
+    const batchSize = 50;
+    let allStudents = [];
+    for (let i = 0; i < _gmailSyncEmails.length; i += batchSize) {
+      const batch = _gmailSyncEmails.slice(i, i + batchSize);
+      const { data } = await db.from('students')
+        .select('id, full_name, username, class_name')
+        .in('username', batch);
+      allStudents = allStudents.concat(data || []);
+    }
+
+    // Lấy student_classes để biết ai đã có lớp này
+    const studentIds = allStudents.map(s => s.id);
+    let existingClasses = [];
+    if (studentIds.length) {
+      const { data } = await db.from('student_classes')
+        .select('student_id, class_name')
+        .in('student_id', studentIds)
+        .eq('class_name', cls);
+      existingClasses = data || [];
+    }
+    const alreadyIds = new Set(existingClasses.map(x => x.student_id));
+
+    // Phân loại
+    const toAdd    = allStudents.filter(s => !alreadyIds.has(s.id)); // có tài khoản, chưa có lớp
+    const alreadyHave = allStudents.filter(s => alreadyIds.has(s.id)); // đã có lớp này rồi
+    const foundEmails = new Set(allStudents.map(s => s.username));
+    const missing  = _gmailSyncEmails.filter(e => !foundEmails.has(e)); // gmail chưa có tài khoản
+
+    _gmailSyncResult = toAdd;
+
+    // Hiện kết quả
+    document.getElementById('gmailSyncStep1').style.display = 'none';
+    document.getElementById('gmailSyncStep2').style.display = 'block';
+
+    // Stats
+    document.getElementById('gmailSyncStats').innerHTML = [
+      `<span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:.2rem .7rem;font-size:.8rem;font-weight:800">✅ Cần thêm lớp: ${toAdd.length}</span>`,
+      `<span style="background:#e0f2fe;color:#0369a1;border-radius:20px;padding:.2rem .7rem;font-size:.8rem;font-weight:800">ℹ️ Đã có lớp: ${alreadyHave.length}</span>`,
+      `<span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:.2rem .7rem;font-size:.8rem;font-weight:800">⚠️ Chưa có TK: ${missing.length}</span>`,
+      `<span style="background:#eef2ff;color:#4338ca;border-radius:20px;padding:.2rem .7rem;font-size:.8rem;font-weight:800">Tổng Gmail: ${_gmailSyncEmails.length}</span>`,
+    ].join('');
+
+    // Danh sách cần thêm
+    const addListEl = document.getElementById('gmailSyncAddList');
+    if (toAdd.length) {
+      addListEl.innerHTML = toAdd.map((s, i) => `
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .85rem;${i ? 'border-top:1px solid var(--border)' : ''}">
+          <input type="checkbox" class="gmail-sync-check" data-id="${s.id}" data-name="${s.full_name}" checked
+            style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;cursor:pointer"/>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:.87rem">${s.full_name}</div>
+            <div style="font-size:.73rem;color:var(--muted)">${s.username}</div>
+          </div>
+          <div style="font-size:.75rem;color:var(--muted)">${s.class_name || '—'}</div>
+          <span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:.1rem .5rem;font-size:.72rem;font-weight:700">+ ${cls}</span>
+        </div>`).join('');
+      // Thêm select all
+      addListEl.insertAdjacentHTML('afterbegin', `
+        <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .85rem;background:var(--primary-light);border-radius:10px 10px 0 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="gmailSelectAll" checked onchange="document.querySelectorAll('.gmail-sync-check').forEach(cb=>cb.checked=this.checked)"
+            style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer"/>
+          <label for="gmailSelectAll" style="font-size:.82rem;font-weight:700;cursor:pointer;color:var(--primary)">Chọn tất cả ${toAdd.length} học sinh</label>
+        </div>`);
+    } else {
+      addListEl.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:.88rem">Tất cả Gmail đã có lớp <b>' + cls + '</b> rồi.</div>';
+      document.getElementById('gmailDoSyncBtn').disabled = true;
+    }
+
+    // Danh sách Gmail chưa có TK
+    if (missing.length) {
+      document.getElementById('gmailSyncMissingWrap').style.display = 'block';
+      document.getElementById('gmailSyncMissingList').textContent = missing.join(', ');
+    } else {
+      document.getElementById('gmailSyncMissingWrap').style.display = 'none';
+    }
+
+    // Danh sách đã có
+    if (alreadyHave.length) {
+      document.getElementById('gmailSyncAlreadyWrap').style.display = 'block';
+      document.getElementById('gmailSyncAlreadyList').textContent = alreadyHave.map(s => s.username).join(', ');
+    } else {
+      document.getElementById('gmailSyncAlreadyWrap').style.display = 'none';
+    }
+
+  } catch(e) {
+    errEl.textContent = 'Lỗi phân tích: ' + e.message;
+  } finally {
+    document.getElementById('gmailAnalyzeBtn').textContent = '🔍 Phân tích danh sách';
+    document.getElementById('gmailAnalyzeBtn').disabled = false;
+  }
+}
+
+async function doGmailSync() {
+  const cls    = document.getElementById('gmailSyncClass').value;
+  const errEl  = document.getElementById('gmailSyncError2');
+  const btn    = document.getElementById('gmailDoSyncBtn');
+  errEl.textContent = '';
+
+  // Lấy các checkbox được chọn
+  const checked = [...document.querySelectorAll('.gmail-sync-check:checked')];
+  if (!checked.length) { errEl.textContent = 'Không có học sinh nào được chọn.'; return; }
+
+  btn.textContent = '⏳ Đang đồng bộ...';
+  btn.disabled = true;
+
+  let successCount = 0;
+  let errorCount   = 0;
+
+  for (const cb of checked) {
+    const studentId = parseInt(cb.dataset.id);
+    try {
+      // Kiểm tra trùng một lần nữa trước khi insert
+      const { data: existing } = await db.from('student_classes')
+        .select('id').eq('student_id', studentId).eq('class_name', cls).maybeSingle();
+      if (existing) { successCount++; continue; }
+
+      const { error } = await db.from('student_classes').insert({ student_id: studentId, class_name: cls });
+      if (error) { errorCount++; console.warn('Sync error:', error.message); }
+      else successCount++;
+    } catch(e) { errorCount++; }
+  }
+
+  btn.textContent = '✅ Đồng bộ tất cả';
+  btn.disabled = false;
+
+  document.getElementById('gmailSyncModal').classList.remove('open');
+  await renderStudents();
+  await populateClassFilters();
+
+  if (errorCount) {
+    showToast(`⚠️ Đồng bộ xong: ${successCount} thành công, ${errorCount} lỗi`, false);
+  } else {
+    showToast(`✅ Đã thêm lớp phụ "${cls}" cho ${successCount} học sinh thành công`);
+  }
+  logAccountActivity(`Đồng bộ Gmail → Lớp ${cls}`, { full_name: `${successCount} học sinh`, username: '', class_name: cls });
+}

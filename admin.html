@@ -51,7 +51,7 @@
       <a href="homework.html" class="slink" data-label="Bài Tập"><span class="slink-icon">📝</span><span class="slink-label">Bài Tập</span></a>
       <a href="#" class="slink" data-page="files" data-label="Lưu trữ"><span class="slink-icon">🗂️</span><span class="slink-label">Lưu trữ tài liệu</span></a>
       <a href="#" class="slink" data-page="schedule" data-label="Lịch học"><span class="slink-icon">📅</span><span class="slink-label">Lịch học</span></a>
-      <a href="#" class="slink" data-page="profile" data-label="Hồ sơ"><span class="slink-icon">�</span><span class="slink-label">Hồ sơ</span></a>/
+      <a href="#" class="slink" data-page="profile" data-label="Hồ sơ"><span class="slink-icon"></span><span class="slink-label">Hồ sơ</span></a>
     </nav>
     <a href="login.html" class="slink slink-logout" id="logoutBtn" data-label="Đăng xuất"><span class="slink-icon">🚪</span><span class="slink-label">Đăng xuất</span></a>
     <a href="index.html" style="display:flex;align-items:center;gap:.6rem;margin:.3rem .75rem .5rem;padding:.45rem .85rem;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:.78rem;font-weight:600;transition:all .18s;text-decoration:none" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.5)'">
@@ -300,6 +300,7 @@
           <button class="btn-outline" id="genMissingCodesBtn" title="Tự động sinh mã cho học viên chưa có">🔧 Sinh mã còn thiếu</button>
           <button class="btn-outline" id="syncExpiryBtn" title="Đồng bộ ngày hết hạn từ lớp" data-teacher-only>📅 Đồng bộ hết hạn</button>
           <button class="btn-outline" id="syncClassNameBtn" title="Đồng bộ tên lớp từ student_classes vào cột Lớp" data-teacher-only>🔄 Đồng bộ lớp</button>
+          <button class="btn-outline" id="syncGmailBtn" title="Đồng bộ danh sách Gmail từ file Excel/CSV vào lớp phụ" data-teacher-only onclick="openGmailSyncModal()" style="background:#eef2ff;border-color:#c7d2fe;color:#4338ca;font-weight:700">📥 Đồng bộ Gmail → Lớp</button>
           <button class="btn-outline" id="exportStudentsBtn">⬇ Xuất Excel</button>
           <button class="btn-primary" id="openAddStudentBtn">➕ Thêm học sinh</button>
         </div>
@@ -602,6 +603,95 @@
       <!-- Nội dung file manager -->
       <div id="fileManagerContent"></div>
     </section>
+
+  <!-- MODAL: Đồng bộ Gmail → Lớp phụ -->
+  <div class="modal-overlay" id="gmailSyncModal">
+    <div class="modal" style="max-width:680px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <h3 style="font-weight:800;margin:0">📥 Đồng bộ danh sách Gmail → Lớp phụ</h3>
+        <button onclick="document.getElementById('gmailSyncModal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+      </div>
+
+      <!-- Bước 1: Chọn lớp & upload -->
+      <div id="gmailSyncStep1">
+        <div style="background:#eef2ff;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:.85rem;line-height:1.7;color:#3730a3">
+          <b>📋 Hướng dẫn:</b><br/>
+          1. Xuất danh sách Gmail từ Google Sheets / nhóm Zalo ra file Excel hoặc CSV<br/>
+          2. Chọn lớp muốn đồng bộ → Upload file → Hệ thống so sánh & liệt kê<br/>
+          3. Học sinh <b>đã có tài khoản nhưng chưa có lớp này</b> → thêm làm lớp phụ<br/>
+          4. Gmail chưa có tài khoản → bỏ qua (không tạo mới)
+        </div>
+
+        <label>Chọn lớp muốn đồng bộ <span style="color:var(--danger)">*</span></label>
+        <select id="gmailSyncClass" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem;margin-bottom:.75rem">
+          <option value="">-- Chọn lớp --</option>
+        </select>
+
+        <label>Upload file danh sách Gmail (Excel .xlsx hoặc CSV)</label>
+        <div id="gmailDropZone"
+          ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
+          ondragleave="this.style.borderColor='var(--border)'"
+          ondrop="handleGmailDrop(event)"
+          onclick="document.getElementById('gmailFileInput').click()"
+          style="border:2px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s">
+          <div style="font-size:2rem;margin-bottom:.35rem">📎</div>
+          <div style="font-weight:700;color:var(--text)">Kéo thả hoặc bấm để chọn file</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Excel (.xlsx) hoặc CSV — cột Gmail có thể đặt tên bất kỳ</div>
+          <input type="file" id="gmailFileInput" accept=".xlsx,.csv,.xls" hidden onchange="parseGmailFile(this.files[0])"/>
+        </div>
+
+        <div id="gmailFileInfo" style="display:none;margin-top:.6rem;font-size:.83rem;color:var(--muted)"></div>
+        <div id="gmailSyncError" class="error-msg" style="margin-top:.5rem"></div>
+
+        <!-- Hoặc dán thẳng Gmail -->
+        <div style="display:flex;align-items:center;gap:.5rem;margin:.75rem 0 .5rem">
+          <hr style="flex:1;border-color:var(--border)"/>
+          <span style="font-size:.78rem;color:var(--muted);font-weight:600;white-space:nowrap">HOẶC DÁN TRỰC TIẾP</span>
+          <hr style="flex:1;border-color:var(--border)"/>
+        </div>
+        <label>Dán danh sách Gmail <span style="color:var(--muted);font-weight:400">(mỗi dòng 1 Gmail, hoặc phân cách bằng dấu phẩy/tab)</span></label>
+        <textarea id="gmailPasteBox" rows="5" placeholder="Dán từ Excel, Google Sheets, Zalo...&#10;VD:&#10;hocsinh1@gmail.com&#10;hocsinh2@gmail.com, hocsinh3@gmail.com"
+          style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;font-size:.85rem;outline:none;font-family:inherit;resize:vertical;background:var(--card);color:var(--text);transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+          oninput="parseGmailPaste(this.value)"></textarea>
+        <div id="gmailPasteInfo" style="font-size:.78rem;color:var(--muted);margin-top:.25rem"></div>
+
+        <div class="form-actions" style="margin-top:1rem">
+          <button class="btn-outline" onclick="document.getElementById('gmailSyncModal').classList.remove('open')">Hủy</button>
+          <button class="btn-primary" id="gmailAnalyzeBtn" onclick="analyzeGmailSync()" disabled>🔍 Phân tích danh sách</button>
+        </div>
+      </div>
+
+      <!-- Bước 2: Kết quả phân tích -->
+      <div id="gmailSyncStep2" style="display:none">
+        <div id="gmailSyncStats" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+
+        <!-- Danh sách cần thêm lớp -->
+        <div id="gmailSyncResultWrap">
+          <div style="font-weight:800;font-size:.9rem;margin-bottom:.5rem">✅ Học sinh cần thêm lớp phụ</div>
+          <div id="gmailSyncAddList" style="max-height:280px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px"></div>
+        </div>
+
+        <!-- Danh sách chưa có tài khoản -->
+        <div id="gmailSyncMissingWrap" style="margin-top:.85rem;display:none">
+          <div style="font-weight:800;font-size:.9rem;margin-bottom:.5rem;color:#92400e">⚠️ Gmail chưa có tài khoản (bỏ qua)</div>
+          <div id="gmailSyncMissingList" style="max-height:120px;overflow-y:auto;border:1.5px solid #fde68a;border-radius:10px;background:#fffbeb;padding:.5rem .75rem;font-size:.82rem;color:#78350f"></div>
+        </div>
+
+        <!-- Danh sách đã có lớp -->
+        <div id="gmailSyncAlreadyWrap" style="margin-top:.65rem;display:none">
+          <div style="font-weight:800;font-size:.9rem;margin-bottom:.5rem;color:var(--muted)">ℹ️ Đã có lớp này rồi (bỏ qua)</div>
+          <div id="gmailSyncAlreadyList" style="max-height:80px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:.5rem .75rem;font-size:.82rem;color:var(--muted)"></div>
+        </div>
+
+        <div id="gmailSyncError2" class="error-msg" style="margin-top:.5rem"></div>
+        <div class="form-actions" style="margin-top:1rem">
+          <button class="btn-outline" onclick="document.getElementById('gmailSyncStep2').style.display='none';document.getElementById('gmailSyncStep1').style.display='block'">← Quay lại</button>
+          <button class="btn-primary" id="gmailDoSyncBtn" onclick="doGmailSync()">✅ Đồng bộ tất cả</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL: Tạo/Sửa thư mục -->
   <div class="modal-overlay" id="folderModal">
