@@ -63,20 +63,21 @@ async function decryptUrl(enc) {
 // ---- Kiểm tra trùng Gmail / SĐT ----
 async function checkDuplicate(username, phone, excludeId=null) {
   const warnings = [];
-  // Kiểm tra Gmail
+  const queries = [];
   if (username) {
     let q = db.from('students').select('id,full_name').eq('username', username);
     if (excludeId) q = q.neq('id', excludeId);
-    const { data } = await q;
-    if (data?.length) warnings.push(`Gmail <b>${username}</b> đã được dùng bởi <b>${data[0].full_name}</b>.`);
-  }
-  // Kiểm tra SĐT
+    queries.push(q);
+  } else queries.push(Promise.resolve({ data: [] }));
   if (phone) {
     let q = db.from('students').select('id,full_name').eq('phone', phone);
     if (excludeId) q = q.neq('id', excludeId);
-    const { data } = await q;
-    if (data?.length) warnings.push(`SĐT <b>${phone}</b> đã được dùng bởi <b>${data[0].full_name}</b>.`);
-  }
+    queries.push(q);
+  } else queries.push(Promise.resolve({ data: [] }));
+
+  const [{ data: gmailData }, { data: phoneData }] = await Promise.all(queries);
+  if (gmailData?.length) warnings.push(`Gmail <b>${username}</b> đã được dùng bởi <b>${gmailData[0].full_name}</b>.`);
+  if (phoneData?.length) warnings.push(`SĐT <b>${phone}</b> đã được dùng bởi <b>${phoneData[0].full_name}</b>.`);
   return warnings;
 }
 
@@ -355,7 +356,12 @@ function showPage(name) {
     if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
     renderAlerts();
   }
-  if (name === 'devices')        renderDeviceAlerts();
+  if (name === 'devices')        {
+    const today = new Date().toISOString().split('T')[0];
+    const fromEl = document.getElementById('deviceAlertDateFrom');
+    if (fromEl && !fromEl.value) fromEl.value = today;
+    renderDeviceAlerts();
+  }
   if (name === 'access-stats')   renderAccessStats();
   if (name === 'login-history')  renderLoginHistory();
   if (name === 'announcements')  { populateClassFilters(); renderAnnouncements(); }
@@ -372,26 +378,41 @@ document.querySelectorAll('[data-goto]').forEach(l => {
 
 
 // ---- Class filters ----
+// Cache danh sách lớp — invalidate khi thêm/xóa lớp
+let _classesCache = null;
+let _classesCacheTime = 0;
+const _CLASSES_CACHE_TTL = 30000; // 30s
+
 async function getClasses() {
+  const now = Date.now();
+  if (_classesCache && (now - _classesCacheTime) < _CLASSES_CACHE_TTL) {
+    return _classesCache;
+  }
   const [{ data: cls }, { data: sts }, { data: sc }] = await Promise.all([
     db.from('classes').select('name').order('name'),
     db.from('students').select('class_name'),
     db.from('student_classes').select('class_name'),
   ]);
   const fromClasses  = (cls||[]).map(c => c.name);
-  // Split comma-separated class_name thành từng lớp riêng lẻ
   const fromStudents = (sts||[])
     .flatMap(s => (s.class_name||'').split(',').map(c => c.trim()))
     .filter(Boolean);
   const fromSC = (sc||[]).map(s => s.class_name).filter(Boolean);
-  return [...new Set([...fromClasses, ...fromStudents, ...fromSC])].sort();
+  _classesCache = [...new Set([...fromClasses, ...fromStudents, ...fromSC])].sort();
+  _classesCacheTime = now;
+  return _classesCache;
+}
+
+function _invalidateClassesCache() {
+  _classesCache = null;
+  _classesCacheTime = 0;
 }
 
 async function populateClassFilters() {
   const classes = await getClasses();
   const filterOpts = '<option value="">Tất cả lớp</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
   const modalOpts  = '<option value="">-- Tất cả lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
-  ['studentFilterClass','lessonFilterClass','accessFilterClass','loginHistoryFilterClass','annClass','scheduleFilterClass'].forEach(id => {
+  ['studentFilterClass','lessonFilterClass','accessFilterClass','loginHistoryFilterClass','annClass','annFilterClass','scheduleFilterClass'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
     const cur = el.value; el.innerHTML = filterOpts; el.value = cur;
   });
@@ -1057,15 +1078,13 @@ document.getElementById('addCode') && document.getElementById('addCode').addEven
 
 // Tự động tạo mã học viên 5 ký tự unique
 async function genStudentCode() {
-  const { data: existing } = await db.from('students').select('student_code');
-  const usedCodes = new Set((existing||[]).map(s => s.student_code).filter(Boolean));
-  // Loại bỏ ký tự dễ nhầm: i, l, I, O, o, 0, 1
+  // Tạo mã random và check trùng chỉ 1 lần thay vì fetch toàn bộ
   const upper  = 'ABCDEFGHJKMNPQRSTUVWXYZ';
   const lower  = 'abcdefghjkmnpqrstuvwxyz';
   const digits = '23456789';
   const all    = upper + lower + digits;
-  let code;
-  do {
+
+  for (let attempt = 0; attempt < 10; attempt++) {
     const arr = [
       upper[Math.floor(Math.random() * upper.length)],
       lower[Math.floor(Math.random() * lower.length)],
@@ -1076,9 +1095,13 @@ async function genStudentCode() {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    code = arr.join('');
-  } while (usedCodes.has(code));
-  return code;
+    const code = arr.join('');
+    // Chỉ check xem mã này có tồn tại không
+    const { data } = await db.from('students').select('id').eq('student_code', code).maybeSingle();
+    if (!data) return code; // Không trùng → dùng ngay
+  }
+  // Fallback nếu 10 lần vẫn trùng (cực kỳ hiếm)
+  return Date.now().toString(36).toUpperCase().slice(-5);
 }
 
 document.getElementById('csSaveBtn').addEventListener('click', async () => {
@@ -1426,10 +1449,11 @@ async function renderStudents() {
   const cls    = document.getElementById('studentFilterClass').value;
   const expiry = document.getElementById('studentFilterExpiry')?.value || '';
   let query = db.from('students').select('*').order('full_name').limit(10000);
-  // Không filter theo lớp ở DB vì class_name có thể chứa nhiều lớp
-  const [{ data: list }, { data: scAll }] = await Promise.all([
+  // Gộp 3 query vào Promise.all thay vì tuần tự
+  const [{ data: list }, { data: scAll }, { data: allClasses }] = await Promise.all([
     query,
-    db.from('student_classes').select('student_id,class_name')
+    db.from('student_classes').select('student_id,class_name'),
+    db.from('classes').select('name,end_date'),
   ]);
 
   // Merge lớp phụ từ student_classes vào class_name
@@ -1445,7 +1469,6 @@ async function renderStudents() {
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const { data: allClasses } = await db.from('classes').select('name,end_date');
   const expiredClasses = new Set((allClasses||[]).filter(c => c.end_date && new Date(c.end_date) < today).map(c => c.name));
   const expired = (list||[]).filter(s => s.active && !s.manually_unlocked && (
     (s.expiry_date && new Date(s.expiry_date) < today) ||
@@ -2723,6 +2746,13 @@ async function renderClasses() {
         showConfirm(`Xóa lớp "${cls}"? Lớp này không có học sinh.`, async () => {
           await db.from('classes').delete().eq('name', cls);
           await db.from('student_classes').delete().eq('class_name', cls);
+          // Xóa tên lớp trong bài học
+          const { data: mLessons } = await db.from('lessons').select('id,class_name').ilike('class_name', `%${cls}%`);
+          for (const l of (mLessons||[])) {
+            const parts = (l.class_name||'').split(',').map(c=>c.trim()).filter(c=>c&&c!==cls);
+            await db.from('lessons').update({ class_name: parts.join(',')||null }).eq('id', l.id);
+          }
+          _invalidateClassesCache();
           renderClasses(); populateClassFilters();
         });
       }
@@ -2796,37 +2826,65 @@ document.getElementById('unlockAllClassBtn').addEventListener('click', async () 
   }, { title: 'Mở khóa toàn bộ', icon: '🔓', okText: 'Mở khóa' });
 });
 
-let editingClassName=null;
+let editingClassName = null;
+
+// ---- Helper dùng chung: xóa tên lớp khỏi students.class_name ----
+async function removeClassFromStudents(className) {
+  const { data: affected } = await db.from('students').select('id,class_name').ilike('class_name', `%${className}%`);
+  const updates = (affected||[])
+    .map(s => {
+      const classes = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+      if (!classes.includes(className)) return null;
+      return { id: s.id, class_name: classes.filter(c=>c!==className).join(',') || null };
+    })
+    .filter(Boolean);
+  // Chạy song song thay vì tuần tự
+  await Promise.all(updates.map(u => db.from('students').update({ class_name: u.class_name }).eq('id', u.id)));
+}
+
+// ---- Helper dùng chung: xóa bảng lớp + student_classes + lessons + groups ----
+async function deleteClassRecord(className) {
+  _invalidateClassesCache();
+  await db.from('classes').delete().eq('name', className);
+  await db.from('student_classes').delete().eq('class_name', className);
+
+  // Lấy lessons + groups song song, rồi update song song
+  const [{ data: allLessons }, { data: allGroups }] = await Promise.all([
+    db.from('lessons').select('id,class_name'),
+    db.from('lesson_groups').select('id,class_name'),
+  ]);
+
+  // Xóa class_name trong bài học — chạy song song
+  await Promise.all((allLessons||[])
+    .filter(l => l.class_name && l.class_name.split(',').map(c=>c.trim()).some(p=>p.toLowerCase()===className.toLowerCase()))
+    .map(l => {
+      const parts = l.class_name.split(',').map(c=>c.trim()).filter(p=>p&&p.toLowerCase()!==className.toLowerCase());
+      return db.from('lessons').update({ class_name: parts.join(',')||null }).eq('id', l.id);
+    })
+  );
+
+  // Xóa class_name trong nhóm bài học — chạy song song
+  await Promise.all((allGroups||[])
+    .filter(g => g.class_name && g.class_name.split(',').map(c=>c.trim()).some(p=>p.toLowerCase()===className.toLowerCase()))
+    .map(g => {
+      const parts = g.class_name.split(',').map(c=>c.trim()).filter(p=>p&&p.toLowerCase()!==className.toLowerCase());
+      return db.from('lesson_groups').update({ class_name: parts.join(',')||null }).eq('id', g.id);
+    })
+  );
+}
+
 // ---- Xóa lớp: 3 chức năng ----
 function openDeleteClassModal(cls, allIds, studentCount) {
   document.getElementById('deleteClassTitle').textContent = `Xóa lớp "${cls}"`;
   document.getElementById('deleteClassDesc').textContent = `Lớp có ${studentCount} học viên. Chọn hành động:`;
   document.getElementById('deleteClassModal').classList.add('open');
 
-  // Helper: xóa lớp khỏi students.class_name
-  async function removeClassFromStudents(className) {
-    const { data: affected } = await db.from('students').select('id,class_name').ilike('class_name', `%${className}%`);
-    for (const s of (affected||[])) {
-      const classes = (s.class_name||'').split(',').map(c=>c.trim());
-      if (!classes.includes(className)) continue;
-      const updated = classes.filter(c => c !== className);
-      await db.from('students').update({ class_name: updated.join(',') || null }).eq('id', s.id);
-    }
-  }
-
-  // Helper: xóa bảng lớp + student_classes
-  async function deleteClassRecord(className) {
-    await db.from('classes').delete().eq('name', className);
-    await db.from('student_classes').delete().eq('class_name', className);
-  }
-
   const closeModal = () => document.getElementById('deleteClassModal').classList.remove('open');
 
-  // Gán sự kiện — clone để tránh listener chồng
+  // Clone nút để tránh listener chồng
   ['delCls_keepAll','delCls_delAll','delCls_selective','deleteClassCancelBtn'].forEach(id => {
     const el = document.getElementById(id);
-    const clone = el.cloneNode(true);
-    el.replaceWith(clone);
+    if (el) el.replaceWith(el.cloneNode(true));
   });
 
   // Nút Hủy
@@ -2837,6 +2895,7 @@ function openDeleteClassModal(cls, allIds, studentCount) {
     closeModal();
     await deleteClassRecord(cls);
     await removeClassFromStudents(cls);
+    _invalidateClassesCache();
     renderClasses(); populateClassFilters(); renderStudents(); renderOverview();
   }, { once: true });
 
@@ -2848,6 +2907,7 @@ function openDeleteClassModal(cls, allIds, studentCount) {
       async () => {
         if (allIds.length) await db.from('students').delete().in('id', allIds);
         await deleteClassRecord(cls);
+        _invalidateClassesCache();
         renderClasses(); populateClassFilters(); renderStudents(); renderOverview();
       },
       { title: `💣 Xác nhận xóa tất cả`, icon: '⚠️', okText: `Xóa ${studentCount} học viên & lớp` }
@@ -2941,6 +3001,7 @@ function openDeleteClassModal(cls, allIds, studentCount) {
       // Xóa lớp
       await deleteClassRecord(cls);
       await removeClassFromStudents(cls);
+      _invalidateClassesCache();
       renderClasses(); populateClassFilters(); renderStudents(); renderOverview();
     }, { once: true });
   }, { once: true });
@@ -2988,6 +3049,7 @@ document.getElementById('editClassSaveBtn').addEventListener('click', async ()=>
     await db.from('students').update({ expiry_date: end }).eq('class_name', newName);
   }
   document.getElementById('editClassModal').classList.remove('open');
+  _invalidateClassesCache();
   renderClasses(); populateClassFilters();
 });
 
@@ -3007,6 +3069,7 @@ document.getElementById('addClassSaveBtn').addEventListener('click', async ()=>{
   const { error }=await db.from('classes').insert({name, start_date:start, end_date:end});
   if (error) { err.textContent='Tên lớp đã tồn tại.'; return; }
   document.getElementById('addClassModal').classList.remove('open');
+  _invalidateClassesCache();
   renderClasses(); populateClassFilters();
 });
 
@@ -3014,11 +3077,29 @@ document.getElementById('addClassSaveBtn').addEventListener('click', async ()=>{
 // DEVICE ALERTS
 // ============================================================
 async function renderDeviceAlerts() {
-  const q = (document.getElementById('deviceAlertSearch').value || '').toLowerCase();
+  const q        = (document.getElementById('deviceAlertSearch').value || '').toLowerCase();
+  const dateFrom = document.getElementById('deviceAlertDateFrom')?.value || '';
+  const dateTo   = document.getElementById('deviceAlertDateTo')?.value || '';
+
   const { data: list } = await db.from('alerts').select('*')
-    .or(`reason.eq.Đăng nhập thiết bị mới — thiết bị cũ bị đăng xuất,reason.eq.Đăng nhập từ thiết bị khác trong vòng 5 phút,reason.eq.Đăng nhập sai mật khẩu 5 lần liên tiếp,reason.like.%Admin%`)
-    .order('created_at', { ascending: false });
-  const filtered = (list||[]).filter(a => !q || (a.student_name||'').toLowerCase().includes(q));
+    .order('created_at', { ascending: false })
+    .limit(5000);
+
+  const deviceKeywords = ['thiết bị', 'đăng nhập', 'mật khẩu', 'admin', 'trợ lý'];
+  let deviceList = (list||[]).filter(a => {
+    const r = (a.reason||'').toLowerCase();
+    return deviceKeywords.some(k => r.includes(k));
+  });
+
+  // Filter theo ngày
+  if (dateFrom) {
+    deviceList = deviceList.filter(a => a.created_at && a.created_at >= dateFrom);
+  }
+  if (dateTo) {
+    deviceList = deviceList.filter(a => a.created_at && a.created_at <= dateTo + 'T23:59:59');
+  }
+
+  const filtered = deviceList.filter(a => !q || (a.student_name||'').toLowerCase().includes(q));
   const el = document.getElementById('deviceAlertList');
   el.innerHTML = '';
   document.getElementById('emptyDeviceAlerts').style.display = filtered.length ? 'none' : 'block';
@@ -3031,7 +3112,7 @@ async function renderDeviceAlerts() {
         <div class="list-title">${a.student_name} <span class="muted" style="font-weight:400">— ${a.username}</span></div>
         <div class="list-meta">
           ${a.class_name ? `<span class="class-tag">${a.class_name}</span>` : ''}
-          <span class="alert-badge">Đăng nhập thiết bị mới</span>
+          <span class="alert-badge">${a.reason}</span>
           • ${fmtTime(a.created_at)}
         </div>
       </div>`;
@@ -3039,13 +3120,27 @@ async function renderDeviceAlerts() {
   });
 }
 document.getElementById('deviceAlertSearch').addEventListener('input', renderDeviceAlerts);
+document.getElementById('deviceAlertDateFrom')?.addEventListener('change', renderDeviceAlerts);
+document.getElementById('deviceAlertDateTo')?.addEventListener('change', renderDeviceAlerts);
+document.getElementById('deviceAlertDateClear')?.addEventListener('click', () => {
+  document.getElementById('deviceAlertDateFrom').value = '';
+  document.getElementById('deviceAlertDateTo').value = '';
+  renderDeviceAlerts();
+});
 document.getElementById('clearDeviceAlertsBtn').addEventListener('click', async () => {
   showConfirm('Xóa toàn bộ cảnh báo thiết bị?', async () => {
-    await db.from('alerts').delete().in('reason', [
-      'Đăng nhập thiết bị mới — thiết bị cũ bị đăng xuất',
-      'Đăng nhập từ thiết bị khác trong vòng 5 phút',
-      'Đăng nhập sai mật khẩu 5 lần liên tiếp'
-    ]);
+    // Lấy danh sách ID đang hiển thị rồi xóa theo id — chắc chắn hơn hardcode reason
+    const { data: list } = await db.from('alerts').select('id,reason').limit(5000);
+    const deviceKeywords = ['thiết bị', 'đăng nhập', 'mật khẩu', 'admin', 'trợ lý'];
+    const ids = (list||[])
+      .filter(a => deviceKeywords.some(k => (a.reason||'').toLowerCase().includes(k)))
+      .map(a => a.id);
+    if (ids.length) {
+      // Xóa theo batch 100 ids
+      for (let i = 0; i < ids.length; i += 100) {
+        await db.from('alerts').delete().in('id', ids.slice(i, i + 100));
+      }
+    }
     renderDeviceAlerts();
   }, { title: 'Xóa cảnh báo', icon: '📱' });
 });
@@ -3155,58 +3250,206 @@ autoLockExpiredAccounts();
 // ============================================================
 let editingAnnId = null;
 
+// Config màu/icon theo priority
+const _ANN_PRIORITY = {
+  urgent: { label: '🔴 Khẩn cấp', bg: '#fff5f5', border: '#fca5a5', badge: '#ef4444', text: '#991b1b' },
+  high:   { label: '🟠 Cao',       bg: '#fff7ed', border: '#fed7aa', badge: '#f97316', text: '#9a3412' },
+  normal: { label: '🔵 Bình thường', bg: 'var(--card)', border: 'var(--border)', badge: '#3b82f6', text: '#1d4ed8' },
+  low:    { label: '⚪ Thấp',      bg: 'var(--bg)',   border: 'var(--border)', badge: '#94a3b8', text: '#64748b' },
+};
+
+function openAnnForm(ann = null) {
+  editingAnnId = ann?.id || null;
+  document.getElementById('annFormWrap').style.display = 'block';
+  document.getElementById('annFormTitle').textContent = ann ? '✏️ Sửa thông báo' : '✏️ Tạo thông báo mới';
+  document.getElementById('annTitle').value   = ann?.title   || '';
+  document.getElementById('annContent').value = ann?.content || '';
+  document.getElementById('annLink').value    = ann?.link_url  || '';
+  document.getElementById('annLinkText').value = ann?.link_text || '';
+  document.getElementById('annClass').value   = ann?.class_name || '';
+  document.getElementById('annPinned').checked = ann?.pinned || false;
+  document.getElementById('annExpire24h').checked = false;
+  document.getElementById('annScheduledAt').value = ann?.scheduled_at
+    ? new Date(ann.scheduled_at).toISOString().slice(0,16) : '';
+  // priority
+  const prio = ann?.priority || 'normal';
+  document.querySelectorAll('input[name="annPriority"]').forEach(r => { r.checked = r.value === prio; });
+  // student
+  const annSearch = document.getElementById('annStudentSearch');
+  if (annSearch) { annSearch.value = ann?.target_username || ''; annSearch.dataset.selectedUsername = ann?.target_username || ''; }
+  const sel = document.getElementById('annStudentSelected');
+  if (ann?.target_username) {
+    document.getElementById('annStudentSelectedName').textContent = `👤 ${ann.target_username}`;
+    sel.style.display = 'flex';
+  } else { sel.style.display = 'none'; }
+  document.getElementById('annError').textContent = '';
+  document.getElementById('annFormWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeAnnForm() {
+  editingAnnId = null;
+  document.getElementById('annFormWrap').style.display = 'none';
+}
+
+document.getElementById('openAnnFormBtn')?.addEventListener('click', () => openAnnForm());
+
 async function renderAnnouncements() {
-  const { data: list } = await db.from('announcements').select('*').order('created_at', {ascending:false});
+  const { data: all } = await db.from('announcements').select('*').order('pinned', {ascending:false}).order('created_at', {ascending:false});
+
+  // Stats bar
+  const statsEl = document.getElementById('annStatsBar');
+  if (statsEl) {
+    const total   = (all||[]).length;
+    const pinned  = (all||[]).filter(a => a.pinned).length;
+    const urgent  = (all||[]).filter(a => a.priority === 'urgent').length;
+    const sched   = (all||[]).filter(a => a.scheduled_at && new Date(a.scheduled_at) > new Date()).length;
+    statsEl.innerHTML = `
+      <div style="background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:.45rem .9rem;font-size:.82rem;font-weight:700;color:var(--text)">📢 ${total} thông báo</div>
+      ${pinned  ? `<div style="background:#fef3c7;border:1.5px solid #fde68a;border-radius:10px;padding:.45rem .9rem;font-size:.82rem;font-weight:700;color:#92400e">📌 ${pinned} đã ghim</div>` : ''}
+      ${urgent  ? `<div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:.45rem .9rem;font-size:.82rem;font-weight:700;color:#991b1b">🔴 ${urgent} khẩn cấp</div>` : ''}
+      ${sched   ? `<div style="background:#e0f2fe;border:1.5px solid #bae6fd;border-radius:10px;padding:.45rem .9rem;font-size:.82rem;font-weight:700;color:#0369a1">🕐 ${sched} chờ gửi</div>` : ''}`;
+  }
+
+  _renderAnnCards(all || []);
+}
+
+// Filter realtime — dùng lại data đã fetch, không re-query DB
+document.getElementById('annSearch')?.addEventListener('input', () => _renderAnnCards(_annAllData));
+document.getElementById('annFilterClass')?.addEventListener('change', () => _renderAnnCards(_annAllData));
+document.getElementById('annFilterPriority')?.addEventListener('change', () => _renderAnnCards(_annAllData));
+
+// Tab state
+let _annCurrentTab = 'all';
+let _annAllData = [];
+
+function switchAnnTab(tab) {
+  _annCurrentTab = tab;
+  // Style tab buttons
+  ['all','pinned','normal'].forEach(t => {
+    const btn = document.getElementById(`annTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    if (!btn) return;
+    if (t === tab) {
+      btn.style.background = 'var(--primary)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--muted)';
+    }
+  });
+  _renderAnnCards(_annAllData);
+}
+
+function _renderAnnCards(all) {
+  _annAllData = all;
+  const searchQ   = (document.getElementById('annSearch')?.value || '').toLowerCase();
+  const filterCls = document.getElementById('annFilterClass')?.value || '';
+  const filterPrio = document.getElementById('annFilterPriority')?.value || '';
+
+  let list = all.filter(a => {
+    if (searchQ && !a.title.toLowerCase().includes(searchQ) && !a.content.toLowerCase().includes(searchQ)) return false;
+    if (filterCls && a.class_name !== filterCls) return false;
+    if (filterPrio && (a.priority||'normal') !== filterPrio) return false;
+    return true;
+  });
+
+  const pinnedList   = list.filter(a => a.pinned);
+  const unpinnedList = list.filter(a => !a.pinned);
+
+  // Update badge counts
+  document.getElementById('annTabAllCount').textContent    = list.length;
+  document.getElementById('annTabPinnedCount').textContent = pinnedList.length;
+  document.getElementById('annTabNormalCount').textContent = unpinnedList.length;
+
+  // Items theo tab
+  let items = _annCurrentTab === 'pinned' ? pinnedList
+            : _annCurrentTab === 'normal' ? unpinnedList
+            : list;
+
+  // Nút xóa tất cả tab
+  const clearBtn = document.getElementById('annClearTabBtn');
+  if (clearBtn) {
+    clearBtn.style.display = items.length ? '' : 'none';
+    clearBtn.textContent = `🗑 Xóa ${items.length} thông báo${_annCurrentTab === 'pinned' ? ' ghim' : _annCurrentTab === 'normal' ? ' thường' : ''}`;
+    clearBtn.onclick = null;
+    clearBtn.addEventListener('click', () => {
+      showConfirm(`Xóa ${items.length} thông báo?`, async () => {
+        await Promise.all(items.map(a => db.from('announcements').delete().eq('id', a.id)));
+        renderAnnouncements();
+      }, { title: 'Xóa thông báo', icon: '📢', okText: 'Xóa tất cả' });
+    }, { once: true });
+  }
+
   const el = document.getElementById('annList');
   el.innerHTML = '';
-  document.getElementById('emptyAnn').style.display = (list||[]).length ? 'none' : 'block';
-  (list||[]).forEach(a => {
-    const row = document.createElement('div');
-    row.className = 'content-row';
-    row.style.flexDirection = 'column';
-    row.style.alignItems = 'flex-start';
-    row.style.gap = '.4rem';
-    row.innerHTML = `
-      <div style="display:flex;align-items:center;gap:.5rem;width:100%">
-        ${a.pinned ? '<span style="color:#f59e0b;font-size:1rem">📌</span>' : '<span style="font-size:1rem">📢</span>'}
-        <div style="flex:1;font-weight:700;font-size:.92rem">${a.title}</div>
-        ${a.class_name ? `<span class="class-tag">${a.class_name}</span>` : a.target_username ? `<span class="class-tag" style="background:#d1fae5;color:#065f46">👤 Cá nhân</span>` : '<span class="class-tag" style="background:#e0f2fe;color:#0369a1">Tất cả</span>'}
-        <div style="display:flex;gap:.3rem">
-          <button class="btn-sm" data-action="edit">✏️</button>
-          <button class="btn-sm btn-danger" data-action="delete">🗑</button>
+  document.getElementById('emptyAnn').style.display = items.length ? 'none' : 'block';
+
+  const now = new Date();
+  items.forEach(a => {
+    const p = _ANN_PRIORITY[a.priority||'normal'] || _ANN_PRIORITY.normal;
+    const isExpired   = a.expires_at && new Date(a.expires_at) < now;
+    const isScheduled = a.scheduled_at && new Date(a.scheduled_at) > now;
+
+    const card = document.createElement('div');
+    card.style.cssText = `background:${p.bg};border:1.5px solid ${isExpired ? '#fca5a5' : a.pinned ? '#fde68a' : p.border};border-radius:14px;padding:1rem 1.25rem;transition:box-shadow .2s;position:relative;overflow:hidden`;
+    card.onmouseover = () => card.style.boxShadow = '0 4px 16px rgba(0,0,0,.08)';
+    card.onmouseout  = () => card.style.boxShadow = '';
+
+    const stripe = document.createElement('div');
+    stripe.style.cssText = `position:absolute;left:0;top:0;bottom:0;width:4px;background:${p.badge};border-radius:4px 0 0 4px`;
+    card.appendChild(stripe);
+
+    card.innerHTML += `
+      <div style="display:flex;align-items:flex-start;gap:.75rem;padding-left:.5rem">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.35rem">
+            ${a.pinned ? '<span style="background:#fef3c7;color:#92400e;font-size:.68rem;font-weight:800;padding:.12rem .45rem;border-radius:6px">📌 Ghim</span>' : ''}
+            <span style="background:${p.badge};color:#fff;font-size:.68rem;font-weight:800;padding:.12rem .45rem;border-radius:6px">${p.label}</span>
+            ${a.class_name ? `<span class="class-tag">${a.class_name}</span>` : a.target_username ? `<span class="class-tag" style="background:#d1fae5;color:#065f46">👤 Cá nhân</span>` : '<span class="class-tag" style="background:#e0f2fe;color:#0369a1">📣 Tất cả</span>'}
+            ${isExpired   ? '<span style="background:#fee2e2;color:#991b1b;font-size:.68rem;font-weight:700;padding:.12rem .45rem;border-radius:6px">⏰ Hết hạn</span>' : ''}
+            ${isScheduled ? `<span style="background:#e0f2fe;color:#0369a1;font-size:.68rem;font-weight:700;padding:.12rem .45rem;border-radius:6px">🕐 ${new Date(a.scheduled_at).toLocaleString('vi-VN')}</span>` : ''}
+          </div>
+          <div style="font-weight:800;font-size:.95rem;color:var(--text);line-height:1.3;margin-bottom:.4rem">${a.title}</div>
+          <div style="font-size:.84rem;color:var(--muted);line-height:1.65;white-space:pre-line">${a.content}</div>
+          ${a.link_url ? `<div style="margin-top:.5rem"><a href="${a.link_url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:.3rem;color:#6366f1;font-size:.82rem;font-weight:600;text-decoration:none;background:#eef2ff;padding:.3rem .7rem;border-radius:8px">🔗 ${a.link_text||a.link_url}</a></div>` : ''}
+          <div style="font-size:.73rem;color:#94a3b8;margin-top:.5rem;display:flex;gap:.75rem;flex-wrap:wrap">
+            <span>📅 ${new Date(a.created_at).toLocaleString('vi-VN')}</span>
+            ${a.expires_at ? `<span>⏱ Hết hạn: ${new Date(a.expires_at).toLocaleString('vi-VN')}</span>` : ''}
+          </div>
         </div>
-      </div>
-      <div style="font-size:.83rem;color:var(--muted);padding-left:1.75rem;line-height:1.6;white-space:pre-line">${a.content}</div>
-      ${a.link_url ? `<div style="padding-left:1.75rem;margin-top:.4rem"><a href="${a.link_url}" target="_blank" style="color:#6366f1;font-size:.82rem;font-weight:600;text-decoration:none">🔗 ${a.link_text||a.link_url}</a></div>` : ''}
-      <div style="font-size:.75rem;color:#94a3b8;padding-left:1.75rem">${new Date(a.created_at).toLocaleString('vi-VN')}${a.expires_at ? ` • ⏱ Hết hạn: ${new Date(a.expires_at).toLocaleString('vi-VN')}` : ''}</div>
-    `;
-    row.querySelector('[data-action="edit"]').addEventListener('click', () => {
-      editingAnnId = a.id;
-      document.getElementById('annFormTitle').textContent = '✏️ Sửa thông báo';
-      document.getElementById('annTitle').value = a.title;
-      document.getElementById('annContent').value = a.content;
-      document.getElementById('annClass').value = a.class_name || '';
-      document.getElementById('annPinned').checked = a.pinned;
+        <div style="display:flex;gap:.35rem;flex-shrink:0">
+          <button class="btn-sm" data-action="pin" title="${a.pinned ? 'Bỏ ghim' : 'Ghim'}" style="${a.pinned ? 'color:#f59e0b;border-color:#fde68a' : ''}">📌</button>
+          <button class="btn-sm" data-action="edit" title="Sửa">✏️</button>
+          <button class="btn-sm btn-danger" data-action="delete" title="Xóa">🗑</button>
+        </div>
+      </div>`;
+
+    card.querySelector('[data-action="pin"]').addEventListener('click', async () => {
+      await db.from('announcements').update({ pinned: !a.pinned }).eq('id', a.id);
+      renderAnnouncements();
     });
-    row.querySelector('[data-action="delete"]').addEventListener('click', () => {
+    card.querySelector('[data-action="edit"]').addEventListener('click', () => openAnnForm(a));
+    card.querySelector('[data-action="delete"]').addEventListener('click', () => {
       showConfirm(`Xóa thông báo "${a.title}"?`, async () => {
         await db.from('announcements').delete().eq('id', a.id);
         renderAnnouncements();
       });
     });
-    el.appendChild(row);
+    el.appendChild(card);
   });
 }
 
-document.getElementById('annSaveBtn').addEventListener('click', async () => {
-  const title   = document.getElementById('annTitle').value.trim();
-  const content = document.getElementById('annContent').value.trim();
-  const cls     = document.getElementById('annClass').value;
-  const pinned  = document.getElementById('annPinned').checked;
+document.getElementById('annSaveBtn')?.addEventListener('click', async () => {
+  const title    = document.getElementById('annTitle').value.trim();
+  const content  = document.getElementById('annContent').value.trim();
+  const cls      = document.getElementById('annClass').value;
+  const pinned   = document.getElementById('annPinned').checked;
   const expire24h = document.getElementById('annExpire24h')?.checked;
   const link_url  = document.getElementById('annLink')?.value.trim() || null;
   const link_text = document.getElementById('annLinkText')?.value.trim() || null;
-  const err     = document.getElementById('annError');
+  const schedVal  = document.getElementById('annScheduledAt')?.value;
+  const scheduled_at = schedVal ? new Date(schedVal).toISOString() : null;
+  const priority  = document.querySelector('input[name="annPriority"]:checked')?.value || 'normal';
+  const err = document.getElementById('annError');
   err.textContent = '';
   if (!title)   { err.textContent = 'Vui lòng nhập tiêu đề.'; return; }
   if (!content) { err.textContent = 'Vui lòng nhập nội dung.'; return; }
@@ -3216,38 +3459,18 @@ document.getElementById('annSaveBtn').addEventListener('click', async () => {
   const finalClass = selectedUsername ? null : (cls || null);
   const target_username = selectedUsername || null;
 
+  const payload = { title, content, class_name: finalClass, pinned, expires_at, target_username, link_url, link_text, priority, scheduled_at };
+
   if (editingAnnId) {
-    await db.from('announcements').update({ title, content, class_name: finalClass, pinned, expires_at, target_username, link_url, link_text }).eq('id', editingAnnId);
+    await db.from('announcements').update(payload).eq('id', editingAnnId);
   } else {
-    await db.from('announcements').insert({ title, content, class_name: finalClass, pinned, expires_at, target_username, link_url, link_text });
+    await db.from('announcements').insert(payload);
   }
-  editingAnnId = null;
-  document.getElementById('annFormTitle').textContent = '✏️ Tạo thông báo mới';
-  document.getElementById('annTitle').value = '';
-  document.getElementById('annContent').value = '';
-  document.getElementById('annLink').value = '';
-  document.getElementById('annLinkText').value = '';
-  document.getElementById('annClass').value = '';
-  document.getElementById('annPinned').checked = false;
-  if (document.getElementById('annExpire24h')) document.getElementById('annExpire24h').checked = false;
-  const annSearch = document.getElementById('annStudentSearch');
-  if (annSearch) { annSearch.value = ''; annSearch.dataset.selectedUsername = ''; }
-  document.getElementById('annStudentSelected').style.display = 'none';
+  closeAnnForm();
   renderAnnouncements();
 });
 
-document.getElementById('annCancelBtn').addEventListener('click', () => {
-  editingAnnId = null;
-  document.getElementById('annFormTitle').textContent = '✏️ Tạo thông báo mới';
-  document.getElementById('annTitle').value = '';
-  document.getElementById('annContent').value = '';
-  document.getElementById('annClass').value = '';
-  document.getElementById('annPinned').checked = false;
-  document.getElementById('annError').textContent = '';
-  const annSearch = document.getElementById('annStudentSearch');
-  if (annSearch) { annSearch.value = ''; annSearch.dataset.selectedUsername = ''; }
-  document.getElementById('annStudentSelected').style.display = 'none';
-});
+document.getElementById('annCancelBtn')?.addEventListener('click', closeAnnForm);
 
 // ── Tìm kiếm học sinh cho thông báo ──
 let _annStudentList = [];
@@ -3382,18 +3605,18 @@ function startStudentAutoRefresh() {
     if (document.getElementById('pageStudents').classList.contains('active')) {
       renderStudents();
     }
-  }, 10000);
+  }, 30000); // tăng từ 10s → 30s
 }
 function stopStudentAutoRefresh() {
   if (_studentRefreshTimer) { clearInterval(_studentRefreshTimer); _studentRefreshTimer = null; }
 }
 
-// Auto-refresh online panel trên tổng quan mỗi 20s (fallback)
+// Auto-refresh online panel — đã có realtime, chỉ fallback mỗi 60s
 setInterval(() => {
   if (document.getElementById('pageOverview')?.classList.contains('active')) {
     renderOnlineStudents();
   }
-}, 15000);
+}, 60000); // tăng từ 15s → 60s
 
 // ── Realtime: online students ──
 db.channel('realtime-online')
@@ -3531,12 +3754,13 @@ function _startAdminFallback() {
   _adminFallbackInterval = setInterval(async () => {
     const curPage = document.querySelector('.page.active')?.id || '';
     try {
-      if (curPage === 'pageOverview')    { renderOverview(); renderOnlineStudents(); }
+      // Chỉ refresh nhẹ — online students thay vì toàn bộ overview
+      if (curPage === 'pageOverview')    renderOnlineStudents();
       if (curPage === 'pageStudents')    renderStudents();
       if (curPage === 'pageSecurity')    renderAlerts();
       if (curPage === 'pageLoginHistory') renderLoginHistory();
     } catch(e) {}
-  }, 2000);
+  }, 30000); // tăng từ 2s → 30s
 }
 
 function _stopAdminFallback() {
@@ -6228,48 +6452,68 @@ async function cleanFakeClasses() {
   btn.disabled = true;
   btn.textContent = '⏳ Đang dọn...';
 
-  // Lấy danh sách lớp hợp lệ từ bảng classes + student_classes (từng lớp riêng lẻ)
-  const [{ data: clsData }, { data: scData }] = await Promise.all([
+  // Lấy danh sách lớp hợp lệ từ bảng classes
+  const [{ data: clsData }, { data: scData }, { data: allLessons }, { data: allGroups }, { data: students }] = await Promise.all([
     db.from('classes').select('name'),
     db.from('student_classes').select('class_name'),
+    db.from('lessons').select('id,class_name').not('class_name', 'is', null),
+    db.from('lesson_groups').select('id,class_name').not('class_name', 'is', null),
+    db.from('students').select('id,class_name').ilike('class_name', '%,%'),
   ]);
+
   const validClasses = new Set([
     ...(clsData||[]).map(c => c.name.trim()),
     ...(scData||[]).map(c => c.class_name.trim()),
   ]);
 
-  // Lấy tất cả học sinh có class_name chứa dấu phẩy (lớp ghép)
-  const { data: students } = await db.from('students').select('id, class_name').ilike('class_name', '%,%');
-
-  if (!students?.length) {
-    btn.disabled = false;
-    btn.textContent = '🧹 Dọn lớp ảo';
-    showToast('✅ Không có lớp ảo nào cần dọn!');
-    return;
-  }
-
   let fixed = 0;
-  for (const s of students) {
-    const parts = (s.class_name||'').split(',').map(c => c.trim()).filter(Boolean);
-    // Chỉ giữ lớp đầu tiên hợp lệ làm class_name chính
-    const mainClass = parts.find(p => validClasses.has(p)) || parts[0] || null;
-    if (mainClass !== s.class_name) {
-      await db.from('students').update({ class_name: mainClass }).eq('id', s.id);
 
-      // Đảm bảo tất cả lớp trong chuỗi đều có trong student_classes
-      for (const cls of parts) {
-        if (!cls) continue;
-        await db.from('student_classes')
-          .upsert({ student_id: s.id, class_name: cls }, { onConflict: 'student_id,class_name' })
-          .catch(() => {});
-      }
-      fixed++;
+  // 1. Dọn students.class_name (lớp ghép)
+  const studentUpdates = (students||[]).map(s => {
+    const parts = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+    const mainClass = parts.find(p => validClasses.has(p)) || parts[0] || null;
+    if (mainClass === s.class_name) return null;
+    return { id: s.id, class_name: mainClass, parts };
+  }).filter(Boolean);
+
+  await Promise.all(studentUpdates.map(async u => {
+    await db.from('students').update({ class_name: u.class_name }).eq('id', u.id);
+    for (const cls of u.parts) {
+      await db.from('student_classes').upsert({ student_id: u.id, class_name: cls }, { onConflict: 'student_id,class_name' }).catch(()=>{});
     }
-  }
+    fixed++;
+  }));
+
+  // 2. Dọn lessons.class_name — xóa các lớp không còn tồn tại
+  const lessonUpdates = (allLessons||[]).map(l => {
+    const parts = (l.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+    const valid = parts.filter(p => validClasses.has(p));
+    const newVal = valid.join(',') || null;
+    if (newVal === l.class_name) return null;
+    return { id: l.id, class_name: newVal };
+  }).filter(Boolean);
+  await Promise.all(lessonUpdates.map(u => db.from('lessons').update({ class_name: u.class_name }).eq('id', u.id)));
+  fixed += lessonUpdates.length;
+
+  // 3. Dọn lesson_groups.class_name — xóa các lớp không còn tồn tại
+  const groupUpdates = (allGroups||[]).map(g => {
+    const parts = (g.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+    const valid = parts.filter(p => validClasses.has(p));
+    const newVal = valid.join(',') || null;
+    if (newVal === g.class_name) return null;
+    return { id: g.id, class_name: newVal };
+  }).filter(Boolean);
+  await Promise.all(groupUpdates.map(u => db.from('lesson_groups').update({ class_name: u.class_name }).eq('id', u.id)));
+  fixed += groupUpdates.length;
 
   btn.disabled = false;
   btn.textContent = '🧹 Dọn lớp ảo';
-  showToast(`✅ Đã dọn ${fixed} tài khoản có lớp bị ghép`);
+  if (fixed === 0) {
+    showToast('✅ Không có gì cần dọn!');
+  } else {
+    showToast(`✅ Đã dọn ${fixed} mục (students, bài học, nhóm bài học)`);
+  }
   renderClasses();
+  renderGroups();
   populateClassFilters();
 }

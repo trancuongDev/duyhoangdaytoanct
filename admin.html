@@ -412,6 +412,9 @@
       </div>
       <div class="filter-bar">
         <input type="text" id="deviceAlertSearch" placeholder="🔍 Tìm theo tên học sinh..."/>
+        <input type="date" id="deviceAlertDateFrom" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem" title="Từ ngày"/>
+        <input type="date" id="deviceAlertDateTo" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem" title="Đến ngày"/>
+        <button class="btn-sm btn-outline" id="deviceAlertDateClear">✕ Xóa ngày</button>
       </div>
       <div class="content-list" id="deviceAlertList"></div>
       <div class="empty-state" id="emptyDeviceAlerts">Chưa có cảnh báo thiết bị nào.</div>
@@ -504,51 +507,128 @@
 
     <!-- PAGE: THÔNG BÁO -->
     <section class="page" id="pageAnnouncements">
-      <div class="page-header">
-        <h1 class="page-title">📢 Thông báo</h1>
+
+      <!-- Header -->
+      <div class="page-header" style="flex-wrap:wrap;gap:.75rem">
+        <h1 class="page-title" style="margin:0">📢 Thông báo</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          <input type="text" id="annSearch" placeholder="🔍 Tìm thông báo..."
+            style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem;min-width:200px"/>
+          <select id="annFilterClass" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem">
+            <option value="">Tất cả lớp</option>
+          </select>
+          <select id="annFilterPriority" style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem">
+            <option value="">Tất cả mức độ</option>
+            <option value="urgent">🔴 Khẩn cấp</option>
+            <option value="high">🟠 Cao</option>
+            <option value="normal">🔵 Bình thường</option>
+            <option value="low">⚪ Thấp</option>
+          </select>
+          <button class="btn-primary" id="openAnnFormBtn" style="display:flex;align-items:center;gap:.4rem">
+            ✏️ Tạo thông báo
+          </button>
+        </div>
       </div>
-      <div class="two-col">
-        <!-- Form tạo thông báo -->
-        <div class="form-panel">
-          <h3 id="annFormTitle">✏️ Tạo thông báo mới</h3>
+
+      <!-- Stats bar -->
+      <div id="annStatsBar" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+
+      <!-- Layout: form (ẩn mặc định) + danh sách -->
+      <div id="annFormWrap" style="display:none;margin-bottom:1.5rem">
+        <div class="form-panel" style="max-width:700px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <h3 id="annFormTitle" style="margin:0;font-size:1rem;font-weight:800">✏️ Tạo thông báo mới</h3>
+            <button onclick="closeAnnForm()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted)">✕</button>
+          </div>
+
+          <!-- Mức độ ưu tiên -->
+          <label>Mức độ ưu tiên</label>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem">
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;padding:.4rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-weight:600;transition:all .15s" id="annPrioLow">
+              <input type="radio" name="annPriority" value="low" style="accent-color:#94a3b8"/> ⚪ Thấp
+            </label>
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;padding:.4rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-weight:600;transition:all .15s" id="annPrioNormal">
+              <input type="radio" name="annPriority" value="normal" checked style="accent-color:#3b82f6"/> 🔵 Bình thường
+            </label>
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;padding:.4rem .8rem;border:1.5px solid #fed7aa;background:#fff7ed;border-radius:8px;font-size:.82rem;font-weight:600;transition:all .15s" id="annPrioHigh">
+              <input type="radio" name="annPriority" value="high" style="accent-color:#f97316"/> 🟠 Cao
+            </label>
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;padding:.4rem .8rem;border:1.5px solid #fecaca;background:#fff5f5;border-radius:8px;font-size:.82rem;font-weight:600;transition:all .15s" id="annPrioUrgent">
+              <input type="radio" name="annPriority" value="urgent" style="accent-color:#ef4444"/> 🔴 Khẩn cấp
+            </label>
+          </div>
+
           <label>Tiêu đề <span style="color:var(--danger)">*</span></label>
           <input type="text" id="annTitle" placeholder="VD: Lịch học tuần tới..."/>
+
           <label>Nội dung <span style="color:var(--danger)">*</span></label>
           <textarea id="annContent" rows="4" placeholder="Nội dung thông báo..." style="resize:vertical"></textarea>
-          <label>Link đính kèm <span class="muted">(tuỳ chọn)</span></label>
-          <input type="text" id="annLink" placeholder="https://..."/>
-          <input type="text" id="annLinkText" placeholder="Tên hiển thị (VD: Xem tại đây)" style="margin-top:.4rem"/>
-          <label>Gửi đến lớp <span class="muted">(để trống = tất cả)</span></label>
-          <select id="annClass"><option value="">-- Tất cả học sinh --</option></select>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+            <div>
+              <label>Link đính kèm <span class="muted">(tuỳ chọn)</span></label>
+              <input type="text" id="annLink" placeholder="https://..."/>
+              <input type="text" id="annLinkText" placeholder="Tên hiển thị link" style="margin-top:.4rem"/>
+            </div>
+            <div>
+              <label>Gửi đến lớp <span class="muted">(để trống = tất cả)</span></label>
+              <select id="annClass" style="width:100%"><option value="">-- Tất cả học sinh --</option></select>
+            </div>
+          </div>
+
           <label>Hoặc gửi cho học sinh cụ thể <span class="muted">(ưu tiên hơn lớp)</span></label>
           <div style="position:relative">
             <input type="text" id="annStudentSearch" placeholder="🔍 Tìm tên học sinh..." autocomplete="off"/>
             <div id="annStudentDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;border:1.5px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;background:var(--card);z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.12);margin-top:2px"></div>
           </div>
-          <div id="annStudentSelected" style="display:none;background:#eef2ff;border-radius:8px;padding:.4rem .75rem;font-size:.83rem;color:#3730a3;display:flex;align-items:center;gap:.5rem">
+          <div id="annStudentSelected" style="display:none;background:#eef2ff;border-radius:8px;padding:.4rem .75rem;font-size:.83rem;color:#3730a3;align-items:center;gap:.5rem;margin-top:.4rem">
             <span id="annStudentSelectedName"></span>
             <button id="annStudentClearBtn" style="background:none;border:none;cursor:pointer;color:#6366f1;font-size:1rem;padding:0;margin-left:auto">✕</button>
           </div>
-          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
-            <input type="checkbox" id="annPinned"/> Ghim thông báo (hiện nổi bật)
-          </label>
-          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
-            <input type="checkbox" id="annExpire24h"/> Tự biến mất sau 24 giờ
-          </label>
-          <div id="annError" class="error-msg"></div>
-          <div class="form-actions">
+
+          <!-- Lên lịch gửi -->
+          <label>Lên lịch gửi <span class="muted">(để trống = gửi ngay)</span></label>
+          <input type="datetime-local" id="annScheduledAt" style="width:100%"/>
+
+          <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:.5rem">
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem">
+              <input type="checkbox" id="annPinned" style="accent-color:#f59e0b"/> 📌 Ghim thông báo
+            </label>
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem">
+              <input type="checkbox" id="annExpire24h" style="accent-color:#6366f1"/> ⏱ Tự biến mất sau 24h
+            </label>
+          </div>
+
+          <div id="annError" class="error-msg" style="margin-top:.5rem"></div>
+          <div class="form-actions" style="margin-top:1rem">
             <button class="btn-outline" id="annCancelBtn">Hủy</button>
             <button class="btn-primary" id="annSaveBtn">📢 Gửi thông báo</button>
           </div>
         </div>
-        <!-- Danh sách thông báo -->
-        <div class="form-panel">
-          <h3>Danh sách thông báo</h3>
-          <div id="annList" style="display:flex;flex-direction:column;gap:.6rem"></div>
-          <div class="empty-state" id="emptyAnn">Chưa có thông báo nào.</div>
-        </div>
       </div>
-    </section>
+
+      <!-- Tab bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+        <div style="display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:.2rem;gap:.15rem" id="annTabBar">
+          <button id="annTabAll" onclick="switchAnnTab('all')"
+            style="padding:.45rem 1.1rem;border-radius:9px;border:none;font-size:.85rem;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;transition:all .2s">
+            📢 Tất cả <span id="annTabAllCount" style="background:rgba(255,255,255,.25);padding:.05rem .4rem;border-radius:10px;font-size:.72rem;margin-left:.25rem">0</span>
+          </button>
+          <button id="annTabPinned" onclick="switchAnnTab('pinned')"
+            style="padding:.45rem 1.1rem;border-radius:9px;border:none;font-size:.85rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s">
+            📌 Đã ghim <span id="annTabPinnedCount" style="background:var(--border);padding:.05rem .4rem;border-radius:10px;font-size:.72rem;margin-left:.25rem">0</span>
+          </button>
+          <button id="annTabNormal" onclick="switchAnnTab('normal')"
+            style="padding:.45rem 1.1rem;border-radius:9px;border:none;font-size:.85rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s">
+            🗒 Thường <span id="annTabNormalCount" style="background:var(--border);padding:.05rem .4rem;border-radius:10px;font-size:.72rem;margin-left:.25rem">0</span>
+          </button>
+        </div>
+        <button id="annClearTabBtn" class="btn-sm btn-danger" style="display:none">🗑 Xóa tất cả tab này</button>
+      </div>
+
+      <!-- Danh sách thông báo dạng card -->
+      <div id="annList" style="display:flex;flex-direction:column;gap:.85rem"></div>
+      <div class="empty-state" id="emptyAnn">Chưa có thông báo nào.</div>
 
     <!-- PAGE: HỒ SƠ -->
     <section class="page" id="pageProfile">
