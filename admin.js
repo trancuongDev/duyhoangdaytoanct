@@ -3321,10 +3321,11 @@ document.getElementById('annFilterPriority')?.addEventListener('change', () => _
 // Tab state
 let _annCurrentTab = 'all';
 let _annAllData = [];
-
+let _annPageSize = 20;
+let _annPage = 1;
 function switchAnnTab(tab) {
   _annCurrentTab = tab;
-  // Style tab buttons
+  _annPage = 1; // reset về trang đầu khi đổi tab
   ['all','pinned','normal'].forEach(t => {
     const btn = document.getElementById(`annTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
     if (!btn) return;
@@ -3383,8 +3384,12 @@ function _renderAnnCards(all) {
   el.innerHTML = '';
   document.getElementById('emptyAnn').style.display = items.length ? 'none' : 'block';
 
+  // Phân trang — chỉ render _annPage * _annPageSize items
+  const visibleItems = items.slice(0, _annPage * _annPageSize);
+  const hasMore = items.length > visibleItems.length;
+
   const now = new Date();
-  items.forEach(a => {
+  visibleItems.forEach(a => {
     const p = _ANN_PRIORITY[a.priority||'normal'] || _ANN_PRIORITY.normal;
     const isExpired   = a.expires_at && new Date(a.expires_at) < now;
     const isScheduled = a.scheduled_at && new Date(a.scheduled_at) > now;
@@ -3430,12 +3435,26 @@ function _renderAnnCards(all) {
     card.querySelector('[data-action="edit"]').addEventListener('click', () => openAnnForm(a));
     card.querySelector('[data-action="delete"]').addEventListener('click', () => {
       showConfirm(`Xóa thông báo "${a.title}"?`, async () => {
-        await db.from('announcements').delete().eq('id', a.id);
+        const { error } = await db.from('announcements').delete().eq('id', a.id);
+        if (error) { console.error('[Ann delete]', error); showToast('❌ Lỗi xóa: ' + error.message); return; }
         renderAnnouncements();
       });
     });
     el.appendChild(card);
   });
+
+  // Nút tải thêm
+  if (hasMore) {
+    const loadMore = document.createElement('button');
+    loadMore.className = 'btn-outline';
+    loadMore.style.cssText = 'width:100%;margin-top:.5rem;font-size:.85rem;font-weight:600';
+    loadMore.textContent = `⬇ Tải thêm (còn ${items.length - visibleItems.length} thông báo)`;
+    loadMore.addEventListener('click', () => {
+      _annPage++;
+      _renderAnnCards(_annAllData);
+    });
+    el.appendChild(loadMore);
+  }
 }
 
 document.getElementById('annSaveBtn')?.addEventListener('click', async () => {

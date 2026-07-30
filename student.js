@@ -83,7 +83,7 @@ function lessonMatchesStudentClasses(lesson, classes) {
     .split(',')
     .map(c => c.trim())
     .filter(Boolean);
-  if (!lessonClasses.length) return true; // null/empty = tất cả lớp
+  if (!lessonClasses.length) return false; // null/empty = không gán lớp → không hiện cho ai
   return classes.some(cls => lessonClasses.includes(cls));
 }
 
@@ -534,10 +534,10 @@ function renderLessonListFromCache() {
 
   function buildGroupCard(g, depth, colorIdx) {
     const c = colors[colorIdx % colors.length];
-    // Nhóm con: filter theo lớp học viên
+    // Nhóm con: filter theo lớp học viên — không có class_name thì không hiện
     const children = (normalizedGroups||[]).filter(x => {
       if (x.parent_id !== g.id) return false;
-      if (!x.class_name) return true;
+      if (!x.class_name) return false;
       const gc = x.class_name.split(',').map(s => s.trim()).filter(Boolean);
       return myClasses.some(mc => gc.includes(mc));
     });
@@ -613,10 +613,10 @@ function renderLessonListFromCache() {
   // Bài học không thuộc nhóm nào
   const ungrouped = filtered.filter(l => !l.group_id && !l.group_name);
 
-  // Render nhóm gốc — chỉ hiển thị nhóm không có class_name HOẶC class_name chứa lớp của học viên
+  // Render nhóm gốc — chỉ hiển thị nhóm có class_name chứa lớp của học viên
   const roots = (normalizedGroups||[]).filter(g => {
     if (g.parent_id) return false; // chỉ lấy root
-    if (!g.class_name) return true; // không giới hạn lớp → hiển thị tất cả
+    if (!g.class_name) return false; // không gán lớp → không hiện cho ai
     const groupClasses = g.class_name.split(',').map(c => c.trim()).filter(Boolean);
     return myClasses.some(mc => groupClasses.includes(mc));
   });
