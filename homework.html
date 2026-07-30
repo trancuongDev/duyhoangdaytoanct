@@ -662,8 +662,9 @@
         <input type="hidden" id="hwClass"/>
       </div>
       <div>
-        <label>Hạn nộp</label>
+        <label>Hạn nộp <span style="color:var(--muted);font-weight:400">(để trống = học sinh làm được mãi mãi, chỉ xóa bài mới mất)</span></label>
         <input type="date" id="hwDue"/>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem;line-height:1.5">ℹ️ Sau hạn nộp, học sinh <b>không thể làm bài</b>. Để trống = không giới hạn thời gian.</div>
       </div>
       <div>
         <label>⏱ Thời gian làm bài <span style="color:var(--muted);font-weight:400">(phút, để trống = không giới hạn)</span></label>
@@ -3496,13 +3497,16 @@ function renderStudentList() {
         <div style="font-weight:800;font-size:.98rem;flex:1">📝 ${esc(h.title)}</div>
         <div style="display:flex;gap:.35rem;flex-wrap:wrap;flex-shrink:0">
           ${sub?`<span class="hw-badge ${sub.status==='graded'?'graded':'submitted'}">${getStatusLabel(sub.status)}</span>`:'<span class="hw-badge pending">Chưa nộp</span>'}
-          ${od&&!sub?'<span class="hw-badge late">⚠️ Quá hạn</span>':''}
+          ${od&&!sub?'<span class="hw-badge late">⏰ Hết hạn</span>':''}
         </div>
       </div>
       ${h.description?`<p style="font-size:.85rem;color:var(--muted);margin-bottom:.4rem">${esc(h.description)}</p>`:''}
       <div style="display:flex;flex-wrap:wrap;gap:.4rem;font-size:.78rem;color:var(--muted);margin-bottom:.6rem">
         ${h.class_name?`<span>🏫 ${esc(h.class_name)}</span>`:''}
-        <span class="due-chip${od?' overdue':''}">⏰ ${h.due_date?'Hạn: '+fmtDate(h.due_date):'Không giới hạn'}</span>
+        ${h.due_date
+          ? `<span class="due-chip${od?' overdue':''}">⏰ ${od?'Đã hết hạn: ':'Hạn: '}${fmtDate(h.due_date)}</span>`
+          : ''
+        }
         ${h.time_limit?`<span style="background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:8px;font-weight:700">⏱ ${h.time_limit} phút</span>`:''}
         ${h.total_score?`<span style="background:#fef9c3;color:#854d0e;padding:.2rem .6rem;border-radius:8px;font-weight:700">🎯 ${h.total_score} điểm</span>`:''}
         ${h.open_at ? (() => {
@@ -3549,9 +3553,11 @@ function renderStudentList() {
       <div style="display:flex;gap:.4rem;flex-wrap:wrap">
         ${h.is_locked
           ? `<span style="display:inline-flex;align-items:center;gap:.35rem;background:#fee2e2;color:#991b1b;border-radius:8px;padding:.4rem .85rem;font-size:.84rem;font-weight:700">🔒 Bài đã bị khóa</span>`
-          : h.open_at && new Date() < new Date(h.open_at)
-            ? `<span id="_openAt_cd_${h.id}" style="display:inline-flex;align-items:center;gap:.35rem;background:#fef3c7;color:#92400e;border-radius:8px;padding:.4rem .85rem;font-size:.84rem;font-weight:700">⏰ Chưa đến giờ mở</span>`
-            : (!sub||canRetry)?`<button class="btn-primary" onclick="openDoHW(${h.id})">${sub&&canRetry?'🔄 Làm lại':'✏️ Làm bài'}</button>`:''
+          : od
+            ? `<span style="display:inline-flex;align-items:center;gap:.35rem;background:#fee2e2;color:#991b1b;border-radius:8px;padding:.4rem .85rem;font-size:.84rem;font-weight:700">⏰ Đã hết hạn nộp</span>`
+            : h.open_at && new Date() < new Date(h.open_at)
+              ? `<span id="_openAt_cd_${h.id}" style="display:inline-flex;align-items:center;gap:.35rem;background:#fef3c7;color:#92400e;border-radius:8px;padding:.4rem .85rem;font-size:.84rem;font-weight:700">⏰ Chưa đến giờ mở</span>`
+              : (!sub||canRetry)?`<button class="btn-primary" onclick="openDoHW(${h.id})">${sub&&canRetry?'🔄 Làm lại':'✏️ Làm bài'}</button>`:''
         }
         ${sub?`<button class="btn-sm" onclick="openResult(${h.id})" style="border-color:#8b5cf6;color:#5b21b6">👁 Xem kết quả</button>`:''}
         ${h.allow_download
@@ -5017,6 +5023,12 @@ async function openDoHW(hwId) {
   if (!hw) return;
   if (hw.is_locked) {
     showToast('🔒 Bài này đã bị khóa — không thể làm bài', false);
+    return;
+  }
+
+  // ── Kiểm tra hết hạn nộp ────────────────────────────────
+  if (hw.due_date && new Date(hw.due_date) < new Date(new Date().toDateString())) {
+    showToast('⏰ Bài tập này đã hết hạn nộp', false);
     return;
   }
 
@@ -7930,10 +7942,10 @@ async function renderAdminTrash() {
 
 async function restoreHW(id) {
   const { error } = await sb.from('homework')
-    .update({ deleted_at: null })
+    .update({ deleted_at: null, is_locked: true })
     .eq('id', id);
   if (error) { showToast('Lỗi: ' + error.message, false); return; }
-  showToast('♻️ Đã khôi phục bài tập thành công');
+  showToast('♻️ Đã khôi phục — bài đang bị khóa, mở khóa để học sinh làm được');
   await loadAdminData();
   _updateTrashBadge();
   renderAdminTrash();

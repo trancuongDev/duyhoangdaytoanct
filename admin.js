@@ -3193,7 +3193,7 @@ document.getElementById('clearAlertsBtn').addEventListener('click', async ()=>{
 });
 
 // ---- Init ----
-const _validPages = ['overview','lessons','lesson-groups','create-student','students','classes','security','devices','access-stats','login-history','announcements','schedule','profile'];
+const _validPages = ['overview','lessons','lesson-groups','create-student','students','classes','security','devices','access-stats','login-history','announcements','files','schedule','profile'];
 const _savedPage = sessionStorage.getItem('dh_page');
 populateClassFilters().then(() => {
   showPage(_validPages.includes(_savedPage) ? _savedPage : 'overview');
