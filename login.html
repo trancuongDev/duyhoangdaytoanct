@@ -835,6 +835,21 @@
             return;
           }
 
+          // Kiểm tra trợ lý (assistants)
+          const { data: assistantData } = await db.from('assistants').select('*').eq('username', u).maybeSingle();
+          if (assistantData) {
+            const isAssistantMatch = assistantData.password === p || assistantData.password === inputHash;
+            if (!isAssistantMatch) {
+              resetLoading('Sai mật khẩu trợ lý.');
+              return;
+            }
+            sessionStorage.setItem('dh_role', 'assistant');
+            sessionStorage.setItem('dh_user', u);
+            sessionStorage.setItem('dh_name', assistantData.full_name || u);
+            window.location.href = 'admin.html';
+            return;
+          }
+
           // Đăng nhập học sinh
           const { data: student } = await db.from('students').select('*').eq('username', u).single();
           if (!student) { resetLoading('Sai tên đăng nhập hoặc mật khẩu.'); return; }
@@ -863,11 +878,18 @@
 
           if (!student.active) {
             if (student.class_name) {
-              const { data: cls } = await db.from('classes').select('end_date').eq('name', student.class_name).single();
-              if (cls?.end_date) {
-                const endDate = new Date(cls.end_date); endDate.setHours(0,0,0,0);
-                const today = new Date(); today.setHours(0,0,0,0);
-                if (today > endDate) { resetLoading(`Khóa học "${student.class_name}" đã kết thúc vào ngày ${endDate.toLocaleDateString('vi-VN')}. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`); return; }
+              const studentClasses2 = student.class_name.split(',').map(c => c.trim()).filter(Boolean);
+              if (studentClasses2.length > 0) {
+                const { data: clsList2 } = await db.from('classes').select('name,end_date').in('name', studentClasses2);
+                if (clsList2?.length) {
+                  const today2 = new Date(); today2.setHours(0,0,0,0);
+                  const expiredCls = clsList2.filter(c => c.end_date && new Date(c.end_date) < today2);
+                  if (expiredCls.length > 0 && expiredCls.length === clsList2.length) {
+                    const latest = expiredCls.reduce((a,b) => new Date(a.end_date) > new Date(b.end_date) ? a : b);
+                    resetLoading(`Khóa học đã kết thúc vào ngày ${new Date(latest.end_date).toLocaleDateString('vi-VN')}. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`);
+                    return;
+                  }
+                }
               }
             }
             resetLoading('Tài khoản đã bị khóa. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.');
@@ -875,14 +897,20 @@
           }
 
           if (student.class_name && !student.manually_unlocked) {
-            const { data: cls } = await db.from('classes').select('end_date').eq('name', student.class_name).single();
-            if (cls?.end_date) {
-              const today = new Date(); today.setHours(0,0,0,0);
-              const endDate = new Date(cls.end_date); endDate.setHours(0,0,0,0);
-              if (today > endDate) {
-                if (student.active) await db.from('students').update({ active: false }).eq('id', student.id);
-                resetLoading(`Khóa học "${student.class_name}" đã kết thúc vào ngày ${endDate.toLocaleDateString('vi-VN')}. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`);
-                return;
+            // Hỗ trợ đa lớp: tách class_name thành danh sách
+            const studentClasses = student.class_name.split(',').map(c => c.trim()).filter(Boolean);
+            if (studentClasses.length > 0) {
+              const { data: clsList } = await db.from('classes').select('name,end_date').in('name', studentClasses);
+              if (clsList?.length) {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const activeCls = clsList.filter(c => !c.end_date || new Date(c.end_date) >= today);
+                if (activeCls.length === 0) {
+                  // Tất cả lớp đều hết hạn → khóa
+                  if (student.active) await db.from('students').update({ active: false }).eq('id', student.id);
+                  const latestEnd = clsList.reduce((a,b) => new Date(a.end_date) > new Date(b.end_date) ? a : b);
+                  resetLoading(`Tất cả khóa học đã kết thúc (${new Date(latestEnd.end_date).toLocaleDateString('vi-VN')}). trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`);
+                  return;
+                }
               }
             }
           }
@@ -956,7 +984,18 @@
         const { data: classes } = await db.from('classes').select('name,end_date');
         const expired = (classes||[]).filter(c => c.end_date && new Date(c.end_date) < today).map(c => c.name);
         if (!expired.length) return;
-        await db.from('students').update({ active: false }).in('class_name', expired).eq('active', true).eq('manually_unlocked', false);
+        // Lấy học sinh còn active và chưa mở thủ công
+        const { data: studs } = await db.from('students')
+          .select('id,class_name').eq('active', true).eq('manually_unlocked', false);
+        if (!studs?.length) return;
+        // Filter client-side để hỗ trợ class_name dạng "12A,12B"
+        const tolock = (studs).filter(s => {
+          const cls = (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
+          return cls.length > 0 && cls.every(c => expired.includes(c));
+        }).map(s => s.id);
+        if (tolock.length) {
+          await db.from('students').update({ active: false }).in('id', tolock);
+        }
       } catch(e) {}
     })();
 

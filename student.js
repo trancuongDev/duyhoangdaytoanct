@@ -79,12 +79,29 @@ function parseClassList(raw) {
 }
 
 function lessonMatchesStudentClasses(lesson, classes) {
+  // Ưu tiên 1: nếu có allowed_usernames → chỉ học sinh trong danh sách mới thấy
+  if (lesson?.allowed_usernames) {
+    const allowed = lesson.allowed_usernames.split(',').map(u => u.trim()).filter(Boolean);
+    return allowed.includes(currentUser);
+  }
+  // Mặc định: kiểm tra theo lớp
   const lessonClasses = (lesson?.class_name || '')
     .split(',')
     .map(c => c.trim())
     .filter(Boolean);
   if (!lessonClasses.length) return false; // null/empty = không gán lớp → không hiện cho ai
   return classes.some(cls => lessonClasses.includes(cls));
+}
+
+// Kiểm tra nhóm bài học có visible với học sinh hiện tại không
+function groupMatchesStudent(g) {
+  if (g?.allowed_usernames) {
+    const allowed = g.allowed_usernames.split(',').map(u => u.trim()).filter(Boolean);
+    return allowed.includes(currentUser);
+  }
+  if (!g?.class_name) return false;
+  const gc = g.class_name.split(',').map(c => c.trim()).filter(Boolean);
+  return myClasses.some(mc => gc.includes(mc));
 }
 
 
@@ -312,11 +329,17 @@ async function renderHome() {
   if (codeEl)   codeEl.textContent   = code ? `Mã HV: ${code}` : '';
 
   // Load thông báo + bài học song song
-  const [{ data: allRecentLessons }, { data: anns }] = await Promise.all([
-    db.from('lessons').select('id,name,class_name').order('group_name',{ascending:true}).order('sort_order',{ascending:true}).order('created_at',{ascending:true}).limit(200),
-    db.from('announcements').select('*').order('created_at',{ascending:false}).limit(200)
+  const [{ data: allRecentLessons }, { data: anns }, { data: allGroupsHome }] = await Promise.all([
+    db.from('lessons').select('id,name,class_name,allowed_usernames,group_id').order('group_name',{ascending:true}).order('sort_order',{ascending:true}).order('created_at',{ascending:true}).limit(200),
+    db.from('announcements').select('*').order('created_at',{ascending:false}).limit(200),
+    db.from('lesson_groups').select('id,class_name,allowed_usernames')
   ]);
-  const list = (allRecentLessons || []).filter(l => lessonMatchesStudentClasses(l, myClasses)).slice(0, 4);
+  const groupMapHome = Object.fromEntries((allGroupsHome||[]).map(g => [g.id, g]));
+  const list = (allRecentLessons || []).filter(l => {
+    if (lessonMatchesStudentClasses(l, myClasses)) return true;
+    if (l.group_id && groupMapHome[l.group_id]) return groupMatchesStudent(groupMapHome[l.group_id]);
+    return false;
+  }).slice(0, 4);
 
   // Thông báo
   const annSection = document.getElementById('announcementSection');
@@ -325,7 +348,7 @@ async function renderHome() {
     const now = new Date();
     const myAnns = (anns||[]).filter(a =>
       (!a.expires_at || new Date(a.expires_at) > now) &&
-      (a.target_username ? a.target_username === currentUser : (!a.class_name || a.class_name === myClass))
+      (a.target_username ? a.target_username === currentUser : (!a.class_name || myClasses.includes(a.class_name)))
     );
     if (myAnns.length) {
       annSection.style.display = '';
@@ -404,16 +427,7 @@ async function renderLessonList(forceRefresh = false) {
     // 1. Fetch tất cả nhóm
     const { data: allGroups } = await db.from('lesson_groups').select('*').order('name');
 
-    // 2. Tìm group_id được chia sẻ cho lớp học viên
-    const sharedGroupIds = (allGroups||[])
-      .filter(g => {
-        if (!g.class_name) return false;
-        const gc = g.class_name.split(',').map(c => c.trim()).filter(Boolean);
-        return myClasses.some(mc => gc.includes(mc));
-      })
-      .map(g => g.id);
-
-    // 3. Fetch bài học thuộc lớp học viên
+    // 2. Fetch tất cả bài học (1 query duy nhất)
     const { data: allLessonsRaw } = await db
       .from('lessons')
       .select('*')
@@ -421,21 +435,24 @@ async function renderLessonList(forceRefresh = false) {
       .order('sort_order',{ascending:true})
       .order('created_at',{ascending:true})
       .limit(5000);
-    const ownLessons = (allLessonsRaw || []).filter(l => lessonMatchesStudentClasses(l, myClasses));
 
-    // 4. Fetch bài học thuộc nhóm được chia sẻ (nếu có)
-    let sharedLessons = [];
-    if (sharedGroupIds.length) {
-      const { data: sl } = await db.from('lessons').select('*').in('group_id', sharedGroupIds);
-      sharedLessons = sl || [];
-    }
+    // 3. Tạo map nhóm để tra nhanh
+    const groupMap = Object.fromEntries((allGroups||[]).map(g => [g.id, g]));
 
-    // 5. Merge, loại trùng theo id
-    const allIds = new Set((ownLessons||[]).map(l => l.id));
-    const merged = [...(ownLessons||[])];
-    for (const l of sharedLessons) {
-      if (!allIds.has(l.id)) { merged.push(l); allIds.add(l.id); }
-    }
+    // 4. Filter bài học — bài visible khi:
+    //    a) Bài có allowed_usernames chứa username học sinh NÀY, HOẶC
+    //    b) Bài không có allowed_usernames VÀ class_name khớp lớp, HOẶC
+    //    c) Nhóm của bài có allowed_usernames chứa username học sinh NÀY, HOẶC
+    //    d) Nhóm của bài không có allowed_usernames VÀ class_name nhóm khớp lớp
+    const merged = (allLessonsRaw || []).filter(l => {
+      // Kiểm tra bản thân bài học
+      if (lessonMatchesStudentClasses(l, myClasses)) return true;
+      // Kiểm tra nhóm của bài
+      if (l.group_id && groupMap[l.group_id]) {
+        return groupMatchesStudent(groupMap[l.group_id]);
+      }
+      return false;
+    });
 
     const lessonIds = merged.map(l => l.id);
     const [{ data: allVids }, { data: allDocs }] = await Promise.all([
@@ -457,7 +474,7 @@ function renderLessonListFromCache() {
   const seenGroupKeys = new Set();
   (allGroups || []).forEach(g => {
     if (g?.id != null && seenGroupIds.has(g.id)) return;
-    const groupKey = `${g?.name || ''}__${g?.parent_id || ''}__${g?.class_name || ''}`;
+    const groupKey = `${g?.name || ''}__${g?.parent_id || ''}__${g?.class_name || ''}__${g?.allowed_usernames || ''}`;
     if (seenGroupKeys.has(groupKey)) return;
     if (g?.id != null) seenGroupIds.add(g.id);
     seenGroupKeys.add(groupKey);
@@ -487,11 +504,18 @@ function renderLessonListFromCache() {
   grid.className = 'group-card-grid';
   el.appendChild(grid);
 
-  // Lấy bài học theo nhóm — ưu tiên group_id, fallback group_name cho dữ liệu cũ
+  // Track bài học đã được assign vào nhóm để tránh hiện ở "ungrouped"
+  const assignedLessonIds = new Set();
+  // Pre-compute: đánh dấu tất cả bài thuộc nhóm nào đó
+  filtered.forEach(l => {
+    if (l.group_id || l.group_name) assignedLessonIds.add(l.id);
+  });
+
+  // Lấy bài học theo nhóm — ưu tiên group_id tuyệt đối, fallback group_name chỉ cho bài chưa có group_id
   function getLessonsForGroup(gId, gName) {
     return filtered.filter(l => {
-      if (l.group_id) return l.group_id === gId;
-      return l.group_name === gName;
+      if (l.group_id != null) return l.group_id === gId;   // bài có group_id → chỉ match đúng nhóm
+      return l.group_name === gName;                        // bài cũ chưa có group_id → fallback
     });
   }
 
@@ -534,12 +558,10 @@ function renderLessonListFromCache() {
 
   function buildGroupCard(g, depth, colorIdx) {
     const c = colors[colorIdx % colors.length];
-    // Nhóm con: filter theo lớp học viên — không có class_name thì không hiện
+    // Nhóm con: filter theo lớp học viên hoặc gán riêng học sinh này
     const children = (normalizedGroups||[]).filter(x => {
       if (x.parent_id !== g.id) return false;
-      if (!x.class_name) return false;
-      const gc = x.class_name.split(',').map(s => s.trim()).filter(Boolean);
-      return myClasses.some(mc => gc.includes(mc));
+      return groupMatchesStudent(x);
     });
     const directLessons = getLessonsForGroup(g.id, g.name);
     // Bỏ qua nhóm không có nội dung gì
@@ -610,21 +632,18 @@ function renderLessonListFromCache() {
     return card;
   }
 
-  // Bài học không thuộc nhóm nào
-  const ungrouped = filtered.filter(l => !l.group_id && !l.group_name);
+  // Bài học không thuộc nhóm nào (và chưa được render trong nhóm)
+  const ungrouped = filtered.filter(l => !assignedLessonIds.has(l.id));
 
-  // Render nhóm gốc — chỉ hiển thị nhóm có class_name chứa lớp của học viên
+  // Render nhóm gốc — hiển thị nhóm theo lớp học viên HOẶC được gán riêng
   const roots = (normalizedGroups||[]).filter(g => {
     if (g.parent_id) return false; // chỉ lấy root
-    if (!g.class_name) return false; // không gán lớp → không hiện cho ai
-    const groupClasses = g.class_name.split(',').map(c => c.trim()).filter(Boolean);
-    return myClasses.some(mc => groupClasses.includes(mc));
+    return groupMatchesStudent(g);
   });
-  const seenRootRenderKeys = new Set();
+  const seenRootIds = new Set();
   roots.forEach((g, gi) => {
-    const renderKey = `${g.name || ''}__${g.class_name || ''}`;
-    if (seenRootRenderKeys.has(renderKey)) return;
-    seenRootRenderKeys.add(renderKey);
+    if (seenRootIds.has(g.id)) return;
+    seenRootIds.add(g.id);
     const card = buildGroupCard(g, 0, gi);
     if (card) grid.appendChild(card);
   });
@@ -1291,7 +1310,7 @@ async function renderNotifications() {
   const now = new Date();
   const myAnns = (anns || []).filter(a =>
     (!a.expires_at || new Date(a.expires_at) > now) &&
-    (a.target_username ? a.target_username === currentUser : (!a.class_name || a.class_name === myClass))
+    (a.target_username ? a.target_username === currentUser : (!a.class_name || myClasses.includes(a.class_name)))
   );
   const list = document.getElementById('notiPageList');
   const empty = document.getElementById('notiPageEmpty');
@@ -1347,7 +1366,7 @@ async function checkNewNotifications(showPopupIfUnread = false) {
     .select('id, class_name, expires_at, target_username').order('created_at', { ascending: false });
   const myAnns = (anns || []).filter(a =>
     (!a.expires_at || new Date(a.expires_at) > new Date()) &&
-    (a.target_username ? a.target_username === currentUser : (!a.class_name || a.class_name === myClass))
+    (a.target_username ? a.target_username === currentUser : (!a.class_name || myClasses.includes(a.class_name)))
   );
 
   const { data: reads } = await db.from('notification_reads')
@@ -1366,7 +1385,8 @@ document.getElementById('notiBtn').addEventListener('click', () => showPage('not
 
 // Dark mode học viên
 const studentDarkBtn = document.getElementById('studentDarkBtn');
-if (localStorage.getItem('st_dark') === '1') { document.body.classList.add('dark-mode'); studentDarkBtn.textContent = '☀️'; }
+const _isDark = localStorage.getItem('st_dark') === '1';
+if (_isDark) { document.body.classList.add('dark-mode'); if (studentDarkBtn) studentDarkBtn.textContent = '☀️'; }
 studentDarkBtn?.addEventListener('click', () => {
   const on = document.body.classList.toggle('dark-mode');
   studentDarkBtn.textContent = on ? '☀️' : '🌙';
@@ -1592,11 +1612,28 @@ function _scheduleLessonReload() {
 db.channel('student-new-lesson')
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lessons' }, async (payload) => {
     const lesson = payload.new;
-    if (lesson.class_name && !myClasses.some(mc => lesson.class_name.split(',').map(c=>c.trim()).includes(mc))) return;
-    showNewLessonToast(lesson.name);
+    // Kiểm tra bài có dành cho học sinh này không
+    if (lesson.allowed_usernames) {
+      const allowed = lesson.allowed_usernames.split(',').map(u=>u.trim()).filter(Boolean);
+      if (!allowed.includes(currentUser)) return;
+      showNewLessonToast(lesson.name, true); // gán riêng
+    } else if (lesson.class_name) {
+      if (!myClasses.some(mc => lesson.class_name.split(',').map(c=>c.trim()).includes(mc))) return;
+      showNewLessonToast(lesson.name, false);
+    } else {
+      return; // không gán lớp và không gán riêng → bỏ qua
+    }
     _scheduleLessonReload();
   })
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons' }, async () => {
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons' }, async (payload) => {
+    const lesson = payload.new;
+    // Nếu vừa được gán riêng cho mình
+    const wasAdded = lesson.allowed_usernames &&
+      lesson.allowed_usernames.split(',').map(u=>u.trim()).includes(currentUser) &&
+      !(payload.old?.allowed_usernames||'').split(',').map(u=>u.trim()).includes(currentUser);
+    if (wasAdded) {
+      showNewLessonToast(lesson.name, true);
+    }
     _scheduleLessonReload();
   })
   .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lesson_groups' }, async () => {
@@ -1610,24 +1647,30 @@ db.channel('student-new-lesson')
   })
   .subscribe();
 
-function showNewLessonToast(lessonName) {
+function showNewLessonToast(lessonName, isPersonal = false) {
   const existing = document.getElementById('newLessonToast');
   if (existing) existing.remove();
 
   const toast = document.createElement('div');
   toast.id = 'newLessonToast';
+  const bg = isPersonal
+    ? 'linear-gradient(135deg,#6366f1,#4f46e5)'   // tím — gán riêng
+    : 'linear-gradient(135deg,#059669,#047857)';   // xanh — bài mới thường
   toast.style.cssText = `
     position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);
-    z-index:9999;background:linear-gradient(135deg,#059669,#047857);color:#fff;
+    z-index:9999;background:${bg};color:#fff;
     padding:1rem 1.5rem;border-radius:16px;font-size:.9rem;font-weight:600;
     box-shadow:0 12px 40px rgba(0,0,0,.3);display:flex;align-items:center;gap:.85rem;
     max-width:340px;width:90%;cursor:pointer;
     transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s;
     border:1px solid rgba(255,255,255,.2)`;
+  const subtitle = isPersonal
+    ? '🎯 Giáo viên vừa giao bài riêng cho bạn!'
+    : 'Bài học mới vừa được đăng!';
   toast.innerHTML = `
-    <div style="width:40px;height:40px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">📚</div>
+    <div style="width:40px;height:40px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">${isPersonal?'👤':'📚'}</div>
     <div style="flex:1;min-width:0">
-      <div style="font-size:.75rem;opacity:.85;margin-bottom:.15rem">Bài học mới vừa được đăng!</div>
+      <div style="font-size:.75rem;opacity:.85;margin-bottom:.15rem">${subtitle}</div>
       <div style="font-size:.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lessonName}</div>
     </div>
     <button id="newLessonToastClose" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:.9rem;flex-shrink:0">✕</button>`;

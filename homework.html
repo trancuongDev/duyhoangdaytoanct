@@ -661,6 +661,24 @@
         </div>
         <input type="hidden" id="hwClass"/>
       </div>
+
+      <!-- Gán học sinh cụ thể -->
+      <div>
+        <label>👤 Gán cho học sinh cụ thể <span style="color:var(--muted);font-weight:400">(tuỳ chọn — ưu tiên hơn lớp)</span></label>
+        <div style="position:relative">
+          <input type="text" id="hwStudentSearch" placeholder="🔍 Nhập tên hoặc Gmail học sinh..."
+            autocomplete="off"
+            style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem;background:var(--card);color:var(--text);transition:border-color .2s;box-sizing:border-box"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="setTimeout(()=>{document.getElementById('hwStudentDropdown').style.display='none'},180)"/>
+          <div id="hwStudentDropdown"
+            style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:1000;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)"></div>
+        </div>
+        <div id="hwStudentTags" style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem;min-height:0"></div>
+        <input type="hidden" id="hwAllowedUsernames"/>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">
+          ℹ️ Khi gán học sinh, bài tập <b>chỉ hiển thị với những học sinh này</b> (bất kể lớp đã chọn ở trên).
+        </div>
+      </div>
       <div>
         <label>Hạn nộp <span style="color:var(--muted);font-weight:400">(để trống = học sinh làm được mãi mãi, chỉ xóa bài mới mất)</span></label>
         <input type="date" id="hwDue"/>
@@ -1183,7 +1201,7 @@ async function loadUser() {
     const localToken = sessionStorage.getItem('dh_token');
     if (!localToken) { sessionStorage.clear(); location.href = 'login.html'; return; }
 
-    const { data } = await sb.from('students').select('class_name,session_token,active').eq('username', username).maybeSingle();
+    const { data } = await sb.from('students').select('id,class_name,session_token,active').eq('username', username).maybeSingle();
 
     if (!data || data.session_token !== localToken || data.active === false) {
       sessionStorage.clear();
@@ -1191,7 +1209,7 @@ async function loadUser() {
       return;
     }
 
-    currentUser = { username, full_name: dhName || username, role, class_name: data.class_name || '' };
+    currentUser = { username, full_name: dhName || username, role, class_name: data.class_name || '', id: data.id };
 
     // ── Realtime: bị đăng xuất khi thiết bị khác đăng nhập ──
     sb.channel('hw-student-lock-' + username)
@@ -1397,6 +1415,79 @@ function _resetHwClassSelect() {
   _renderHwClassTags();
 }
 
+// ── Gán học sinh cụ thể vào bài tập ─────────────────────────
+let _hwSelectedUsernames = [];
+
+function _renderHwStudentTags() {
+  const wrap = document.getElementById('hwStudentTags');
+  if (!wrap) return;
+  if (!_hwSelectedUsernames.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = _hwSelectedUsernames.map(u => `
+    <span style="display:inline-flex;align-items:center;gap:.3rem;background:#eef2ff;color:#3730a3;border:1.5px solid #c7d2fe;border-radius:20px;padding:.18rem .65rem;font-size:.78rem;font-weight:700">
+      👤 ${u}
+      <button type="button" onclick="_hwRemoveStudent('${u}')"
+        style="background:none;border:none;cursor:pointer;color:#6366f1;font-size:.9rem;padding:0;line-height:1;margin-left:.15rem">✕</button>
+    </span>`).join('');
+  document.getElementById('hwAllowedUsernames').value = _hwSelectedUsernames.join(',');
+}
+
+function _hwRemoveStudent(u) {
+  _hwSelectedUsernames = _hwSelectedUsernames.filter(x => x !== u);
+  _renderHwStudentTags();
+}
+
+function _hwAddStudent(username) {
+  if (!_hwSelectedUsernames.includes(username)) {
+    _hwSelectedUsernames.push(username);
+    _renderHwStudentTags();
+  }
+  document.getElementById('hwStudentSearch').value = '';
+  document.getElementById('hwStudentDropdown').style.display = 'none';
+}
+
+function _resetHwStudentSelect() {
+  _hwSelectedUsernames = [];
+  document.getElementById('hwStudentSearch').value = '';
+  document.getElementById('hwAllowedUsernames').value = '';
+  _renderHwStudentTags();
+}
+
+function _setHwStudentSelect(value) {
+  _hwSelectedUsernames = (value||'').split(',').map(u=>u.trim()).filter(Boolean);
+  document.getElementById('hwAllowedUsernames').value = value||'';
+  _renderHwStudentTags();
+}
+
+// Autocomplete tìm kiếm học sinh cho bài tập
+let _hwStudentSearchTimer = null;
+document.getElementById('hwStudentSearch')?.addEventListener('input', function() {
+  clearTimeout(_hwStudentSearchTimer);
+  const q = this.value.trim();
+  const dd = document.getElementById('hwStudentDropdown');
+  if (!q) { dd.style.display = 'none'; return; }
+  _hwStudentSearchTimer = setTimeout(async () => {
+    const { data } = await sb.from('students')
+      .select('username,full_name,class_name')
+      .or(`full_name.ilike.%${q}%,username.ilike.%${q}%`)
+      .eq('active', true)
+      .limit(10);
+    if (!data?.length) {
+      dd.innerHTML = '<div style="padding:.65rem 1rem;font-size:.83rem;color:var(--muted)">Không tìm thấy học sinh</div>';
+      dd.style.display = 'block';
+      return;
+    }
+    dd.innerHTML = data.map(s => `
+      <div onclick="_hwAddStudent('${s.username}')"
+        style="padding:.6rem 1rem;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border);transition:background .15s"
+        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <span style="font-weight:700">${s.full_name}</span>
+        <span style="color:var(--muted);font-size:.78rem;margin-left:.4rem">${s.username}</span>
+        ${s.class_name ? `<span style="float:right;font-size:.72rem;background:#eef2ff;color:#6366f1;padding:.1rem .4rem;border-radius:6px;font-weight:700">${s.class_name}</span>` : ''}
+      </div>`).join('');
+    dd.style.display = 'block';
+  }, 250);
+});
+
 function _setHwClassSelect(value) {
   // value: "12A" hoặc "12A,12B"
   _hwSelectedClasses = (value||'').split(',').map(c=>c.trim()).filter(Boolean);
@@ -1445,8 +1536,18 @@ let allTopScores = {}; // { homework_id: { score, name, max_score } }
 
 async function loadStudentData() {
   const cn = currentUser.class_name || '';
-  // Hỗ trợ đa lớp — học sinh có thể thuộc nhiều lớp (vd: "12A,12B")
-  const myClasses = cn.split(',').map(c => c.trim()).filter(Boolean);
+  // Hỗ trợ đa lớp — đọc từ student_classes để lấy đủ lớp
+  let myClasses = cn.split(',').map(c => c.trim()).filter(Boolean);
+  try {
+    if (currentUser.id) {
+      const { data: scData } = await sb.from('student_classes')
+        .select('class_name').eq('student_id', currentUser.id);
+      if (scData && scData.length > 0) {
+        const extra = scData.flatMap(sc => (sc.class_name||'').split(',').map(c=>c.trim()).filter(Boolean));
+        myClasses = [...new Set([...myClasses, ...extra])];
+      }
+    }
+  } catch(e) { /* fallback dùng class_name từ session */ }
 
   // Build or-filter: bài cho tất cả (null) OR bài cho bất kỳ lớp nào của mình
   // Lọc bỏ bài đã xóa vào thùng rác
@@ -1465,9 +1566,15 @@ async function loadStudentData() {
     hwQuery,
     sb.from('homework_submissions').select('*').eq('username', currentUser.username)
   ]);
-  // Filter phía client để hỗ trợ class_name dạng "12A,12B" (nhiều lớp)
+  // Filter phía client để hỗ trợ class_name dạng "12A,12B" (nhiều lớp) + allowed_usernames
   const rawHomework = hwR.data || [];
   allHomework = rawHomework.filter(h => {
+    // Ưu tiên: bài được gán riêng cho học sinh này
+    if (h.allowed_usernames) {
+      const allowed = h.allowed_usernames.split(',').map(u => u.trim()).filter(Boolean);
+      return allowed.includes(currentUser.username);
+    }
+    // Mặc định: theo lớp
     if (!h.class_name) return true; // giao tất cả
     const hwClasses = h.class_name.split(',').map(c => c.trim()).filter(Boolean);
     return myClasses.some(mc => hwClasses.includes(mc));
@@ -1487,8 +1594,11 @@ async function loadStudentData() {
 
     allTopScores = {};
     (topData||[]).forEach(s => {
-      // Chỉ tính bài của cùng lớp
-      if (cn && s.class_name && s.class_name !== cn) return;
+      // Chỉ tính bài của cùng lớp (hỗ trợ đa lớp)
+      if (myClasses.length > 0 && s.class_name) {
+        const sCls = s.class_name.split(',').map(c=>c.trim()).filter(Boolean);
+        if (!sCls.some(c => myClasses.includes(c))) return;
+      }
       const key = String(s.homework_id);
       if (!allTopScores[key] || s.score > allTopScores[key].score) {
         allTopScores[key] = {
@@ -1771,9 +1881,11 @@ function renderAdminList() {
         <div style="display:flex;gap:.35rem;flex-shrink:0;flex-wrap:wrap">
           ${isDraft
             ? `<span style="background:#fef3c7;color:#92400e;padding:.2rem .6rem;border-radius:8px;font-size:.75rem;font-weight:700">⛔ Chưa giao</span>`
-            : hw.class_name
-              ? `<span class="hw-badge pending">🏫 ${esc(hw.class_name)}</span>`
-              : '<span class="hw-badge" style="background:#e0e7ff;color:#3730a3">🌐 Tất cả</span>'
+            : hw.allowed_usernames
+              ? `<span style="background:#ede9fe;color:#5b21b6;padding:.2rem .6rem;border-radius:8px;font-size:.75rem;font-weight:700">👤 ${hw.allowed_usernames.split(',').length} HS</span>`
+              : hw.class_name
+                ? `<span class="hw-badge pending">🏫 ${esc(hw.class_name)}</span>`
+                : '<span class="hw-badge" style="background:#e0e7ff;color:#3730a3">🌐 Tất cả</span>'
           }
           ${hw.due_date?`<span class="due-chip${od?' overdue':''}">⏰ ${fmtDate(hw.due_date)}${od?' · Quá hạn':''}</span>`:''}
         </div>
@@ -3614,8 +3726,7 @@ function openModalHW() {
   document.getElementById('hwAntiPaste').checked = false;
   document.getElementById('hwOpenAt').value = '';
   _resetHwClassSelect();
-  window._hwAttachExistingUrl = null;
-  document.getElementById('modalHWTitle').textContent='➕ Giao bài tập mới';
+  _resetHwStudentSelect();
   renderQuestionList();
   document.getElementById('modalHW').classList.add('open');
 }
@@ -3645,6 +3756,7 @@ async function openEditHW(hwId) {
   document.getElementById('hwAntiPaste').checked = !!hw.anti_paste;
   document.getElementById('hwOpenAt').value = hw.open_at ? _utcToLocalInput(hw.open_at) : '';
   _setHwClassSelect(hw.class_name || '');
+  _setHwStudentSelect(hw.allowed_usernames || '');
   window._hwAttachExistingUrl = null;
   document.getElementById('modalHWTitle').textContent='✏️ Sửa bài tập';
   // Load questions
@@ -4678,6 +4790,7 @@ async function saveHomework(isDraft=false) {
     description:document.getElementById('hwDesc').value.trim()||null,
     // class_name: lưu dạng "12A,12B" hoặc null nếu tất cả
     class_name: document.getElementById('hwClass').value.trim() || null,
+    allowed_usernames: document.getElementById('hwAllowedUsernames').value.trim() || null,
     due_date:document.getElementById('hwDue').value||null,
     time_limit:parseInt(document.getElementById('hwTimeLimit').value)||null,
     max_attempts: _getMaxAttempts(),
@@ -6883,10 +6996,13 @@ function initSidebar() {
 }
 
 function initDarkMode() {
-  if(localStorage.getItem('darkMode')==='1')document.body.classList.add('dark-mode');
-  document.getElementById('darkBtn')?.addEventListener('click',()=>{
+  if(localStorage.getItem('st_dark')==='1')document.body.classList.add('dark-mode');
+  const btn = document.getElementById('darkBtn');
+  if (btn) btn.textContent = localStorage.getItem('st_dark')==='1' ? '☀️' : '🌙';
+  btn?.addEventListener('click',()=>{
     const on=document.body.classList.toggle('dark-mode');
-    localStorage.setItem('darkMode',on?'1':'0');
+    if (btn) btn.textContent = on ? '☀️' : '🌙';
+    localStorage.setItem('st_dark',on?'1':'0');
   });
 }
 
@@ -8026,13 +8142,20 @@ function initRealtime() {
         // Học sinh: kiểm tra bài mới có dành cho lớp mình không
         const myClasses = (currentUser.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
         const hwClass   = (nw?.class_name||'').split(',').map(c=>c.trim()).filter(Boolean);
-        const relevant  = !hwClass.length || myClasses.some(c=>hwClass.includes(c));
+        // Relevant: gán riêng cho mình, hoặc theo lớp, hoặc giao tất cả
+        const allowedList = nw?.allowed_usernames
+          ? nw.allowed_usernames.split(',').map(u=>u.trim()).filter(Boolean)
+          : null;
+        const relevant = allowedList
+          ? allowedList.includes(currentUser.username)
+          : (!hwClass.length || myClasses.some(c=>hwClass.includes(c)));
 
         if (eventType === 'INSERT' && relevant && !nw?.is_draft) {
           await loadStudentData();
           renderStudentList();
           updateGuideStats();
-          showRealtimeNotify('📝 Bài tập mới', nw?.title || 'Giáo viên vừa giao bài mới!');
+          const notifMsg = allowedList ? `Giáo viên vừa giao riêng cho bạn: ${nw?.title}` : (nw?.title || 'Giáo viên vừa giao bài mới!');
+          showRealtimeNotify('📝 Bài tập mới', notifMsg);
         } else if (eventType === 'UPDATE') {
           // Khi GV publish nháp → học sinh nhận thông báo
           const wasPublished = !nw?.is_draft && payload.old?.is_draft === true;

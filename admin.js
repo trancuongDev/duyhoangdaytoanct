@@ -4,6 +4,22 @@ const db = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
 );
 
+// ── Toast thông báo ──────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg, ok = true) {
+  const t = document.getElementById('adminToast');
+  if (!t) return;
+  t.textContent = (ok ? '✅ ' : '❌ ') + msg;
+  t.style.background = ok ? '#1e293b' : '#7f1d1d';
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(80px)';
+  }, 3000);
+}
+
 // ── Browser Notification cho admin ──────────────────────────────
 (function _initAdminNotif() {
   if (!('Notification' in window)) return;
@@ -408,10 +424,13 @@ function _invalidateClassesCache() {
   _classesCacheTime = 0;
 }
 
+let _populatingFilters = false;
+
 async function populateClassFilters() {
   const classes = await getClasses();
   const filterOpts = '<option value="">Tất cả lớp</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
   const modalOpts  = '<option value="">-- Tất cả lớp --</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
+  _populatingFilters = true;
   ['studentFilterClass','lessonFilterClass','accessFilterClass','loginHistoryFilterClass','annClass','annFilterClass','scheduleFilterClass'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
     const cur = el.value; el.innerHTML = filterOpts; el.value = cur;
@@ -421,6 +440,7 @@ async function populateClassFilters() {
     const el = document.getElementById(id); if (!el) return;
     const cur = el.value; el.innerHTML = modalOpts; el.value = cur;
   });
+  _populatingFilters = false;
 }
 
 // ---- Populate nhóm bài học vào dropdown (hỗ trợ cây 3 cấp) ----
@@ -458,7 +478,14 @@ async function renderGroups() {
   document.getElementById('emptyGroups').style.display = (list||[]).length ? 'none' : 'block';
   if (!(list||[]).length) return;
 
-  const { data: allLessons } = await db.from('lessons').select('id,name,class_name,description,group_id,group_name,sort_order').order('sort_order', {ascending: true}).order('created_at', {ascending: true});
+  const { data: allLessonsRaw } = await db.from('lessons').select('id,name,class_name,description,group_id,group_name,sort_order,allowed_usernames').order('sort_order', {ascending: true}).order('created_at', {ascending: true});
+  // Dedup theo id phòng trùng
+  const seenLessonIds = new Set();
+  const allLessons = (allLessonsRaw||[]).filter(l => {
+    if (seenLessonIds.has(l.id)) return false;
+    seenLessonIds.add(l.id);
+    return true;
+  });
   const lessonIds = (allLessons||[]).map(l => l.id);
   const [{ data: allVids }, { data: allDocs }] = lessonIds.length ? await Promise.all([
     db.from('lesson_videos').select('lesson_id').in('lesson_id', lessonIds),
@@ -482,11 +509,20 @@ async function renderGroups() {
   container.appendChild(grid);
 
   function getLessonsForGroup(gId) {
-    // Ưu tiên group_id, fallback group_name cho dữ liệu cũ
+    // Ưu tiên group_id, fallback group_name chỉ cho bài chưa có group_id
     const g = (list||[]).find(x => x.id === gId);
+    const seen = new Set();
     return (allLessons||[]).filter(l => {
-      if (l.group_id) return l.group_id === gId;
-      return g && l.group_name === g.name;
+      let match;
+      if (l.group_id != null) {
+        match = l.group_id === gId; // bài có group_id → chỉ match đúng nhóm
+      } else {
+        match = g && l.group_name === g.name; // bài cũ chưa có group_id → fallback group_name
+      }
+      if (!match) return false;
+      if (seen.has(l.id)) return false;
+      seen.add(l.id);
+      return true;
     });
   }
 
@@ -502,7 +538,7 @@ async function renderGroups() {
     const num = document.createElement('div'); num.className = 'group-lesson-num'; num.textContent = idx + 1;
     const info = document.createElement('div'); info.className = 'group-lesson-info';
     info.innerHTML = `<div class="group-lesson-title"><span style="margin-right:.35rem">📚</span>${l.name}</div>
-      <div class="group-lesson-stats"><span>${vcMap[l.id]||0} video</span><span>${dcMap[l.id]||0} tài liệu</span>${l.class_name?`<span class="class-tag" style="font-size:.68rem">${l.class_name}</span>`:''}</div>`;
+      <div class="group-lesson-stats"><span>${vcMap[l.id]||0} video</span><span>${dcMap[l.id]||0} tài liệu</span>${l.class_name?`<span class="class-tag" style="font-size:.68rem">${l.class_name}</span>`:''}${_allowedBadge(l.allowed_usernames)}</div>`;
     const acts = document.createElement('div'); acts.className = 'group-lesson-item-actions';
     const openBtn = document.createElement('button'); openBtn.className = 'group-lesson-open'; openBtn.textContent = '→';
     openBtn.addEventListener('click', e => { e.stopPropagation(); onOpen(); });
@@ -544,6 +580,7 @@ async function renderGroups() {
     bodyEl.innerHTML = `<div class="group-card-name">${g.name}${depthBadge}</div>
       <div class="group-card-meta">
         ${g.class_name ? g.class_name.split(',').map(c=>`<span class="class-tag">${c.trim()}</span>`).join('') : ''}
+        ${_allowedBadge(g.allowed_usernames)}
         <span class="group-card-count">${children.length ? children.length + ' nhóm con • ' : ''}${directLessons.length} bài học</span>
       </div>`;
 
@@ -671,8 +708,16 @@ function openGroupModal(g=null, parentId=null) {
   const rawCls = g ? (g.class_name || '') : '';
   _groupSelectedClasses = rawCls ? rawCls.split(',').map(c => c.trim()).filter(Boolean) : [];
 
+  // Fill allowed_usernames
+  _groupSelectedUsernames = [];
+  document.getElementById('groupStudentSearch').value = '';
+  document.getElementById('groupAllowedUsernames').value = g?.allowed_usernames || '';
+  if (g?.allowed_usernames) {
+    _groupSelectedUsernames = g.allowed_usernames.split(',').map(u => u.trim()).filter(Boolean);
+  }
+  _renderGroupStudentTags();
+
   populateClassFilters().then(() => {
-    // Reset select về mặc định
     const sel = document.getElementById('groupClassSelect');
     if (sel) sel.value = '';
     renderGroupClassTags(_groupSelectedClasses);
@@ -680,8 +725,69 @@ function openGroupModal(g=null, parentId=null) {
   document.getElementById('groupModal').classList.add('open');
 }
 
+// ── Gán học sinh cụ thể vào nhóm bài học ─────────────────────
+let _groupSelectedUsernames = [];
+
+function _renderGroupStudentTags() {
+  const wrap = document.getElementById('groupStudentTags');
+  if (!wrap) return;
+  if (!_groupSelectedUsernames.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = _groupSelectedUsernames.map(u => `
+    <span style="display:inline-flex;align-items:center;gap:.3rem;background:#eef2ff;color:#3730a3;border:1.5px solid #c7d2fe;border-radius:20px;padding:.18rem .65rem;font-size:.78rem;font-weight:700">
+      👤 ${u}
+      <button type="button" onclick="_groupRemoveStudent('${u}')"
+        style="background:none;border:none;cursor:pointer;color:#6366f1;font-size:.9rem;padding:0;line-height:1;margin-left:.15rem">✕</button>
+    </span>`).join('');
+  document.getElementById('groupAllowedUsernames').value = _groupSelectedUsernames.join(',');
+}
+
+function _groupRemoveStudent(u) {
+  _groupSelectedUsernames = _groupSelectedUsernames.filter(x => x !== u);
+  _renderGroupStudentTags();
+}
+
+function _groupAddStudent(username, name) {
+  if (!_groupSelectedUsernames.includes(username)) {
+    _groupSelectedUsernames.push(username);
+    _renderGroupStudentTags();
+  }
+  document.getElementById('groupStudentSearch').value = '';
+  document.getElementById('groupStudentDropdown').style.display = 'none';
+}
+
+// Autocomplete tìm kiếm học sinh cho nhóm
+let _groupStudentSearchTimer = null;
+document.getElementById('groupStudentSearch')?.addEventListener('input', function() {
+  clearTimeout(_groupStudentSearchTimer);
+  const q = this.value.trim();
+  const dd = document.getElementById('groupStudentDropdown');
+  if (!q) { dd.style.display = 'none'; return; }
+  _groupStudentSearchTimer = setTimeout(async () => {
+    const { data } = await db.from('students')
+      .select('username,full_name,class_name')
+      .or(`full_name.ilike.%${q}%,username.ilike.%${q}%`)
+      .eq('active', true)
+      .limit(10);
+    if (!data?.length) {
+      dd.innerHTML = '<div style="padding:.65rem 1rem;font-size:.83rem;color:var(--muted)">Không tìm thấy học sinh</div>';
+      dd.style.display = 'block';
+      return;
+    }
+    dd.innerHTML = data.map(s => `
+      <div onclick="_groupAddStudent('${s.username}','${s.full_name.replace(/'/g,'&#39;')}')"
+        style="padding:.6rem 1rem;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border);transition:background .15s"
+        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <span style="font-weight:700">${s.full_name}</span>
+        <span style="color:var(--muted);font-size:.78rem;margin-left:.4rem">${s.username}</span>
+        ${s.class_name ? `<span style="float:right;font-size:.72rem;background:var(--primary-light);color:var(--primary);padding:.1rem .4rem;border-radius:6px;font-weight:700">${s.class_name}</span>` : ''}
+      </div>`).join('');
+    dd.style.display = 'block';
+  }, 250);
+});
+
 // Khi chọn lớp từ dropdown → thêm vào tags
 document.getElementById('groupClassSelect').addEventListener('change', function() {
+  if (_populatingFilters) { this.value = ''; return; } // bỏ qua khi đang populate
   const cls = this.value;
   if (cls && !_groupSelectedClasses.includes(cls)) {
     _groupSelectedClasses.push(cls);
@@ -696,25 +802,28 @@ document.getElementById('groupSaveBtn').addEventListener('click', async () => {
   const oldName = document.getElementById('groupNameInput').dataset.oldName;
   const parentId = document.getElementById('groupNameInput').dataset.parentId || null;
   const cls = _groupSelectedClasses.length ? _groupSelectedClasses.join(',') : null;
+  const allowedUsernames = document.getElementById('groupAllowedUsernames').value.trim() || null;
   const err = document.getElementById('groupError');
   if (!name) { err.textContent = 'Vui lòng nhập tên nhóm.'; return; }
 
   if (editingGroupId) {
-    await db.from('lesson_groups').update({ name, class_name: cls }).eq('id', editingGroupId);
+    await db.from('lesson_groups').update({ name, class_name: cls, allowed_usernames: allowedUsernames }).eq('id', editingGroupId);
     if (oldName && oldName !== name) await db.from('lessons').update({ group_name: name }).eq('group_name', oldName);
-    // Đồng bộ toàn bộ bài học trong nhóm theo class_name mới của nhóm
+    // Đồng bộ toàn bộ bài học trong nhóm theo class_name mới + gắn group_id cho bài cũ dùng group_name
     const [{ data: byId }, { data: byName }] = await Promise.all([
       db.from('lessons').select('id').eq('group_id', editingGroupId),
       name ? db.from('lessons').select('id').eq('group_name', name) : { data: [] },
     ]);
     const allLessonIds = [...new Set([...(byId||[]), ...(byName||[])].map(l => l.id))];
     for (const lessonId of allLessonIds) {
-      await db.from('lessons').update({ class_name: cls }).eq('id', lessonId);
+      // Đồng bộ class_name và gắn group_id (migrate bài cũ dùng group_name)
+      await db.from('lessons').update({ class_name: cls, group_id: editingGroupId, group_name: name }).eq('id', lessonId);
     }
   } else {
     const { error } = await db.from('lesson_groups').insert({
       name,
       class_name: cls,
+      allowed_usernames: allowedUsernames,
       parent_id: parentId ? parseInt(parentId) : null
     });
     if (error) { err.textContent = 'Tên nhóm đã tồn tại.'; return; }
@@ -1871,6 +1980,7 @@ function openEditStudent(s) {
   editingStudentId = s.id;
   document.getElementById('esCode').value = s.student_code||'';
   document.getElementById('esName').value = s.full_name;
+  document.getElementById('esPhone').value = s.phone||'';
   document.getElementById('esUsername').value = s.username;
   document.getElementById('esPassword').value = s.student_code||'';
   document.getElementById('esExpiry').value = s.expiry_date||'';
@@ -1946,7 +2056,7 @@ document.getElementById('esSaveBtn').addEventListener('click', async () => {
   const dupWE = await checkDuplicate(username, phone, editingStudentId);
   if (dupWE.length) { err.innerHTML = '⚠️ ' + dupWE.join('<br/>⚠️ '); return; }
   // Trợ lý không được thay đổi ngày hết hạn — giữ nguyên giá trị cũ
-  const updates={ student_code:code, full_name:name, username, class_name:cls||null, notes };
+  const updates={ student_code:code, full_name:name, username, class_name:cls||null, notes, phone: phone||null };
   if (isTeacher) updates.expiry_date = expiry;
   const { data: orig } = await db.from('students').select('student_code').eq('id', editingStudentId).single();
   if (code && code !== (orig?.student_code || '')) updates.password = await hashPw(code);
@@ -1964,19 +2074,41 @@ document.getElementById('esSaveBtn').addEventListener('click', async () => {
 // ============================================================
 // PROFILE / PASSWORD
 // ============================================================
+
+// Restore password hash từ Supabase nếu localStorage bị xóa
+(async () => {
+  try {
+    const t = JSON.parse(localStorage.getItem('dh_teacher') || 'null');
+    if (!t || !t.passwordHash || !t.hashed) {
+      // Thử lấy từ Supabase
+      const { data } = await db.from('app_settings').select('value').eq('key', 'admin_password_hash').maybeSingle();
+      if (data?.value) {
+        const current = t || {};
+        localStorage.setItem('dh_teacher', JSON.stringify({ ...current, passwordHash: data.value, hashed: true }));
+      }
+    }
+  } catch(e) {}
+})();
+
 document.getElementById('pwSaveBtn').addEventListener('click', async () => {
   const old=document.getElementById('pwOld').value, nw=document.getElementById('pwNew').value, cf=document.getElementById('pwConfirm').value;
   const err=document.getElementById('pwError'), ok=document.getElementById('pwSuccess');
   err.textContent=''; ok.textContent='';
   const t=JSON.parse(localStorage.getItem('dh_teacher'));
+  if (!t) { err.textContent='Không tìm thấy thông tin tài khoản. Hãy đăng nhập lại.'; return; }
 
   const oldHash = await hashPw(old);
   if (oldHash !== t.passwordHash) { err.textContent='Mật khẩu hiện tại không đúng.'; return; }
   if (!nw) { err.textContent='Vui lòng nhập mật khẩu mới.'; return; }
   if (nw!==cf) { err.textContent='Mật khẩu xác nhận không khớp.'; return; }
   const newHash = await hashPw(nw);
+  // Lưu localStorage
   localStorage.setItem('dh_teacher', JSON.stringify({...t, passwordHash: newHash, hashed: true }));
-  ok.textContent='Đổi mật khẩu thành công!';
+  // Backup lên Supabase để phòng clear browser
+  try {
+    await db.from('app_settings').upsert({ key: 'admin_password_hash', value: newHash }, { onConflict: 'key' });
+  } catch(e) {}
+  ok.textContent='Đổi mật khẩu thành công! Đã sao lưu lên cloud.';
   ['pwOld','pwNew','pwConfirm'].forEach(id=>document.getElementById(id).value='');
 });
 
@@ -2193,7 +2325,7 @@ async function _doRenderLessons() {
           handle.style.cssText = 'cursor:grab;color:var(--muted);font-size:1.1rem;padding:0 .4rem;flex-shrink:0;user-select:none';
           const num = document.createElement('div'); num.className = 'group-lesson-num'; num.textContent = idx+1;
           const info = document.createElement('div'); info.className = 'group-lesson-info';
-          info.innerHTML = `<div class="group-lesson-title"><span style="margin-right:.35rem">\uD83D\uDCDA</span>${l.name}</div><div class="group-lesson-stats"><span>\uD83C\uDFAC ${vc}</span><span>\uD83D\uDCC4 ${dc}</span>${l.class_name?`<span class="class-tag" style="font-size:.68rem">${l.class_name}</span>`:''}</div>`;
+          info.innerHTML = `<div class="group-lesson-title"><span style="margin-right:.35rem">\uD83D\uDCDA</span>${l.name}</div><div class="group-lesson-stats"><span>\uD83C\uDFAC ${vc}</span><span>\uD83D\uDCC4 ${dc}</span>${l.class_name?`<span class="class-tag" style="font-size:.68rem">${l.class_name}</span>`:''}${_allowedBadge(l.allowed_usernames)}</div>`;
           const acts = document.createElement('div'); acts.className = 'group-lesson-item-actions';
           const openBtn = document.createElement('button'); openBtn.className = 'group-lesson-open'; openBtn.textContent = String.fromCharCode(8594);
           openBtn.addEventListener('click', e => { e.stopPropagation(); openLessonDetail(l.id); });
@@ -2259,10 +2391,105 @@ function openLessonModal(l=null) {
     document.getElementById('lInlineDocLinks').value = '';
     document.getElementById('lInlineHwLinks').value = '';
   }
+  // Fill allowed_usernames
+  _lSelectedUsernames = [];
+  document.getElementById('lStudentSearch').value = '';
+  document.getElementById('lAllowedUsernames').value = l?.allowed_usernames || '';
+  if (l?.allowed_usernames) {
+    _lSelectedUsernames = l.allowed_usernames.split(',').map(u => u.trim()).filter(Boolean);
+  }
+  _renderLStudentTags();
   // Truyền group_id nếu có, fallback group_name cũ
   populateGroupSelect('lGroupInput', l ? (l.group_id || l.group_name || '') : '');
   document.getElementById('lessonModal').classList.add('open');
 }
+
+// ── Helper: badge hiển thị học sinh được gán ─────────────────
+function _allowedBadge(allowed_usernames) {
+  if (!allowed_usernames) return '';
+  const list = allowed_usernames.split(',').map(u => u.trim()).filter(Boolean);
+  if (!list.length) return '';
+  const tooltip = list.join('\n');
+  return `<span title="${tooltip}" style="background:#ede9fe;color:#5b21b6;border-radius:20px;padding:.1rem .45rem;font-size:.68rem;font-weight:700;cursor:help" onclick="event.stopPropagation();_showAllowedModal(this,'${allowed_usernames.replace(/'/g,'&#39;')}')">👤 ${list.length} HS</span>`;
+}
+
+// Modal xem danh sách học sinh được gán
+function _showAllowedModal(el, allowedRaw) {
+  const list = allowedRaw.split(',').map(u => u.trim()).filter(Boolean);
+  const existing = document.getElementById('_allowedModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = '_allowedModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = `
+    <div style="background:var(--card);border-radius:16px;padding:1.5rem;max-width:400px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.25);max-height:70vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div style="font-weight:800;font-size:.95rem">👤 Học sinh được gán (${list.length})</div>
+        <button onclick="document.getElementById('_allowedModal').remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+      </div>
+      ${list.map(u => `<div style="padding:.45rem .75rem;border-radius:8px;background:var(--bg);margin-bottom:.3rem;font-size:.85rem;font-weight:600">📧 ${u}</div>`).join('')}
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+
+let _lSelectedUsernames = []; // ['gmail1@gmail.com', ...]
+
+function _renderLStudentTags() {
+  const wrap = document.getElementById('lStudentTags');
+  if (!wrap) return;
+  if (!_lSelectedUsernames.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = _lSelectedUsernames.map(u => `
+    <span style="display:inline-flex;align-items:center;gap:.3rem;background:#eef2ff;color:#3730a3;border:1.5px solid #c7d2fe;border-radius:20px;padding:.18rem .65rem;font-size:.78rem;font-weight:700">
+      👤 ${u}
+      <button type="button" onclick="_lRemoveStudent('${u}')"
+        style="background:none;border:none;cursor:pointer;color:#6366f1;font-size:.9rem;padding:0;line-height:1;margin-left:.15rem">✕</button>
+    </span>`).join('');
+  document.getElementById('lAllowedUsernames').value = _lSelectedUsernames.join(',');
+}
+
+function _lRemoveStudent(u) {
+  _lSelectedUsernames = _lSelectedUsernames.filter(x => x !== u);
+  _renderLStudentTags();
+}
+
+// Search học sinh khi gõ vào ô tìm kiếm
+let _lStudentSearchTimer = null;
+document.getElementById('lStudentSearch')?.addEventListener('input', function() {
+  clearTimeout(_lStudentSearchTimer);
+  const q = this.value.trim();
+  const dd = document.getElementById('lStudentDropdown');
+  if (!q) { dd.style.display = 'none'; return; }
+  _lStudentSearchTimer = setTimeout(async () => {
+    const { data } = await db.from('students')
+      .select('username,full_name,class_name')
+      .or(`full_name.ilike.%${q}%,username.ilike.%${q}%`)
+      .eq('active', true)
+      .limit(10);
+    if (!data?.length) { dd.innerHTML = '<div style="padding:.65rem 1rem;font-size:.83rem;color:var(--muted)">Không tìm thấy học sinh</div>'; dd.style.display = 'block'; return; }
+    dd.innerHTML = data.map(s => `
+      <div onclick="_lAddStudent('${s.username}','${s.full_name.replace(/'/g,'&#39;')}')"
+        style="padding:.6rem 1rem;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border);transition:background .15s"
+        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <span style="font-weight:700">${s.full_name}</span>
+        <span style="color:var(--muted);font-size:.78rem;margin-left:.4rem">${s.username}</span>
+        ${s.class_name ? `<span style="float:right;font-size:.72rem;background:var(--primary-light);color:var(--primary);padding:.1rem .4rem;border-radius:6px;font-weight:700">${s.class_name}</span>` : ''}
+      </div>`).join('');
+    dd.style.display = 'block';
+  }, 250);
+});
+
+function _lAddStudent(username, name) {
+  if (!_lSelectedUsernames.includes(username)) {
+    _lSelectedUsernames.push(username);
+    _renderLStudentTags();
+  }
+  document.getElementById('lStudentSearch').value = '';
+  document.getElementById('lStudentDropdown').style.display = 'none';
+}
+
+
 document.getElementById('openAddLessonBtn').addEventListener('click', () => openLessonModal());
 document.getElementById('lCancelBtn').addEventListener('click', () => document.getElementById('lessonModal').classList.remove('open'));
 document.getElementById('lSaveBtn').addEventListener('click', async () => {
@@ -2270,6 +2497,7 @@ document.getElementById('lSaveBtn').addEventListener('click', async () => {
   if (!name) { err.textContent = 'Vui lòng nhập tên bài học.'; return; }
   const desc  = document.getElementById('lDescInput').value.trim();
   const groupId = document.getElementById('lGroupInput').value || null;
+  const allowedUsernames = document.getElementById('lAllowedUsernames').value.trim() || null;
   // Lấy tên nhóm + lớp của nhóm để tự đồng bộ class_name cho bài học
   const { data: grpData } = groupId
     ? await db.from('lesson_groups').select('name,class_name').eq('id', groupId).single()
@@ -2282,7 +2510,7 @@ document.getElementById('lSaveBtn').addEventListener('click', async () => {
 
   let lessonId = editingLessonId;
   if (editingLessonId) {
-    await db.from('lessons').update({ name, class_name: cls, description: desc, group_id: groupId ? parseInt(groupId) : null, group_name: groupName }).eq('id', editingLessonId);
+    await db.from('lessons').update({ name, class_name: cls, description: desc, group_id: groupId ? parseInt(groupId) : null, group_name: groupName, allowed_usernames: allowedUsernames }).eq('id', editingLessonId);
   } else {
     // Tính sort_order = max hiện tại trong nhóm + 1 → bài mới nằm cuối
     let nextOrder = 1;
@@ -2294,7 +2522,7 @@ document.getElementById('lSaveBtn').addEventListener('click', async () => {
     if (existing && existing.length > 0 && existing[0].sort_order != null) {
       nextOrder = existing[0].sort_order + 1;
     }
-    const { data: newLesson } = await db.from('lessons').insert({ name, class_name: cls, description: desc, group_id: groupId ? parseInt(groupId) : null, group_name: groupName, sort_order: nextOrder }).select('id').single();
+    const { data: newLesson } = await db.from('lessons').insert({ name, class_name: cls, description: desc, group_id: groupId ? parseInt(groupId) : null, group_name: groupName, sort_order: nextOrder, allowed_usernames: allowedUsernames }).select('id').single();
     lessonId = newLesson?.id;
 
     // Lưu video links inline
@@ -4280,11 +4508,11 @@ document.addEventListener('click', e => {
 // ============================================================
 const darkBtn = document.getElementById('darkModeBtn');
 const isDark  = localStorage.getItem('dh_dark') === '1';
-if (isDark) { document.body.classList.add('dark-mode'); darkBtn.textContent = '☀️'; }
+if (isDark) { document.body.classList.add('dark-mode'); if (darkBtn) darkBtn.textContent = '☀️'; }
 
 darkBtn?.addEventListener('click', () => {
   const on = document.body.classList.toggle('dark-mode');
-  darkBtn.textContent = on ? '☀️' : '🌙';
+  if (darkBtn) darkBtn.textContent = on ? '☀️' : '🌙';
   localStorage.setItem('dh_dark', on ? '1' : '0');
 });
 

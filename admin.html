@@ -32,6 +32,9 @@
 </head>
 <body class="dashboard-page">
 
+  <!-- TOAST NOTIFICATION -->
+  <div id="adminToast" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;padding:.7rem 1.4rem;border-radius:12px;font-size:.88rem;font-weight:600;z-index:99999;opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;max-width:90vw;text-align:center"></div>
+
   <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
@@ -1298,10 +1301,10 @@
       <input type="text" id="esPassword" placeholder="Tự động theo mã học viên" style="background:var(--bg,#f8fafc);color:var(--muted,#94a3b8)" readonly/>
       <label>Họ và tên</label>
       <input type="text" id="esName" placeholder="Họ và tên..."/>
+      <label>Số điện thoại</label>
+      <input type="tel" id="esPhone" placeholder="VD: 0901234567" maxlength="10" inputmode="numeric"/>
       <label>Gmail (tên đăng nhập)</label>
       <input type="text" id="esUsername" placeholder="Gmail..."/>
-      <label>Số báo danh mới <span class="muted">(để trống nếu không đổi)</span></label>
-      <input type="password" id="esPassword" placeholder="Số báo danh mới..."/>
       <label>Lớp chính</label>
       <select id="esClass"><option value="">-- Chọn lớp --</option></select>
       <label style="margin-top:.5rem">Các lớp đã đăng ký</label>
@@ -1415,6 +1418,27 @@
       </div>
       <label>Mô tả <span class="muted">(tuỳ chọn)</span></label>
       <input type="text" id="lDescInput" placeholder="Mô tả ngắn về bài học..."/>
+
+      <!-- Gán học sinh cụ thể -->
+      <label style="margin-top:.75rem">👤 Gán cho học sinh cụ thể <span class="muted">(tuỳ chọn — để trống = hiển thị theo lớp)</span></label>
+      <div style="position:relative" id="lStudentWrap">
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <div style="position:relative;flex:1">
+            <input type="text" id="lStudentSearch" placeholder="🔍 Tìm tên hoặc Gmail học sinh..."
+              autocomplete="off"
+              style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem;background:var(--card);color:var(--text);transition:border-color .2s;box-sizing:border-box"
+              onfocus="this.style.borderColor='var(--primary)'" onblur="setTimeout(()=>{document.getElementById('lStudentDropdown').style.display='none'},180)"/>
+            <div id="lStudentDropdown"
+              style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)"></div>
+          </div>
+        </div>
+        <!-- Tags học sinh đã chọn -->
+        <div id="lStudentTags" style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem;min-height:0"></div>
+        <input type="hidden" id="lAllowedUsernames"/>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">
+          ℹ️ Khi gán học sinh, bài học sẽ <b>chỉ hiển thị với những học sinh này</b> (bất kể lớp).
+        </div>
+      </div>
 
       <!-- Thêm video/tài liệu ngay khi tạo (chỉ hiện khi tạo mới) -->
       <div id="lInlineMediaSection" style="margin-top:1rem;border-top:1.5px solid var(--border);padding-top:1rem">
@@ -1627,6 +1651,23 @@
       </div>
       <!-- Tags lớp đã chọn -->
       <div id="groupClassTags" style="display:flex;flex-wrap:wrap;gap:.4rem;min-height:2rem;padding:.3rem 0"></div>
+
+      <!-- Gán học sinh cụ thể -->
+      <label style="margin-top:.5rem">👤 Gán cho học sinh cụ thể <span class="muted">(tuỳ chọn — để trống = theo lớp)</span></label>
+      <div style="position:relative">
+        <input type="text" id="groupStudentSearch" placeholder="🔍 Nhập tên hoặc Gmail học sinh..."
+          autocomplete="off"
+          style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.88rem;background:var(--card);color:var(--text);transition:border-color .2s;box-sizing:border-box"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="setTimeout(()=>{document.getElementById('groupStudentDropdown').style.display='none'},180)"/>
+        <div id="groupStudentDropdown"
+          style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)"></div>
+      </div>
+      <div id="groupStudentTags" style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem;min-height:0"></div>
+      <input type="hidden" id="groupAllowedUsernames"/>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">
+        ℹ️ Khi gán học sinh, nhóm bài học sẽ <b>chỉ hiển thị với những học sinh này</b> (bất kể lớp).
+      </div>
+
       <div id="groupError" class="error-msg"></div>
       <div class="modal-actions">
         <button id="groupCancelBtn" class="btn-outline">Hủy</button>
