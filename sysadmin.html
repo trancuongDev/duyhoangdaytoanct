@@ -1,0 +1,2766 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quản Trị Hệ Thống - DHDT LMS</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --sys-blue: #3b82f6;
+      --sys-green: #10b981;
+      --sys-orange: #f59e0b;
+      --sys-red: #ef4444;
+      --sys-purple: #8b5cf6;
+      --sys-cyan: #06b6d4;
+    }
+    /* ── Layout ── */
+    .sa-wrap { display:flex; min-height:100vh; }
+    .sa-sidebar {
+      width:240px; background:linear-gradient(160deg,#0f0c29,#1e1b4b,#312e81);
+      color:#fff; display:flex; flex-direction:column;
+      position:sticky; top:0; height:100vh; overflow-y:auto; flex-shrink:0;
+      transition: width .25s;
+    }
+    .sa-brand {
+      display:flex; align-items:center; gap:.75rem;
+      padding:1.25rem 1rem 1rem; border-bottom:1px solid rgba(255,255,255,.1);
+    }
+    .sa-brand img { width:36px; height:36px; border-radius:10px; object-fit:cover; }
+    .sa-brand-text { font-weight:900; font-size:.9rem; line-height:1.25; }
+    .sa-brand-sub { font-size:.68rem; color:rgba(255,255,255,.45); font-weight:600; letter-spacing:.3px; }
+    .sa-nav { padding:.5rem .5rem; flex:1; display:flex; flex-direction:column; gap:.15rem; }
+    .sa-section-label {
+      font-size:.62rem; font-weight:800; color:rgba(255,255,255,.3);
+      letter-spacing:.8px; text-transform:uppercase;
+      padding:.6rem .6rem .2rem;
+    }
+    .sa-link {
+      display:flex; align-items:center; gap:.65rem;
+      padding:.6rem .75rem; border-radius:10px;
+      color:rgba(255,255,255,.65); font-size:.84rem; font-weight:500;
+      cursor:pointer; border:none; background:none; width:100%; text-align:left;
+      transition:background .15s,color .15s;
+    }
+    .sa-link:hover { background:rgba(255,255,255,.1); color:#fff; }
+    .sa-link.active { background:rgba(255,255,255,.15); color:#fff; font-weight:700; }
+    .sa-link .sa-icon { font-size:1rem; width:20px; text-align:center; flex-shrink:0; }
+    .sa-link .sa-badge {
+      margin-left:auto; background:var(--sys-red); color:#fff;
+      font-size:.62rem; font-weight:800; padding:.12rem .45rem; border-radius:20px; min-width:18px; text-align:center;
+    }
+    .sa-footer {
+      padding:.75rem 1rem; border-top:1px solid rgba(255,255,255,.1);
+      display:flex; flex-direction:column; gap:.35rem;
+    }
+    .sa-user-row {
+      display:flex; align-items:center; gap:.6rem;
+      padding:.5rem .5rem; border-radius:10px; background:rgba(255,255,255,.07);
+    }
+    .sa-avatar {
+      width:32px; height:32px; border-radius:50%;
+      background:linear-gradient(135deg,#6366f1,#8b5cf6);
+      display:flex; align-items:center; justify-content:center;
+      font-size:.85rem; font-weight:800; color:#fff; flex-shrink:0;
+    }
+    .sa-user-name { font-size:.8rem; font-weight:700; color:#fff; }
+    .sa-user-role { font-size:.68rem; color:rgba(255,255,255,.45); }
+    /* ── Main ── */
+    .sa-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .sa-topbar {
+      background:var(--card); border-bottom:1.5px solid var(--border);
+      padding:.75rem 1.5rem; display:flex; align-items:center; gap:1rem;
+      position:sticky; top:0; z-index:50;
+    }
+    .sa-topbar-title { font-weight:800; font-size:1rem; color:var(--text); flex:1; }
+    .sa-topbar-right { display:flex; align-items:center; gap:.6rem; }
+    .sa-content { padding:1.5rem; flex:1; }
+    /* ── Pages ── */
+    .sa-page { display:none; }
+    .sa-page.active { display:block; }
+    /* ── Stats grid ── */
+    .sa-stats-grid {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:1rem; margin-bottom:1.75rem;
+    }
+    .sa-stat-card {
+      background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+      padding:1.1rem 1.25rem; box-shadow:var(--shadow);
+      display:flex; align-items:center; gap:.9rem;
+      transition:box-shadow .2s, transform .15s;
+    }
+    .sa-stat-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .sa-stat-icon {
+      width:46px; height:46px; border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem; flex-shrink:0;
+    }
+    .sa-stat-body { min-width:0; }
+    .sa-stat-num { font-size:1.6rem; font-weight:900; color:var(--text); line-height:1; }
+    .sa-stat-label { font-size:.75rem; color:var(--muted); font-weight:600; margin-top:.2rem; }
+    .sa-stat-delta {
+      font-size:.7rem; font-weight:700; margin-top:.25rem;
+      display:flex; align-items:center; gap:.2rem;
+    }
+    .sa-stat-delta.up { color:var(--sys-green); }
+    .sa-stat-delta.down { color:var(--sys-red); }
+    /* ── Section header ── */
+    .sa-section-hd {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:1rem; flex-wrap:wrap; gap:.5rem;
+    }
+    .sa-section-hd h2 { font-size:.95rem; font-weight:800; color:var(--text); }
+    /* ── Card ── */
+    .sa-card {
+      background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+      padding:1.25rem 1.4rem; box-shadow:var(--shadow); margin-bottom:1.25rem;
+    }
+    .sa-card-title {
+      font-size:.88rem; font-weight:800; color:var(--text);
+      margin-bottom:1rem; display:flex; align-items:center; gap:.5rem;
+    }
+    /* ── Table ── */
+    .sa-table-wrap { overflow-x:auto; border-radius:12px; border:1.5px solid var(--border); }
+    .sa-table { width:100%; border-collapse:collapse; }
+    .sa-table th {
+      background:var(--bg); font-size:.72rem; font-weight:700; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.5px; padding:.65rem .9rem;
+      text-align:left; border-bottom:1.5px solid var(--border); white-space:nowrap;
+    }
+    .sa-table td {
+      padding:.6rem .9rem; font-size:.84rem; border-bottom:1px solid var(--border);
+      vertical-align:middle;
+    }
+    .sa-table tbody tr:last-child td { border-bottom:none; }
+    .sa-table tbody tr:hover td { background:var(--primary-light); }
+    /* ── Badges ── */
+    .badge {
+      display:inline-flex; align-items:center; gap:.2rem;
+      padding:.18rem .55rem; border-radius:20px; font-size:.71rem; font-weight:700;
+    }
+    .badge-green  { background:#d1fae5; color:#065f46; }
+    .badge-red    { background:#fee2e2; color:#991b1b; }
+    .badge-blue   { background:#dbeafe; color:#1e40af; }
+    .badge-orange { background:#fef3c7; color:#92400e; }
+    .badge-purple { background:#ede9fe; color:#6d28d9; }
+    .badge-gray   { background:#f1f5f9; color:#475569; }
+    /* ── Buttons ── */
+    .sa-btn {
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.5rem 1rem; border-radius:10px; font-size:.82rem; font-weight:700;
+      cursor:pointer; border:none; transition:all .18s;
+    }
+    .sa-btn-primary { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; box-shadow:0 2px 8px rgba(99,102,241,.3); }
+    .sa-btn-primary:hover { filter:brightness(1.08); }
+    .sa-btn-danger { background:#ef4444; color:#fff; }
+    .sa-btn-danger:hover { background:#dc2626; }
+    .sa-btn-outline { background:var(--card); color:var(--text); border:1.5px solid var(--border); }
+    .sa-btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+    .sa-btn-sm { padding:.32rem .65rem; font-size:.75rem; border-radius:8px; }
+    /* ── Form ── */
+    .sa-fg { display:flex; flex-direction:column; gap:.28rem; margin-bottom:.75rem; }
+    .sa-fg label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .sa-fg input, .sa-fg select, .sa-fg textarea {
+      padding:.6rem .85rem; border:1.5px solid var(--border); border-radius:10px;
+      font-size:.88rem; outline:none; background:var(--card); color:var(--text);
+      transition:border-color .2s;
+    }
+    .sa-fg input:focus, .sa-fg select:focus, .sa-fg textarea:focus { border-color:var(--primary); }
+    /* ── Modal ── */
+    .sa-overlay {
+      display:none; position:fixed; inset:0; background:rgba(15,23,42,.6);
+      backdrop-filter:blur(5px); z-index:500; align-items:center; justify-content:center; padding:1rem;
+    }
+    .sa-overlay.open { display:flex; }
+    .sa-modal {
+      background:var(--card); border-radius:20px; padding:1.75rem;
+      width:100%; max-width:520px; max-height:92vh; overflow-y:auto;
+      box-shadow:0 24px 80px rgba(0,0,0,.22);
+    }
+    .sa-modal h3 { font-size:1rem; font-weight:800; color:var(--primary); margin-bottom:1.1rem; }
+    .sa-modal-footer { display:flex; gap:.65rem; justify-content:flex-end; margin-top:1.1rem; }
+    /* ── Health bar ── */
+    .health-bar-wrap { background:var(--bg); border-radius:20px; height:8px; overflow:hidden; }
+    .health-bar { height:100%; border-radius:20px; transition:width .8s ease; }
+    /* ── Activity feed ── */
+    .sa-feed { display:flex; flex-direction:column; gap:.5rem; }
+    .sa-feed-item {
+      display:flex; align-items:flex-start; gap:.75rem;
+      padding:.6rem .75rem; border-radius:10px; background:var(--bg);
+    }
+    .sa-feed-dot {
+      width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:.35rem;
+    }
+    .sa-feed-msg { font-size:.83rem; color:var(--text); line-height:1.55; flex:1; }
+    .sa-feed-time { font-size:.7rem; color:var(--muted); flex-shrink:0; white-space:nowrap; }
+    /* ── Overview header ── */
+    .sa-overview-banner {
+      background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);
+      border-radius:18px; padding:1.5rem 1.75rem; margin-bottom:1.5rem;
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;
+    }
+    .sa-overview-banner h1 { font-size:1.4rem; font-weight:900; color:#fff; margin:0; }
+    .sa-overview-banner p { color:rgba(255,255,255,.65); font-size:.82rem; margin-top:.25rem; }
+    /* ── Toggle switch ── */
+    .sa-toggle { position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0; }
+    .sa-toggle input { opacity:0; width:0; height:0; }
+    .sa-toggle-slider {
+      position:absolute; inset:0; background:#cbd5e1; border-radius:20px; cursor:pointer;
+      transition:.25s;
+    }
+    .sa-toggle-slider::before {
+      content:''; position:absolute; width:18px; height:18px; border-radius:50%;
+      background:#fff; left:3px; top:3px; transition:.25s; box-shadow:0 1px 4px rgba(0,0,0,.2);
+    }
+    .sa-toggle input:checked + .sa-toggle-slider { background:var(--sys-green); }
+    .sa-toggle input:checked + .sa-toggle-slider::before { transform:translateX(18px); }
+    /* ── Progress ring ── */
+    .sa-ring-wrap { display:flex; align-items:center; gap:1rem; }
+    .sa-ring svg { transform:rotate(-90deg); }
+    .sa-ring-label { text-align:center; }
+    .sa-ring-pct { font-size:1.1rem; font-weight:900; color:var(--text); }
+    .sa-ring-sub { font-size:.7rem; color:var(--muted); font-weight:600; }
+    /* ── Realtime notification item ── */
+    .sa-notif-item {
+      display:flex; align-items:flex-start; gap:.65rem;
+      padding:.7rem 1rem; border-bottom:1px solid var(--border);
+      transition:background .15s; cursor:default;
+    }
+    .sa-notif-item:last-child { border-bottom:none; }
+    .sa-notif-item:hover { background:var(--bg); }
+    .sa-notif-dot {
+      width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:.35rem;
+    }
+    .sa-notif-text { font-size:.8rem; color:var(--text); line-height:1.55; flex:1; }
+    .sa-notif-time { font-size:.68rem; color:var(--muted); white-space:nowrap; flex-shrink:0; }
+    /* Flash khi có event mới */
+    @keyframes flashNew {
+      0%   { background: rgba(99,102,241,.18); }
+      100% { background: transparent; }
+    }
+    .sa-stat-card.flash-new { animation: flashNew .8s ease-out; }
+    /* Realtime connected */
+    #saRealtimeIndicator.connected { background:#d1fae5; color:#065f46; }
+    #saRealtimeIndicator.connected #saRtDot { background:#10b981; animation:pulse 1.5s infinite; }
+    #saRealtimeIndicator.error { background:#fee2e2; color:#991b1b; }
+    #saRealtimeIndicator.error #saRtDot { background:#ef4444; }
+    /* ── Toast ── */
+    #saToast {
+      position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(60px);
+      background:#1e293b; color:#fff; padding:.7rem 1.4rem; border-radius:12px;
+      font-size:.88rem; font-weight:600; z-index:9999; opacity:0; transition:all .3s;
+      pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,.25); white-space:nowrap;
+    }
+    #saToast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    /* ── Responsive ── */
+    @media(max-width:768px) {
+      .sa-sidebar { position:fixed; left:-240px; z-index:200; transition:left .25s; height:100%; }
+      .sa-sidebar.open { left:0; }
+      .sa-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:199; }
+      .sa-backdrop.show { display:block; }
+      .sa-stats-grid { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="saToast"></div>
+<div class="sa-backdrop" id="saBackdrop"></div>
+
+<div class="sa-wrap">
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sa-sidebar" id="saSidebar">
+    <div class="sa-brand">
+      <img src="icons/icon-192.png" alt="Logo"/>
+      <div>
+        <div class="sa-brand-text">DHDT LMS</div>
+        <div class="sa-brand-sub">⚙️ SYS ADMIN</div>
+      </div>
+    </div>
+    <nav class="sa-nav">
+      <div class="sa-section-label">Tổng quan</div>
+      <button class="sa-link active" data-page="overview">
+        <span class="sa-icon">🏠</span> Bảng điều khiển
+      </button>
+      <div class="sa-section-label">Người dùng</div>
+      <button class="sa-link" data-page="students">
+        <span class="sa-icon">🎓</span> Học sinh
+      </button>
+      <button class="sa-link" data-page="assistants">
+        <span class="sa-icon">🤝</span> Tài khoản trợ lý
+      </button>
+      <button class="sa-link" data-page="teachers">
+        <span class="sa-icon">👨‍🏫</span> Tài khoản giáo viên
+      </button>
+      <button class="sa-link" data-page="sessions">
+        <span class="sa-icon">📡</span> Phiên đăng nhập
+        <span class="sa-badge" id="onlineBadge">0</span>
+      </button>
+      <div class="sa-section-label">Nội dung</div>
+      <button class="sa-link" data-page="content">
+        <span class="sa-icon">📚</span> Bài học & Bài tập
+      </button>
+      <button class="sa-link" data-page="storage">
+        <span class="sa-icon">🗄️</span> Lưu trữ & File
+      </button>
+      <div class="sa-section-label">Hệ thống</div>
+      <button class="sa-link" data-page="guide">
+        <span class="sa-icon">📖</span> Hướng dẫn sử dụng
+      </button>
+      <button class="sa-link" data-page="settings">
+        <span class="sa-icon">⚙️</span> Cài đặt hệ thống
+      </button>
+      <button class="sa-link" data-page="logs">
+        <span class="sa-icon">📋</span> Nhật ký hoạt động
+        <span class="sa-badge" id="alertsBadge" style="display:none">!</span>
+      </button>
+      <button class="sa-link" data-page="assistant-logs">
+        <span class="sa-icon">🗒️</span> Nhật ký trợ lý
+        <span class="sa-badge" id="assistantLogsBadge" style="display:none">!</span>
+      </button>
+      <button class="sa-link" data-page="maintenance">
+        <span class="sa-icon">🔧</span> Bảo trì
+      </button>
+    </nav>
+    <div class="sa-footer">
+      <div class="sa-user-row">
+        <div class="sa-avatar" id="saAvatarChar">A</div>
+        <div>
+          <div class="sa-user-name" id="saUserName">Admin</div>
+          <div class="sa-user-role">Teacher · SysAdmin</div>
+        </div>
+      </div>
+      <button class="sa-link" onclick="location.href='admin.html'" style="margin-top:.2rem">
+        <span class="sa-icon">◀</span> Về trang Admin
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="sa-main">
+    <!-- Topbar -->
+    <header class="sa-topbar">
+      <button id="saMenuBtn" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text);display:none">☰</button>
+      <div class="sa-topbar-title" id="saTopbarTitle">🏠 Bảng điều khiển</div>
+      <div class="sa-topbar-right">
+        <div id="saOnlineIndicator" style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--muted);font-weight:600">
+          <span id="saPulseDot" style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;animation:pulse 1.5s infinite"></span>
+          <span id="saOnlineCount">0</span> online
+        </div>
+        <!-- Realtime status indicator -->
+        <div id="saRealtimeIndicator" title="Trạng thái kết nối Realtime"
+          style="display:flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:700;padding:.3rem .7rem;border-radius:20px;background:#f1f5f9;color:#64748b;transition:all .3s;cursor:default">
+          <span id="saRtDot" style="width:7px;height:7px;border-radius:50%;background:#94a3b8;flex-shrink:0;transition:background .3s"></span>
+          <span id="saRtLabel">Đang kết nối</span>
+        </div>
+        <!-- Notification bell -->
+        <div style="position:relative">
+          <button id="saNotifBtn" title="Thông báo"
+            style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative">
+            🔔
+            <span id="saNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:.58rem;font-weight:800;padding:.1rem .35rem;border-radius:20px;min-width:16px;text-align:center;line-height:1.4">0</span>
+          </button>
+          <!-- Dropdown thông báo -->
+          <div id="saNotifDropdown" style="display:none;position:fixed;top:56px;right:8px;width:320px;max-width:calc(100vw - 16px);background:var(--card);border:1.5px solid var(--border);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:200;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--border)">
+              <span style="font-size:.85rem;font-weight:800;color:var(--text)">🔔 Thông báo realtime</span>
+              <button onclick="clearNotifs()" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-weight:600">Xóa tất cả</button>
+            </div>
+            <div id="saNotifList" style="max-height:320px;overflow-y:auto">
+              <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.84rem">Chưa có thông báo</div>
+            </div>
+          </div>
+        </div>
+        <button id="saDarkBtn" title="Đổi giao diện"
+          style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center">🌙</button>
+        <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="loadAllData()">🔄 Làm mới</button>
+      </div>
+    </header>
+
+    <div class="sa-content">
+      <!-- ══════════ PAGE: OVERVIEW ══════════ -->
+      <div class="sa-page active" id="pageOverview">
+        <div class="sa-overview-banner">
+          <div>
+            <h1>⚙️ Quản trị hệ thống</h1>
+            <p id="overviewTime">Đang tải...</p>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.75rem;color:rgba(255,255,255,.5);font-weight:600">TRẠNG THÁI</div>
+            <div id="systemStatusBadge" style="margin-top:.3rem">
+              <span class="badge badge-green" style="font-size:.8rem;padding:.3rem .8rem">🟢 Hệ thống bình thường</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="sa-stats-grid" id="overviewStats">
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#eef2ff">🎓</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statStudents">—</div>
+              <div class="sa-stat-label">Học sinh</div>
+              <div class="sa-stat-delta up" id="statStudentsDelta"></div>
+            </div>
+          </div>
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#d1fae5">📡</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statOnline">—</div>
+              <div class="sa-stat-label">Đang online</div>
+            </div>
+          </div>
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#fef3c7">📚</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statLessons">—</div>
+              <div class="sa-stat-label">Bài học / Video</div>
+            </div>
+          </div>
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#fce7f3">📝</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statHomework">—</div>
+              <div class="sa-stat-label">Bài tập</div>
+            </div>
+          </div>
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#ede9fe">🏫</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statClasses">—</div>
+              <div class="sa-stat-label">Lớp học</div>
+            </div>
+          </div>
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#e0f2fe">📬</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statSubmissions">—</div>
+              <div class="sa-stat-label">Bài nộp hôm nay</div>
+            </div>
+          </div>
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#fee2e2">⚠️</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statAlerts">—</div>
+              <div class="sa-stat-label">Cảnh báo hôm nay</div>
+            </div>
+          </div>
+          <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background:#d1fae5">🗂️</div>
+            <div class="sa-stat-body">
+              <div class="sa-stat-num" id="statFiles">—</div>
+              <div class="sa-stat-label">File tài liệu</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+          <!-- Activity feed -->
+          <div class="sa-card">
+            <div class="sa-card-title">📋 Hoạt động gần đây</div>
+            <div class="sa-feed" id="activityFeed">
+              <div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:.85rem">Đang tải...</div>
+            </div>
+          </div>
+          <!-- Quick actions -->
+          <div class="sa-card">
+            <div class="sa-card-title">⚡ Thao tác nhanh</div>
+            <div style="display:flex;flex-direction:column;gap:.6rem">
+              <button class="sa-btn sa-btn-outline" onclick="showPage('settings')" style="justify-content:flex-start">
+                ⚙️ &nbsp;Cài đặt hệ thống
+              </button>
+              <button class="sa-btn sa-btn-outline" onclick="showPage('sessions')" style="justify-content:flex-start">
+                📡 &nbsp;Xem phiên đăng nhập
+              </button>
+              <button class="sa-btn sa-btn-outline" onclick="showPage('logs')" style="justify-content:flex-start">
+                📋 &nbsp;Xem nhật ký cảnh báo
+              </button>
+              <button class="sa-btn sa-btn-outline" onclick="showPage('maintenance')" style="justify-content:flex-start">
+                🔧 &nbsp;Bảo trì & bảo mật
+              </button>
+              <button class="sa-btn sa-btn-outline" onclick="location.href='admin.html'" style="justify-content:flex-start">
+                ◀ &nbsp;Quay về Admin
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ══════════ PAGE: STUDENTS ══════════ -->
+      <div class="sa-page" id="pageStudents">
+        <div class="sa-section-hd">
+          <h2>🎓 Quản lý học sinh</h2>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <input id="studentSearch" placeholder="🔍 Tìm tên, Gmail..." style="padding:.48rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text);width:200px"/>
+            <select id="studentClassFilter" style="padding:.48rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text)">
+              <option value="">Tất cả lớp</option>
+            </select>
+            <select id="studentStatusFilter" style="padding:.48rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text)">
+              <option value="">Tất cả trạng thái</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="inactive">Bị khóa</option>
+              <option value="online">Đang online</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:.75rem;font-size:.82rem;color:var(--muted)" id="studentMeta"></div>
+        <div class="sa-table-wrap">
+          <table class="sa-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Họ tên</th><th>Gmail</th><th>Lớp</th>
+                <th>Mã HS</th><th>Trạng thái</th><th>Hết hạn</th>
+                <th>Online lần cuối</th><th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody">
+              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:.75rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <button class="sa-btn sa-btn-outline sa-btn-sm" id="prevPageBtn">◀ Trước</button>
+          <span style="font-size:.82rem;color:var(--muted)" id="pageInfo">Trang 1</span>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" id="nextPageBtn">Sau ▶</button>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: SESSIONS ══════════ -->
+      <div class="sa-page" id="pageSessions">
+        <div class="sa-section-hd">
+          <h2>📡 Phiên đăng nhập đang hoạt động</h2>
+          <div style="display:flex;gap:.5rem">
+            <button class="sa-btn sa-btn-danger sa-btn-sm" id="kickAllBtn">🚫 Kick tất cả</button>
+            <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="renderSessions()">🔄 Làm mới</button>
+          </div>
+        </div>
+        <div class="sa-card" style="margin-bottom:1rem">
+          <div style="display:flex;gap:2rem;flex-wrap:wrap">
+            <div>
+              <div style="font-size:2rem;font-weight:900;color:var(--sys-green)" id="sesOnlineCount">—</div>
+              <div style="font-size:.75rem;color:var(--muted);font-weight:600">Đang online</div>
+            </div>
+            <div>
+              <div style="font-size:2rem;font-weight:900;color:var(--sys-orange)" id="sesActiveExam">—</div>
+              <div style="font-size:.75rem;color:var(--muted);font-weight:600">Đang làm bài</div>
+            </div>
+            <div>
+              <div style="font-size:2rem;font-weight:900;color:var(--primary)" id="sesTodayLogins">—</div>
+              <div style="font-size:.75rem;color:var(--muted);font-weight:600">Đăng nhập hôm nay</div>
+            </div>
+          </div>
+        </div>
+        <div class="sa-table-wrap">
+          <table class="sa-table">
+            <thead>
+              <tr><th>Học sinh</th><th>Lớp</th><th>Gmail</th><th>Đăng nhập lúc</th><th>Trạng thái</th><th>Thao tác</th></tr>
+            </thead>
+            <tbody id="sessionTableBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- ══════════ PAGE: CONTENT ══════════ -->
+      <div class="sa-page" id="pageContent">
+        <div class="sa-section-hd"><h2>📚 Bài học & Bài tập</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+          <div class="sa-card">
+            <div class="sa-card-title">📖 Bài học</div>
+            <div class="sa-stats-grid" style="grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:0">
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--text)" id="cntLessons">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Tổng bài học</div>
+              </div>
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--text)" id="cntGroups">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Nhóm bài</div>
+              </div>
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--text)" id="cntVideos">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Video</div>
+              </div>
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--text)" id="cntDocs">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Tài liệu</div>
+              </div>
+            </div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-title">📝 Bài tập</div>
+            <div class="sa-stats-grid" style="grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:0">
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--text)" id="cntHw">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Tổng bài tập</div>
+              </div>
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--text)" id="cntHwActive">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Đang giao</div>
+              </div>
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--text)" id="cntSubmit">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Bài đã nộp</div>
+              </div>
+              <div style="background:var(--bg);border-radius:12px;padding:.85rem 1rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:var(--sys-orange)" id="cntHwTrash">—</div>
+                <div style="font-size:.72rem;color:var(--muted);font-weight:600">Thùng rác</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Recent homework -->
+        <div class="sa-card">
+          <div class="sa-card-title">📝 Bài tập gần đây</div>
+          <div class="sa-table-wrap">
+            <table class="sa-table">
+              <thead><tr><th>Tên bài</th><th>Lớp</th><th>Câu hỏi</th><th>Bài nộp</th><th>Trạng thái</th><th>Ngày tạo</th></tr></thead>
+              <tbody id="hwRecentBody">
+                <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: STORAGE ══════════ -->
+      <div class="sa-page" id="pageStorage">
+        <div class="sa-section-hd"><h2>🗄️ Lưu trữ & File</h2></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.25rem">
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--primary)" id="storageFolders">—</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem">Thư mục</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--sys-blue)" id="storageFiles">—</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem">File tài liệu</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--sys-green)" id="storageDownloads">—</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem">Lượt tải</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--sys-orange)" id="storageTrash">—</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem">File thùng rác</div>
+          </div>
+        </div>
+        <div class="sa-card">
+          <div class="sa-card-title">📥 File được tải nhiều nhất</div>
+          <div class="sa-table-wrap">
+            <table class="sa-table">
+              <thead><tr><th>Tên file</th><th>Thư mục</th><th>Loại</th><th>Lượt tải</th><th>Ngày tạo</th></tr></thead>
+              <tbody id="topFilesBody">
+                <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- ══════════ PAGE: SETTINGS ══════════ -->
+      <div class="sa-page" id="pageSettings">
+        <div class="sa-section-hd"><h2>⚙️ Cài đặt hệ thống</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+          <!-- Chế độ bảo trì -->
+          <div class="sa-card">
+            <div class="sa-card-title">🔧 Chế độ bảo trì</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+              <div>
+                <div style="font-size:.88rem;font-weight:700;color:var(--text)">Bật chế độ bảo trì</div>
+                <div style="font-size:.75rem;color:var(--muted);margin-top:.15rem">Học sinh sẽ không truy cập được hệ thống</div>
+              </div>
+              <label class="sa-toggle">
+                <input type="checkbox" id="maintenanceToggle" onchange="setSetting('maintenance', this.checked ? 'true':'false')"/>
+                <span class="sa-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="sa-fg">
+              <label>Thông báo bảo trì</label>
+              <textarea id="maintenanceMsg" rows="3" placeholder="Hệ thống đang bảo trì, vui lòng quay lại sau..."></textarea>
+            </div>
+            <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="saveMaintMsg()">💾 Lưu thông báo</button>
+          </div>
+
+          <!-- Thông báo hệ thống -->
+          <div class="sa-card">
+            <div class="sa-card-title">📢 Thông báo hệ thống</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+              <div>
+                <div style="font-size:.88rem;font-weight:700;color:var(--text)">Hiển thị banner thông báo</div>
+                <div style="font-size:.75rem;color:var(--muted);margin-top:.15rem">Hiện banner ở trang đăng nhập</div>
+              </div>
+              <label class="sa-toggle">
+                <input type="checkbox" id="bannerToggle" onchange="setSetting('show_banner', this.checked ? 'true':'false')"/>
+                <span class="sa-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="sa-fg">
+              <label>Nội dung banner</label>
+              <textarea id="bannerMsg" rows="3" placeholder="Chào mừng học sinh đến với DHDT LMS!"></textarea>
+            </div>
+            <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="saveBannerMsg()">💾 Lưu banner</button>
+          </div>
+
+          <!-- Đổi mật khẩu Admin -->
+          <div class="sa-card">
+            <div class="sa-card-title">🔑 Đổi mật khẩu Admin</div>
+            <div class="sa-fg">
+              <label>Mật khẩu mới</label>
+              <input type="password" id="newAdminPw" placeholder="Nhập mật khẩu mới..."/>
+            </div>
+            <div class="sa-fg">
+              <label>Xác nhận mật khẩu</label>
+              <input type="password" id="confirmAdminPw" placeholder="Nhập lại mật khẩu..."/>
+            </div>
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+              Mật khẩu được hash SHA-256 trước khi lưu.
+            </div>
+            <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="changeAdminPw()">🔑 Đổi mật khẩu</button>
+          </div>
+
+          <!-- Thống kê app_settings -->
+          <div class="sa-card">
+            <div class="sa-card-title">📊 Cài đặt hiện tại (app_settings)</div>
+            <div class="sa-table-wrap" style="max-height:220px;overflow-y:auto">
+              <table class="sa-table">
+                <thead><tr><th>Key</th><th>Value</th><th></th></tr></thead>
+                <tbody id="settingsTableBody">
+                  <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:1rem">Đang tải...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: LOGS ══════════ -->
+      <div class="sa-page" id="pageLogs">
+        <div class="sa-section-hd">
+          <h2>📋 Nhật ký hoạt động</h2>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <input type="date" id="logDateFilter" style="padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text)"/>
+            <input id="logSearch" placeholder="🔍 Tìm..." style="padding:.45rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text);width:180px"/>
+            <button class="sa-btn sa-btn-danger sa-btn-sm" id="clearLogsBtn">🗑 Xóa cũ (>30 ngày)</button>
+          </div>
+        </div>
+        <div class="sa-table-wrap">
+          <table class="sa-table">
+            <thead>
+              <tr><th>#</th><th>Học sinh</th><th>Gmail</th><th>Lớp</th><th>Nội dung</th><th>Thời gian</th></tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: MAINTENANCE ══════════ -->
+      <div class="sa-page" id="pageMaintenance">
+        <div class="sa-section-hd"><h2>🔧 Bảo trì & Bảo mật</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+          <div class="sa-card">
+            <div class="sa-card-title">🧹 Dọn dẹp dữ liệu</div>
+            <div style="display:flex;flex-direction:column;gap:.65rem">
+              <div style="background:var(--bg);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font-size:.85rem;font-weight:700;color:var(--text)">Xóa exam_progress cũ</div>
+                  <div style="font-size:.72rem;color:var(--muted)">Xóa records > 7 ngày</div>
+                </div>
+                <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="cleanExamProgress()">Dọn</button>
+              </div>
+              <div style="background:var(--bg);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font-size:.85rem;font-weight:700;color:var(--text)">Xóa alerts cũ</div>
+                  <div style="font-size:.72rem;color:var(--muted)">Xóa cảnh báo > 30 ngày</div>
+                </div>
+                <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="cleanAlerts()">Dọn</button>
+              </div>
+              <div style="background:var(--bg);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font-size:.85rem;font-weight:700;color:var(--text)">Xóa access_logs cũ</div>
+                  <div style="font-size:.72rem;color:var(--muted)">Xóa log truy cập > 30 ngày</div>
+                </div>
+                <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="cleanAccessLogs()">Dọn</button>
+              </div>
+              <div style="background:var(--bg);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font-size:.85rem;font-weight:700;color:var(--text)">Xóa file trong thùng rác</div>
+                  <div style="font-size:.72rem;color:var(--muted)">Xóa vĩnh viễn file đã xóa</div>
+                </div>
+                <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="cleanTrashFiles()">Dọn</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="sa-card">
+            <div class="sa-card-title">🔐 Bảo mật tài khoản</div>
+            <div style="display:flex;flex-direction:column;gap:.65rem">
+              <div style="background:var(--bg);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font-size:.85rem;font-weight:700;color:var(--text)">Kick tất cả học sinh</div>
+                  <div style="font-size:.72rem;color:var(--muted)">Hủy toàn bộ session hiện tại</div>
+                </div>
+                <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="kickAllStudents()">Kick</button>
+              </div>
+              <div style="background:var(--bg);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font-size:.85rem;font-weight:700;color:var(--text)">Học sinh hết hạn</div>
+                  <div style="font-size:.72rem;color:var(--muted)" id="expiredCount">Đang kiểm tra...</div>
+                </div>
+                <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="showPage('students')">Xem</button>
+              </div>
+              <div style="background:var(--bg);border-radius:10px;padding:.85rem 1rem">
+                <div style="font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:.4rem">Thống kê bảo mật</div>
+                <div style="display:flex;gap:1.25rem;flex-wrap:wrap">
+                  <div style="text-align:center">
+                    <div style="font-size:1.4rem;font-weight:900;color:var(--sys-red)" id="secAlerts24h">—</div>
+                    <div style="font-size:.7rem;color:var(--muted);font-weight:600">Cảnh báo 24h</div>
+                  </div>
+                  <div style="text-align:center">
+                    <div style="font-size:1.4rem;font-weight:900;color:var(--sys-orange)" id="secLogins24h">—</div>
+                    <div style="font-size:.7rem;color:var(--muted);font-weight:600">Đăng nhập 24h</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: ASSISTANTS ══════════ -->
+      <div class="sa-page" id="pageAssistants">
+        <div class="sa-section-hd">
+          <h2>🤝 Tài khoản trợ lý</h2>
+          <div style="display:flex;gap:.5rem">
+            <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="_openGuide('assistant')">📖 Hướng dẫn</button>
+            <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="openAssistantModal()">➕ Thêm trợ lý</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.25rem">
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--primary)" id="statTotalAssistants">—</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem">Tổng trợ lý</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--sys-orange)" id="statAssistantActions">—</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem">Thao tác hôm nay</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--sys-green)" id="statAssistantTotal">—</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem">Tổng thao tác</div>
+          </div>
+        </div>
+
+        <div class="sa-card">
+          <div class="sa-card-title">👤 Danh sách tài khoản trợ lý</div>
+          <div class="sa-table-wrap">
+            <table class="sa-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>Họ tên</th><th>Tên đăng nhập</th>
+                  <th>Thao tác hôm nay</th><th>Tổng thao tác</th>
+                  <th>Ngày tạo</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="assistantTableBody">
+                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: ASSISTANT LOGS ══════════ -->
+      <div class="sa-page" id="pageAssistantLogs">
+        <div class="sa-section-hd">
+          <h2>🗒️ Nhật ký biến động — Trợ lý</h2>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <input type="date" id="alogDateFilter" style="padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text)"/>
+            <select id="alogAssistantFilter" style="padding:.45rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text)">
+              <option value="">Tất cả trợ lý</option>
+            </select>
+            <select id="alogActionFilter" style="padding:.45rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text)">
+              <option value="">Tất cả hành động</option>
+              <option value="Tạo tài khoản">➕ Tạo học sinh</option>
+              <option value="Xóa tài khoản">🗑 Xóa học sinh</option>
+              <option value="Sửa tài khoản">✏️ Sửa học sinh</option>
+              <option value="[Bài học]">📚 Bài học</option>
+              <option value="[Nhóm bài]">📂 Nhóm bài học</option>
+              <option value="[Video]">🎬 Video</option>
+              <option value="[Tài liệu]">📄 Tài liệu</option>
+              <option value="[Lớp học]">🏫 Lớp học</option>
+              <option value="[Thông báo]">📢 Thông báo</option>
+              <option value="[Lịch học]">📅 Lịch học</option>
+              <option value="[File]">🗂️ File</option>
+              <option value="[Thư mục]">📁 Thư mục</option>
+            </select>
+            <input id="alogSearch" placeholder="🔍 Tìm học sinh..." style="padding:.45rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text);width:180px"/>
+            <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="renderAssistantLogs()">🔄 Làm mới</button>
+          </div>
+        </div>
+
+        <!-- Stats bar -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;margin-bottom:1.25rem" id="alogStatsBar">
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.5rem;font-weight:900;color:var(--primary)" id="alogTotalCount">—</div>
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:.1rem">Tổng thao tác</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.5rem;font-weight:900;color:var(--sys-green)" id="alogCreateCount">—</div>
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:.1rem">➕ Tạo học sinh</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.5rem;font-weight:900;color:var(--sys-blue)" id="alogEditCount">—</div>
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:.1rem">✏️ Thêm/Sửa nội dung</div>
+          </div>
+          <div class="sa-card" style="margin-bottom:0">
+            <div style="font-size:1.5rem;font-weight:900;color:var(--sys-red)" id="alogDeleteCount">—</div>
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:.1rem">🗑 Xóa</div>
+          </div>
+        </div>
+
+        <div class="sa-table-wrap">
+          <table class="sa-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Người thực hiện</th>
+                <th>Danh mục</th>
+                <th>Đối tượng</th>
+                <th>Chi tiết</th>
+                <th>Lớp</th>
+                <th>Thời gian</th>
+              </tr>
+            </thead>
+            <tbody id="alogTableBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:.75rem;font-size:.82rem;color:var(--muted)" id="alogMeta"></div>
+      </div>
+
+      <!-- ══════════ PAGE: TEACHERS ══════════ -->
+      <div class="sa-page" id="pageTeachers">
+        <div class="sa-section-hd">
+          <h2>👨‍🏫 Tài khoản giáo viên</h2>
+          <div style="display:flex;gap:.5rem">
+            <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="_openGuide('teacher')">📖 Hướng dẫn</button>
+            <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="openTeacherModal()">➕ Thêm giáo viên</button>
+          </div>
+        </div>
+
+        <div class="sa-card" style="margin-bottom:1.25rem;border-left:3px solid #f59e0b;background:linear-gradient(135deg,#fef3c7,#fffbeb)">
+          <div style="display:flex;gap:.75rem;align-items:flex-start">
+            <span style="font-size:1.4rem">🔑</span>
+            <div style="font-size:.83rem;color:#78350f;line-height:1.75">
+              <b style="color:#92400e">Lưu ý bảo mật:</b> Tài khoản giáo viên lưu trong <code>localStorage</code> trình duyệt này.<br/>
+              Mỗi thiết bị/trình duyệt cần thiết lập riêng. Mật khẩu được mã hóa SHA-256.
+            </div>
+          </div>
+        </div>
+
+        <div class="sa-card">
+          <div class="sa-card-title">👨‍🏫 Danh sách tài khoản giáo viên</div>
+          <div class="sa-table-wrap">
+            <table class="sa-table">
+              <thead>
+                <tr><th>#</th><th>Họ tên</th><th>Tên đăng nhập</th><th>Trạng thái</th><th>Thao tác</th></tr>
+              </thead>
+              <tbody id="teacherTableBody">
+                <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: GUIDE ══════════ -->
+      <div class="sa-page" id="pageGuide">
+        <div class="sa-section-hd"><h2>📖 Hướng dẫn sử dụng</h2></div>
+
+        <!-- Search -->
+        <div style="margin-bottom:1.25rem;position:relative">
+          <input id="guideSearch" placeholder="🔍 Tìm kiếm hướng dẫn..." oninput="filterGuide(this.value)"
+            style="width:100%;padding:.65rem 1rem .65rem 2.5rem;border:1.5px solid var(--border);border-radius:12px;font-size:.9rem;outline:none;background:var(--card);color:var(--text)"/>
+          <span style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">🔍</span>
+        </div>
+
+        <!-- Tab danh mục -->
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem" id="guideTabs">
+          <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="setGuideTab('all',this)">📋 Tất cả</button>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="setGuideTab('student',this)">🎓 Học sinh</button>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="setGuideTab('lesson',this)">📚 Bài học</button>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="setGuideTab('class',this)">🏫 Lớp học</button>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="setGuideTab('file',this)">🗂️ File</button>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="setGuideTab('system',this)">⚙️ Hệ thống</button>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="setGuideTab('assistant',this)">🤝 Trợ lý</button>
+          <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="setGuideTab('teacher',this)">👨‍🏫 Giáo viên</button>
+        </div>
+
+        <div id="guideContent"></div>
+      </div>
+
+    </div><!-- /sa-content -->
+  </div><!-- /sa-main -->
+</div><!-- /sa-wrap -->
+<!-- ══ CONFIRM MODAL ══ -->
+<div class="sa-overlay" id="saConfirmOverlay">
+  <div class="sa-modal" style="max-width:380px;text-align:center">
+    <div style="font-size:2.2rem;margin-bottom:.5rem" id="saConfirmIcon">⚠️</div>
+    <h3 id="saConfirmTitle" style="text-align:center">Xác nhận</h3>
+    <p id="saConfirmMsg" style="font-size:.87rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6"></p>
+    <div style="display:flex;gap:.65rem;justify-content:center">
+      <button class="sa-btn sa-btn-outline" id="saConfirmCancel">Hủy</button>
+      <button class="sa-btn sa-btn-danger" id="saConfirmOk">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TEACHER MODAL ══ -->
+<div class="sa-overlay" id="teacherModal">
+  <div class="sa-modal" style="max-width:440px">
+    <h3 id="teacherModalTitle">➕ Thêm tài khoản giáo viên</h3>
+    <input type="hidden" id="teacherEditIndex"/>
+    <div class="sa-fg">
+      <label>Họ và tên *</label>
+      <input id="teacherName" placeholder="Thầy/Cô Nguyễn Văn A"/>
+    </div>
+    <div class="sa-fg">
+      <label>Tên đăng nhập *</label>
+      <input id="teacherUsername" placeholder="giaovien01"/>
+    </div>
+    <div class="sa-fg">
+      <label>Mật khẩu <span id="teacherPwHint" style="font-weight:400;color:var(--muted)">(để trống = không đổi)</span></label>
+      <input type="password" id="teacherPassword" placeholder="Nhập mật khẩu..."/>
+    </div>
+    <div id="teacherErr" style="color:var(--sys-red);font-size:.8rem;margin-top:.25rem"></div>
+    <div class="sa-modal-footer">
+      <button class="sa-btn sa-btn-outline" onclick="document.getElementById('teacherModal').classList.remove('open')">Hủy</button>
+      <button class="sa-btn sa-btn-primary" onclick="saveTeacher()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ASSISTANT MODAL ══ -->
+<div class="sa-overlay" id="assistantModal">
+  <div class="sa-modal" style="max-width:440px">
+    <h3 id="assistantModalTitle">➕ Thêm tài khoản trợ lý</h3>
+    <input type="hidden" id="assistantEditId"/>
+    <div class="sa-fg">
+      <label>Họ và tên *</label>
+      <input id="assistantName" placeholder="Nguyễn Văn A"/>
+    </div>
+    <div class="sa-fg">
+      <label>Tên đăng nhập *</label>
+      <input id="assistantUsername" placeholder="trolytoan"/>
+    </div>
+    <div class="sa-fg">
+      <label>Mật khẩu <span id="assistantPwHint" style="font-weight:400;color:var(--muted)">(để trống = không đổi)</span></label>
+      <input type="password" id="assistantPassword" placeholder="Nhập mật khẩu..."/>
+    </div>
+    <div id="assistantErr" style="color:var(--sys-red);font-size:.8rem;margin-top:.25rem"></div>
+    <div class="sa-modal-footer">
+      <button class="sa-btn sa-btn-outline" onclick="document.getElementById('assistantModal').classList.remove('open')">Hủy</button>
+      <button class="sa-btn sa-btn-primary" onclick="saveAssistant()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT SETTING MODAL ══ -->
+<div class="sa-overlay" id="editSettingOverlay">
+  <div class="sa-modal" style="max-width:400px">
+    <h3>✏️ Chỉnh sửa cài đặt</h3>
+    <input type="hidden" id="editSettingKey"/>
+    <div class="sa-fg">
+      <label>Key</label>
+      <input id="editSettingKeyDisplay" disabled style="opacity:.6"/>
+    </div>
+    <div class="sa-fg">
+      <label>Value</label>
+      <textarea id="editSettingValue" rows="3"></textarea>
+    </div>
+    <div class="sa-modal-footer">
+      <button class="sa-btn sa-btn-outline" onclick="document.getElementById('editSettingOverlay').classList.remove('open')">Hủy</button>
+      <button class="sa-btn sa-btn-primary" onclick="saveEditSetting()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+</style>
+<script>
+// ══ Supabase ══
+const db = supabase.createClient(
+  'https://gojpmogjretoxplydjvg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
+);
+
+// ══ Auth guard — chỉ teacher ══
+const _role = sessionStorage.getItem('dh_role');
+if (_role !== 'teacher') location.href = 'login.html';
+const _name = sessionStorage.getItem('dh_name') || 'Admin';
+document.getElementById('saUserName').textContent = _name;
+document.getElementById('saAvatarChar').textContent = _name.charAt(_name.length-1).toUpperCase();
+
+// ══ Toast ══
+let _toastT;
+function showToast(msg, ok=true) {
+  const t = document.getElementById('saToast');
+  t.textContent = (ok?'✅ ':'❌ ') + msg;
+  t.style.background = ok ? '#1e293b' : '#7f1d1d';
+  t.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ══ Confirm popup ══
+function saConfirm(msg, onOk, { icon='⚠️', title='Xác nhận', okText='Xác nhận' } = {}) {
+  document.getElementById('saConfirmIcon').textContent = icon;
+  document.getElementById('saConfirmTitle').textContent = title;
+  document.getElementById('saConfirmMsg').textContent = msg;
+  document.getElementById('saConfirmOk').textContent = okText;
+  document.getElementById('saConfirmOverlay').classList.add('open');
+  const ok = document.getElementById('saConfirmOk');
+  const cancel = document.getElementById('saConfirmCancel');
+  const close = () => {
+    document.getElementById('saConfirmOverlay').classList.remove('open');
+    ok.replaceWith(ok.cloneNode(true));
+    cancel.replaceWith(cancel.cloneNode(true));
+  };
+  document.getElementById('saConfirmOk').addEventListener('click', () => { close(); onOk(); }, { once:true });
+  document.getElementById('saConfirmCancel').addEventListener('click', close, { once:true });
+}
+
+// ══ Dark mode ══
+const _dm = localStorage.getItem('dh_dark') === '1';
+if (_dm) document.body.classList.add('dark-mode');
+document.getElementById('saDarkBtn').textContent = _dm ? '☀️' : '🌙';
+document.getElementById('saDarkBtn').addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+  const isDark = document.body.classList.contains('dark-mode');
+  localStorage.setItem('dh_dark', isDark ? '1' : '');
+  document.getElementById('saDarkBtn').textContent = isDark ? '☀️' : '🌙';
+});
+
+// ══ Sidebar mobile ══
+document.getElementById('saMenuBtn').style.display = window.innerWidth <= 768 ? 'block' : 'none';
+document.getElementById('saMenuBtn').addEventListener('click', () => {
+  document.getElementById('saSidebar').classList.toggle('open');
+  document.getElementById('saBackdrop').classList.toggle('show');
+});
+document.getElementById('saBackdrop').addEventListener('click', () => {
+  document.getElementById('saSidebar').classList.remove('open');
+  document.getElementById('saBackdrop').classList.remove('show');
+});
+</script>
+<script>
+// ══ Page navigation ══
+const PAGE_TITLES = {
+  overview: '🏠 Bảng điều khiển',
+  students: '🎓 Quản lý học sinh',
+  assistants: '🤝 Tài khoản trợ lý',
+  teachers:   '👨‍🏫 Tài khoản giáo viên',
+  sessions: '📡 Phiên đăng nhập',
+  content:  '📚 Bài học & Bài tập',
+  storage:  '🗄️ Lưu trữ & File',
+  settings: '⚙️ Cài đặt hệ thống',
+  logs:     '📋 Nhật ký hoạt động',
+  'assistant-logs': '🗒️ Nhật ký biến động — Trợ lý',
+  maintenance: '🔧 Bảo trì & Bảo mật',
+  guide: '📖 Hướng dẫn sử dụng',
+};
+
+function showPage(name) {
+  document.querySelectorAll('.sa-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sa-link[data-page]').forEach(l => l.classList.remove('active'));
+  const page = document.getElementById('page' + name.charAt(0).toUpperCase() + name.slice(1).replace(/-([a-z])/g, g => g[1].toUpperCase()));
+  if (page) page.classList.add('active');
+  document.querySelectorAll(`.sa-link[data-page="${name}"]`).forEach(l => l.classList.add('active'));
+  document.getElementById('saTopbarTitle').textContent = PAGE_TITLES[name] || name;
+  document.getElementById('saSidebar').classList.remove('open');
+  document.getElementById('saBackdrop').classList.remove('show');
+  if (name === 'overview')     renderOverview();
+  if (name === 'students')     renderStudents();
+  if (name === 'assistants')   renderAssistants();
+  if (name === 'teachers')     renderTeachers();
+  if (name === 'sessions')     renderSessions();
+  if (name === 'content')      renderContent();
+  if (name === 'storage')      renderStorage();
+  if (name === 'settings')     renderSettings();
+  if (name === 'logs')         renderLogs();
+  if (name === 'assistant-logs') renderAssistantLogs();
+  if (name === 'maintenance')  renderMaintenance();
+  if (name === 'guide')        renderGuide();
+}
+
+document.querySelectorAll('.sa-link[data-page]').forEach(l => {
+  l.addEventListener('click', () => showPage(l.dataset.page));
+});
+
+// ══ Helpers ══
+function fmtDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function fmtDateOnly(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60)   return 'vừa xong';
+  if (diff < 3600) return Math.floor(diff/60) + ' phút trước';
+  if (diff < 86400)return Math.floor(diff/3600) + ' giờ trước';
+  return Math.floor(diff/86400) + ' ngày trước';
+}
+
+// Render nhiều badge lớp (học sinh có thể thuộc nhiều lớp, ngăn cách bởi dấu phẩy)
+function renderClassBadges(classStr) {
+  if (!classStr) return '<span class="badge badge-gray">—</span>';
+  const classes = classStr.split(',').map(c => c.trim()).filter(Boolean);
+  if (!classes.length) return '<span class="badge badge-gray">—</span>';
+  return classes.map(c =>
+    `<span class="badge badge-purple" style="margin:.1rem .15rem .1rem 0">${c}</span>`
+  ).join('');
+}
+function isOnline(lastSeen) {
+  // Chỉ coi là online nếu last_seen trong vòng 5 phút
+  if (!lastSeen) return false;
+  return (Date.now() - new Date(lastSeen)) < 5 * 60 * 1000;
+}
+function isExpired(d) {
+  if (!d) return false;
+  return new Date(d) < new Date();
+}
+
+// ── Hash SHA-256 ──
+async function hashPw(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+</script>
+<script>
+// ══════════════════════════════════════════════════
+// OVERVIEW
+// ══════════════════════════════════════════════════
+async function renderOverview() {
+  // Time
+  document.getElementById('overviewTime').textContent =
+    'Cập nhật lúc ' + new Date().toLocaleString('vi-VN');
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const [
+    { count: totalStudents },
+    { count: onlineFromDB },
+    { count: totalLessons },
+    { count: totalVideos },
+    { count: totalHw },
+    { count: totalSubmitToday },
+    { count: totalFiles },
+    { count: totalClasses },
+    { count: realAlerts },
+  ] = await Promise.all([
+    db.from('students').select('*', { count:'exact', head:true }),
+    // Online: chỉ đếm is_online=true (học sinh đang active trong app)
+    db.from('students').select('*', { count:'exact', head:true }).eq('is_online', true).eq('active', true),
+    db.from('lessons').select('*', { count:'exact', head:true }),
+    db.from('lesson_videos').select('*', { count:'exact', head:true }),
+    db.from('homework').select('*', { count:'exact', head:true }).is('deleted_at', null),
+    db.from('homework_submissions').select('*', { count:'exact', head:true }).gte('submitted_at', today),
+    db.from('file_items').select('*', { count:'exact', head:true }).is('deleted_at', null),
+    db.from('classes').select('*', { count:'exact', head:true }),
+    // Cảnh báo thực sự: loại bỏ log activity (reason có prefix [xxx])
+    db.from('alerts').select('*', { count:'exact', head:true })
+      .gte('created_at', today)
+      .not('reason', 'like', '[%]%'),
+  ]);
+
+  document.getElementById('statStudents').textContent    = totalStudents ?? '—';
+  document.getElementById('statOnline').textContent      = onlineFromDB ?? 0;
+  document.getElementById('statLessons').textContent     = `${totalLessons ?? '—'} bài / ${totalVideos ?? '—'} video`;
+  document.getElementById('statHomework').textContent    = totalHw ?? '—';
+  document.getElementById('statSubmissions').textContent = totalSubmitToday ?? '—';
+  document.getElementById('statAlerts').textContent      = realAlerts ?? '—';
+  document.getElementById('statFiles').textContent       = totalFiles ?? '—';
+  document.getElementById('statClasses').textContent     = totalClasses ?? '—';
+
+  // Update global online count
+  const onlineCount = onlineFromDB ?? 0;
+  document.getElementById('saOnlineCount').textContent  = onlineCount;
+  document.getElementById('onlineBadge').textContent    = onlineCount;
+  document.getElementById('sesOnlineCount').textContent = onlineCount;
+
+  // Activity feed
+  const { data: recentAlerts } = await db.from('alerts').select('*').order('created_at', { ascending:false }).limit(8);
+  const feed = document.getElementById('activityFeed');
+  if (!recentAlerts || !recentAlerts.length) {
+    feed.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:.85rem">Không có hoạt động gần đây</div>';
+    return;
+  }
+  feed.innerHTML = recentAlerts.map(a => `
+    <div class="sa-feed-item">
+      <div class="sa-feed-dot" style="background:#6366f1"></div>
+      <div class="sa-feed-msg"><b>${a.student_name||'—'}</b> — ${a.reason||'Hoạt động'}</div>
+      <div class="sa-feed-time">${timeAgo(a.created_at)}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// STUDENTS — with pagination
+// ══════════════════════════════════════════════════
+let _allStudents = [], _stuPage = 1, _stuPageSize = 20;
+
+async function renderStudents() {
+  // Lấy học sinh + tất cả lớp phụ từ student_classes
+  const [{ data: students }, { data: scRows }] = await Promise.all([
+    db.from('students').select('*').order('created_at', { ascending:false }),
+    db.from('student_classes').select('student_id,class_name'),
+  ]);
+
+  // Gộp lớp chính + lớp phụ cho mỗi học sinh
+  const scMap = {}; // student_id → Set of class_name
+  (scRows||[]).forEach(r => {
+    if (!scMap[r.student_id]) scMap[r.student_id] = new Set();
+    scMap[r.student_id].add(r.class_name);
+  });
+
+  _allStudents = (students||[]).map(s => {
+    const allClasses = new Set(
+      (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean)
+    );
+    (scMap[s.id] || new Set()).forEach(c => allClasses.add(c));
+    return { ...s, _allClasses: [...allClasses].join(',') };
+  });
+
+  // Populate class filter — từ tất cả lớp (chính + phụ)
+  const classes = [...new Set(_allStudents.flatMap(s =>
+    (s._allClasses||'').split(',').map(c=>c.trim()).filter(Boolean)
+  ))].sort();
+  const sel = document.getElementById('studentClassFilter');
+  sel.innerHTML = '<option value="">Tất cả lớp</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+  _stuPage = 1;
+  renderStudentTable();
+}
+
+function renderStudentTable() {
+  const q      = document.getElementById('studentSearch').value.toLowerCase().trim();
+  const cls    = document.getElementById('studentClassFilter').value;
+  const status = document.getElementById('studentStatusFilter').value;
+
+  let list = _allStudents.filter(s => {
+    if (q && !(s.full_name||'').toLowerCase().includes(q) && !(s.username||'').toLowerCase().includes(q)) return false;
+    if (cls && !(s._allClasses||'').split(',').map(c=>c.trim()).includes(cls)) return false;
+    if (status === 'active'   && s.active === false) return false;
+    if (status === 'inactive' && s.active !== false) return false;
+    if (status === 'online'   && !s.is_online) return false;
+    return true;
+  });
+
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / _stuPageSize));
+  if (_stuPage > totalPages) _stuPage = totalPages;
+  const paged = list.slice((_stuPage-1)*_stuPageSize, _stuPage*_stuPageSize);
+
+  document.getElementById('studentMeta').textContent = `Hiển thị ${paged.length}/${total} học sinh`;
+  document.getElementById('pageInfo').textContent = `Trang ${_stuPage}/${totalPages}`;
+  document.getElementById('prevPageBtn').disabled = _stuPage <= 1;
+  document.getElementById('nextPageBtn').disabled = _stuPage >= totalPages;
+
+  const tbody = document.getElementById('studentTableBody');
+  if (!paged.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">Không có dữ liệu</td></tr>';
+    return;
+  }
+  tbody.innerHTML = paged.map((s, i) => {
+    const online  = s.is_online === true;
+    const expired = isExpired(s.expiry_date);
+    const locked  = s.active === false;
+    return `<tr>
+      <td style="color:var(--muted);font-size:.75rem">${(_stuPage-1)*_stuPageSize+i+1}</td>
+      <td><b>${s.full_name||'—'}</b></td>
+      <td style="font-size:.8rem">${s.username||'—'}</td>
+      <td style="line-height:1.8">${renderClassBadges(s._allClasses || s.class_name)}</td>
+      <td style="font-size:.78rem;font-family:monospace">${s.student_code||'—'}</td>
+      <td>
+        ${online   ? '<span class="badge badge-green">🟢 Online</span>' : ''}
+        ${locked   ? '<span class="badge badge-red">🔒 Khóa</span>' : ''}
+        ${expired  ? '<span class="badge badge-orange">⏰ Hết hạn</span>' : ''}
+        ${!online && !locked && !expired ? '<span class="badge badge-gray">Offline</span>' : ''}
+      </td>
+      <td style="font-size:.78rem">${fmtDateOnly(s.expiry_date)}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${timeAgo(s.last_seen)}</td>
+      <td style="white-space:nowrap">
+        <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="toggleStudentLock(${s.id}, ${s.active !== false})" title="${s.active !== false ? 'Khóa' : 'Mở khóa'}">
+          ${s.active !== false ? '🔒' : '🔓'}
+        </button>
+        <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="kickStudent('${s.username}','${s.full_name}')" title="Kick">🚫</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('studentSearch').addEventListener('input', renderStudentTable);
+document.getElementById('studentClassFilter').addEventListener('change', renderStudentTable);
+document.getElementById('studentStatusFilter').addEventListener('change', renderStudentTable);
+document.getElementById('prevPageBtn').addEventListener('click', () => { _stuPage--; renderStudentTable(); });
+document.getElementById('nextPageBtn').addEventListener('click', () => { _stuPage++; renderStudentTable(); });
+
+async function toggleStudentLock(id, currentlyActive) {
+  const newState = !currentlyActive;
+  const action = newState ? 'Mở khóa' : 'Khóa';
+  saConfirm(`${action} tài khoản này?`, async () => {
+    const { error } = await db.from('students').update({ active: newState }).eq('id', id);
+    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    showToast(`${action} tài khoản thành công`);
+    renderStudents();
+  }, { icon: newState ? '🔓' : '🔒', title: action, okText: action });
+}
+
+async function kickStudent(username, name) {
+  saConfirm(`Kick "${name}" ra khỏi hệ thống?`, async () => {
+    await db.from('students').update({ session_token: null, is_online: false }).eq('username', username);
+    showToast(`Đã kick ${name}`);
+    renderStudents();
+  }, { icon: '🚫', title: 'Kick học sinh', okText: 'Kick' });
+}
+</script>
+<script>
+// ══════════════════════════════════════════════════
+// SESSIONS
+// ══════════════════════════════════════════════════
+async function renderSessions() {
+  const today = new Date().toISOString().split('T')[0];
+
+  const [{ data: online }, { data: inExam }, { count: todayLogins }] = await Promise.all([
+    // Chỉ lấy học sinh đang is_online=true
+    db.from('students').select('username,full_name,class_name,last_seen,is_online')
+      .eq('is_online', true)
+      .eq('active', true)
+      .order('last_seen', { ascending:false }),
+    db.from('exam_progress').select('username,homework_id').eq('status','active'),
+    db.from('login_logs').select('*', { count:'exact', head:true }).gte('created_at', today),
+  ]);
+
+  const examUsernames = new Set((inExam||[]).map(e => e.username));
+  const list = online || [];
+
+  document.getElementById('sesOnlineCount').textContent = list.length;
+  document.getElementById('sesActiveExam').textContent = examUsernames.size;
+  document.getElementById('sesTodayLogins').textContent = todayLogins ?? '—';
+  document.getElementById('saOnlineCount').textContent = list.length;
+  document.getElementById('onlineBadge').textContent = list.length;
+
+  const tbody = document.getElementById('sessionTableBody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Không có học sinh nào online</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(s => `
+    <tr>
+      <td><b>${s.full_name||'—'}</b></td>
+      <td style="line-height:1.8">${renderClassBadges(s.class_name)}</td>
+      <td style="font-size:.8rem">${s.username||'—'}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${fmtDate(s.last_seen)}</td>
+      <td>
+        ${examUsernames.has(s.username)
+          ? '<span class="badge badge-orange">📝 Đang làm bài</span>'
+          : '<span class="badge badge-green">🟢 Online</span>'}
+      </td>
+      <td>
+        <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="kickStudent('${s.username}','${s.full_name}')">🚫 Kick</button>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('kickAllBtn').addEventListener('click', () => {
+  saConfirm('Kick TẤT CẢ học sinh đang online?', kickAllStudents, { icon:'🚫', title:'Kick tất cả', okText:'Kick tất cả' });
+});
+
+async function kickAllStudents() {
+  const { error } = await db.from('students').update({ session_token: null, is_online: false }).eq('active', true);
+  if (error) { showToast('Lỗi: ' + error.message, false); return; }
+  showToast('Đã kick tất cả học sinh');
+  renderSessions();
+}
+
+// ══════════════════════════════════════════════════
+// CONTENT
+// ══════════════════════════════════════════════════
+async function renderContent() {
+  const [
+    { count: cLessons },
+    { count: cGroups },
+    { count: cVideos },
+    { count: cDocs },
+    { count: cHw },
+    { count: cHwActive },
+    { count: cSubmit },
+    { count: cTrash },
+    { data: recentHw },
+  ] = await Promise.all([
+    db.from('lessons').select('*', { count:'exact', head:true }),
+    db.from('lesson_groups').select('*', { count:'exact', head:true }),
+    db.from('lesson_videos').select('*', { count:'exact', head:true }),
+    db.from('lesson_docs').select('*', { count:'exact', head:true }),
+    db.from('homework').select('*', { count:'exact', head:true }).is('deleted_at', null),
+    db.from('homework').select('*', { count:'exact', head:true }).is('deleted_at', null).eq('is_draft', false).is('is_locked', false),
+    db.from('homework_submissions').select('*', { count:'exact', head:true }),
+    db.from('homework').select('*', { count:'exact', head:true }).not('deleted_at', 'is', null),
+    db.from('homework').select('id,title,class_name,is_draft,is_locked,created_at')
+      .is('deleted_at', null).order('created_at', { ascending:false }).limit(8),
+  ]);
+
+  document.getElementById('cntLessons').textContent = cLessons ?? '—';
+  document.getElementById('cntGroups').textContent  = cGroups  ?? '—';
+  document.getElementById('cntVideos').textContent  = cVideos  ?? '—';
+  document.getElementById('cntDocs').textContent    = cDocs    ?? '—';
+  document.getElementById('cntHw').textContent      = cHw      ?? '—';
+  document.getElementById('cntHwActive').textContent= cHwActive?? '—';
+  document.getElementById('cntSubmit').textContent  = cSubmit  ?? '—';
+  document.getElementById('cntHwTrash').textContent = cTrash   ?? '—';
+
+  // Load submission counts for recent homework
+  const hwIds = (recentHw||[]).map(h => h.id);
+  let subCounts = {};
+  if (hwIds.length) {
+    const { data: subs } = await db.from('homework_submissions').select('homework_id').in('homework_id', hwIds);
+    (subs||[]).forEach(s => { subCounts[s.homework_id] = (subCounts[s.homework_id]||0)+1; });
+  }
+
+  const qCounts = {};
+  if (hwIds.length) {
+    const { data: qs } = await db.from('homework_questions').select('homework_id').in('homework_id', hwIds);
+    (qs||[]).forEach(q => { qCounts[q.homework_id] = (qCounts[q.homework_id]||0)+1; });
+  }
+
+  document.getElementById('hwRecentBody').innerHTML = (recentHw||[]).map(h => `
+    <tr>
+      <td><b>${h.title||'—'}</b></td>
+      <td>${h.class_name ? `<span class="badge badge-purple">${h.class_name}</span>` : '—'}</td>
+      <td style="text-align:center">${qCounts[h.id]||0}</td>
+      <td style="text-align:center">${subCounts[h.id]||0}</td>
+      <td>
+        ${h.is_draft  ? '<span class="badge badge-gray">📋 Nháp</span>' : ''}
+        ${h.is_locked ? '<span class="badge badge-red">🔒 Đã khóa</span>' : ''}
+        ${!h.is_draft && !h.is_locked ? '<span class="badge badge-green">🟢 Đang giao</span>' : ''}
+      </td>
+      <td style="font-size:.78rem;color:var(--muted)">${fmtDate(h.created_at)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">Chưa có bài tập</td></tr>';
+}
+
+// ══════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════
+async function renderStorage() {
+  const [
+    { count: cFolders },
+    { count: cFiles },
+    { count: cDownloads },
+    { count: cTrash },
+    { data: topFiles },
+  ] = await Promise.all([
+    db.from('file_folders').select('*', { count:'exact', head:true }),
+    db.from('file_items').select('*', { count:'exact', head:true }).is('deleted_at', null),
+    db.from('file_downloads').select('*', { count:'exact', head:true }),
+    db.from('file_items').select('*', { count:'exact', head:true }).not('deleted_at','is',null),
+    db.from('file_items').select('id,display_name,file_type,download_count,folder_id,created_at')
+      .is('deleted_at', null).order('download_count', { ascending:false }).limit(8),
+  ]);
+
+  document.getElementById('storageFolders').textContent  = cFolders   ?? '—';
+  document.getElementById('storageFiles').textContent    = cFiles     ?? '—';
+  document.getElementById('storageDownloads').textContent= cDownloads ?? '—';
+  document.getElementById('storageTrash').textContent    = cTrash     ?? '—';
+
+  // Get folder names
+  const folderIds = [...new Set((topFiles||[]).map(f => f.folder_id).filter(Boolean))];
+  let folderMap = {};
+  if (folderIds.length) {
+    const { data: folders } = await db.from('file_folders').select('id,name').in('id', folderIds);
+    (folders||[]).forEach(f => { folderMap[f.id] = f.name; });
+  }
+
+  const ftIcon = { pdf:'📄', image:'🖼️', video:'🎬', other:'📦' };
+  document.getElementById('topFilesBody').innerHTML = (topFiles||[]).map(f => `
+    <tr>
+      <td><b>${f.display_name||'—'}</b></td>
+      <td style="font-size:.8rem">${folderMap[f.folder_id]||'—'}</td>
+      <td>${ftIcon[f.file_type]||'📦'} <span style="font-size:.78rem">${f.file_type||'other'}</span></td>
+      <td style="text-align:center;font-weight:700">${f.download_count||0}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${fmtDate(f.created_at)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">Chưa có file</td></tr>';
+}
+</script>
+<script>
+// ══════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════
+async function renderSettings() {
+  const { data } = await db.from('app_settings').select('*').order('key');
+
+  // Sync toggles
+  const maintenance = (data||[]).find(r => r.key === 'maintenance');
+  const banner      = (data||[]).find(r => r.key === 'show_banner');
+  const maintMsg    = (data||[]).find(r => r.key === 'maintenance_message');
+  const bannerMsgData = (data||[]).find(r => r.key === 'banner_message');
+
+  if (maintenance) document.getElementById('maintenanceToggle').checked = maintenance.value === 'true';
+  if (banner)      document.getElementById('bannerToggle').checked = banner.value === 'true';
+  if (maintMsg)    document.getElementById('maintenanceMsg').value = maintMsg.value || '';
+  if (bannerMsgData) document.getElementById('bannerMsg').value = bannerMsgData.value || '';
+
+  // Table
+  const tbody = document.getElementById('settingsTableBody');
+  tbody.innerHTML = (data||[]).map(r => `
+    <tr>
+      <td style="font-family:monospace;font-size:.78rem;color:var(--primary)">${r.key}</td>
+      <td style="font-size:.8rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.value||''}">${r.value||'—'}</td>
+      <td>
+        <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="openEditSetting('${r.key}','${(r.value||'').replace(/'/g,"\\'")}')">✏️</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Không có dữ liệu</td></tr>';
+}
+
+async function setSetting(key, value) {
+  const { error } = await db.from('app_settings').upsert({ key, value }, { onConflict:'key' });
+  if (error) { showToast('Lỗi: ' + error.message, false); return; }
+  showToast(`Đã cập nhật ${key}`);
+  renderSettings();
+}
+
+async function saveMaintMsg() {
+  await setSetting('maintenance_message', document.getElementById('maintenanceMsg').value.trim());
+}
+async function saveBannerMsg() {
+  await setSetting('banner_message', document.getElementById('bannerMsg').value.trim());
+}
+
+async function changeAdminPw() {
+  const pw1 = document.getElementById('newAdminPw').value;
+  const pw2 = document.getElementById('confirmAdminPw').value;
+  if (!pw1) { showToast('Vui lòng nhập mật khẩu mới', false); return; }
+  if (pw1 !== pw2) { showToast('Mật khẩu không khớp', false); return; }
+  if (pw1.length < 6) { showToast('Mật khẩu cần ít nhất 6 ký tự', false); return; }
+  const hash = await hashPw(pw1);
+  await setSetting('admin_password_hash', hash);
+  document.getElementById('newAdminPw').value = '';
+  document.getElementById('confirmAdminPw').value = '';
+  showToast('Đã đổi mật khẩu Admin');
+}
+
+function openEditSetting(key, value) {
+  document.getElementById('editSettingKey').value = key;
+  document.getElementById('editSettingKeyDisplay').value = key;
+  document.getElementById('editSettingValue').value = value;
+  document.getElementById('editSettingOverlay').classList.add('open');
+}
+async function saveEditSetting() {
+  const key   = document.getElementById('editSettingKey').value;
+  const value = document.getElementById('editSettingValue').value;
+  document.getElementById('editSettingOverlay').classList.remove('open');
+  await setSetting(key, value);
+}
+
+// ══════════════════════════════════════════════════
+// LOGS
+// ══════════════════════════════════════════════════
+let _allLogs = [];
+
+async function renderLogs() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('logDateFilter');
+  if (!dateEl.value) dateEl.value = today;
+
+  const { data } = await db.from('alerts').select('*').order('created_at', { ascending:false }).limit(200);
+  _allLogs = data || [];
+
+  // Badge
+  const todayCount = _allLogs.filter(l => (l.created_at||'').startsWith(today)).length;
+  const badge = document.getElementById('alertsBadge');
+  if (todayCount > 0) { badge.textContent = todayCount; badge.style.display = 'inline-block'; }
+  else badge.style.display = 'none';
+
+  renderLogsTable();
+}
+
+function renderLogsTable() {
+  const dateFilter = document.getElementById('logDateFilter').value;
+  const q = document.getElementById('logSearch').value.toLowerCase().trim();
+  let list = _allLogs.filter(l => {
+    if (dateFilter && !(l.created_at||'').startsWith(dateFilter)) return false;
+    if (q && !(l.student_name||'').toLowerCase().includes(q) &&
+             !(l.username||'').toLowerCase().includes(q) &&
+             !(l.reason||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  document.getElementById('logsTableBody').innerHTML = list.map((l, i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
+      <td><b>${l.student_name||'—'}</b></td>
+      <td style="font-size:.79rem">${l.username||'—'}</td>
+      <td>${l.class_name ? `<span class="badge badge-purple">${l.class_name}</span>` : '—'}</td>
+      <td style="font-size:.82rem">${l.reason||'—'}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${fmtDate(l.created_at)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Không có nhật ký</td></tr>';
+}
+
+document.getElementById('logDateFilter').addEventListener('change', renderLogsTable);
+document.getElementById('logSearch').addEventListener('input', renderLogsTable);
+
+document.getElementById('clearLogsBtn').addEventListener('click', () => {
+  saConfirm('Xóa tất cả cảnh báo cũ hơn 30 ngày?', async () => {
+    const cutoff = new Date(Date.now() - 30*24*3600*1000).toISOString();
+    const { error } = await db.from('alerts').delete().lt('created_at', cutoff);
+    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    showToast('Đã xóa nhật ký cũ');
+    renderLogs();
+  }, { icon:'🗑', title:'Xóa nhật ký cũ', okText:'Xóa' });
+});
+
+// ══════════════════════════════════════════════════
+// MAINTENANCE
+// ══════════════════════════════════════════════════
+async function renderMaintenance() {
+  const today24h = new Date(Date.now() - 24*3600*1000).toISOString();
+  const [
+    { count: alerts24h },
+    { count: logins24h },
+    { data: expiredStudents },
+  ] = await Promise.all([
+    db.from('alerts').select('*', { count:'exact', head:true }).gte('created_at', today24h),
+    db.from('login_logs').select('*', { count:'exact', head:true }).gte('created_at', today24h),
+    db.from('students').select('id').lt('expiry_date', new Date().toISOString().split('T')[0]).eq('active', true),
+  ]);
+
+  document.getElementById('secAlerts24h').textContent  = alerts24h  ?? '—';
+  document.getElementById('secLogins24h').textContent  = logins24h  ?? '—';
+  const expCnt = (expiredStudents||[]).length;
+  document.getElementById('expiredCount').textContent  = expCnt > 0 ? `⚠️ ${expCnt} tài khoản hết hạn` : '✅ Không có tài khoản hết hạn';
+}
+
+async function cleanExamProgress() {
+  saConfirm('Xóa records exam_progress cũ hơn 7 ngày?', async () => {
+    const cutoff = new Date(Date.now() - 7*24*3600*1000).toISOString();
+    const { error } = await db.from('exam_progress').delete().lt('updated_at', cutoff);
+    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    showToast('Đã dọn exam_progress');
+  }, { icon:'🧹', title:'Dọn exam_progress', okText:'Xóa' });
+}
+
+async function cleanAlerts() {
+  saConfirm('Xóa alerts cũ hơn 30 ngày?', async () => {
+    const cutoff = new Date(Date.now() - 30*24*3600*1000).toISOString();
+    const { error } = await db.from('alerts').delete().lt('created_at', cutoff);
+    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    showToast('Đã dọn alerts cũ');
+  }, { icon:'🧹', title:'Dọn alerts', okText:'Xóa' });
+}
+
+async function cleanAccessLogs() {
+  saConfirm('Xóa access_logs cũ hơn 30 ngày?', async () => {
+    const cutoff = new Date(Date.now() - 30*24*3600*1000).toISOString();
+    const { error } = await db.from('access_logs').delete().lt('created_at', cutoff);
+    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    showToast('Đã dọn access_logs cũ');
+  }, { icon:'🧹', title:'Dọn access_logs', okText:'Xóa' });
+}
+
+async function cleanTrashFiles() {
+  saConfirm('Xóa vĩnh viễn tất cả file trong thùng rác?', async () => {
+    const { error } = await db.from('file_items').delete().not('deleted_at','is',null);
+    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    showToast('Đã xóa file trong thùng rác');
+    renderStorage();
+  }, { icon:'🗑', title:'Xóa file thùng rác', okText:'Xóa vĩnh viễn' });
+}
+
+// ══════════════════════════════════════════════════
+// ASSISTANTS — Tài khoản trợ lý
+// ══════════════════════════════════════════════════
+let _allAssistants = [];
+
+async function renderAssistants() {
+  // Load trợ lý từ Supabase (bảng assistants)
+  const { data: assistants, error } = await db.from('assistants').select('*').order('created_at', { ascending: false });
+
+  if (error) {
+    document.getElementById('assistantTableBody').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;color:var(--sys-red);padding:2rem">Lỗi: ${error.message}<br/><small style="color:var(--muted)">Bảng assistants chưa tồn tại trong Supabase. Chạy SQL tạo bảng trước.</small></td></tr>`;
+    return;
+  }
+
+  _allAssistants = assistants || [];
+  const today = new Date().toISOString().split('T')[0];
+
+  // Đếm số thao tác của mỗi trợ lý trong alerts
+  const { data: allLogs } = await db.from('alerts').select('reason,created_at');
+  const todayLogs   = (allLogs||[]).filter(l => (l.created_at||'').startsWith(today));
+  const assistantNames = _allAssistants.map(a => a.full_name);
+
+  // Tính số thao tác: tìm "bởi Trợ lý [tên]" trong reason
+  function countActions(logs, name) {
+    return logs.filter(l => (l.reason||'').includes(`bởi Trợ lý ${name}`) || (l.reason||'').includes(`bởi Admin ${name}`)).length;
+  }
+
+  const totalActions = _allAssistants.reduce((s,a) => s + countActions(allLogs||[], a.full_name), 0);
+  const todayActions = _allAssistants.reduce((s,a) => s + countActions(todayLogs, a.full_name), 0);
+
+  document.getElementById('statTotalAssistants').textContent = _allAssistants.length;
+  document.getElementById('statAssistantActions').textContent = todayActions;
+  document.getElementById('statAssistantTotal').textContent = totalActions;
+
+  if (!_allAssistants.length) {
+    document.getElementById('assistantTableBody').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Chưa có tài khoản trợ lý nào</td></tr>';
+    return;
+  }
+
+  document.getElementById('assistantTableBody').innerHTML = _allAssistants.map((a, i) => {
+    const todayCnt = countActions(todayLogs, a.full_name);
+    const totalCnt = countActions(allLogs||[], a.full_name);
+    return `<tr>
+      <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:800;flex-shrink:0">
+            ${(a.full_name||'?').charAt(0).toUpperCase()}
+          </div>
+          <b>${a.full_name||'—'}</b>
+        </div>
+      </td>
+      <td style="font-size:.82rem;color:var(--muted);font-family:monospace">${a.username||'—'}</td>
+      <td style="text-align:center">
+        <span class="badge ${todayCnt>0?'badge-orange':'badge-gray'}">${todayCnt} thao tác</span>
+      </td>
+      <td style="text-align:center;font-weight:700;color:var(--primary)">${totalCnt}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${fmtDate(a.created_at)}</td>
+      <td style="white-space:nowrap">
+        <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="openAssistantModal(${JSON.stringify(a).replace(/"/g,'&quot;')})">✏️</button>
+        <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="deleteAssistant(${a.id},'${(a.full_name||'').replace(/'/g,"\\'")}')">🗑</button>
+        <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="viewAssistantLog('${(a.full_name||'').replace(/'/g,"\\'")}')">📋</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAssistantModal(assistant = null) {
+  document.getElementById('assistantEditId').value   = assistant ? assistant.id : '';
+  document.getElementById('assistantName').value     = assistant ? (assistant.full_name||'') : '';
+  document.getElementById('assistantUsername').value = assistant ? (assistant.username||'') : '';
+  document.getElementById('assistantPassword').value = '';
+  document.getElementById('assistantErr').textContent = '';
+  document.getElementById('assistantModalTitle').textContent = assistant ? '✏️ Sửa tài khoản trợ lý' : '➕ Thêm tài khoản trợ lý';
+  document.getElementById('assistantPwHint').style.display = assistant ? 'inline' : 'none';
+  document.getElementById('assistantModal').classList.add('open');
+}
+
+async function saveAssistant() {
+  const id       = document.getElementById('assistantEditId').value;
+  const name     = document.getElementById('assistantName').value.trim();
+  const username = document.getElementById('assistantUsername').value.trim();
+  const pw       = document.getElementById('assistantPassword').value;
+  const errEl    = document.getElementById('assistantErr');
+
+  if (!name)     { errEl.textContent = 'Vui lòng nhập họ tên.'; return; }
+  if (!username) { errEl.textContent = 'Vui lòng nhập tên đăng nhập.'; return; }
+  if (!id && !pw){ errEl.textContent = 'Vui lòng nhập mật khẩu.'; return; }
+
+  let payload = { full_name: name, username };
+  if (pw) payload.password = await hashPw(pw);
+
+  let error;
+  if (id) {
+    ({ error } = await db.from('assistants').update(payload).eq('id', id));
+  } else {
+    if (!pw) { errEl.textContent = 'Cần nhập mật khẩu khi tạo mới.'; return; }
+    ({ error } = await db.from('assistants').insert(payload));
+  }
+
+  if (error) {
+    errEl.textContent = error.message.includes('unique') ? 'Tên đăng nhập đã tồn tại.' : 'Lỗi: ' + error.message;
+    return;
+  }
+
+  document.getElementById('assistantModal').classList.remove('open');
+  showToast(id ? 'Đã cập nhật tài khoản trợ lý' : 'Đã thêm tài khoản trợ lý');
+
+  // Ghi log
+  const by = sessionStorage.getItem('dh_name') || 'Admin';
+  await db.from('alerts').insert({
+    student_name: name,
+    username: username,
+    class_name: 'Trợ lý',
+    reason: `${id ? 'Sửa' : 'Tạo'} tài khoản trợ lý — bởi Admin ${by}`
+  });
+
+  renderAssistants();
+}
+
+async function deleteAssistant(id, name) {
+  saConfirm(`Xóa tài khoản trợ lý "${name}"?`, async () => {
+    const { error } = await db.from('assistants').delete().eq('id', id);
+    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    showToast('Đã xóa tài khoản trợ lý');
+
+    const by = sessionStorage.getItem('dh_name') || 'Admin';
+    await db.from('alerts').insert({
+      student_name: name,
+      username: '',
+      class_name: 'Trợ lý',
+      reason: `Xóa tài khoản trợ lý — bởi Admin ${by}`
+    });
+    renderAssistants();
+  }, { icon: '🗑', title: 'Xóa trợ lý', okText: 'Xóa' });
+}
+
+function viewAssistantLog(name) {
+  // Chuyển sang trang nhật ký và filter theo tên trợ lý
+  showPage('assistant-logs');
+  setTimeout(() => {
+    const sel = document.getElementById('alogAssistantFilter');
+    if (sel) {
+      for (let opt of sel.options) {
+        if (opt.value === name) { sel.value = name; break; }
+      }
+      renderAlogTable();
+    }
+  }, 300);
+}
+
+// ══════════════════════════════════════════════════
+// ASSISTANT LOGS — Nhật ký biến động trợ lý
+// ══════════════════════════════════════════════════
+let _allAssistantLogs = [];
+
+async function renderAssistantLogs() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('alogDateFilter');
+  if (!dateEl.value) dateEl.value = today;
+
+  // Lấy activity logs: có "bởi Trợ lý/Admin" trong reason (log từ logActivity + logAccountActivity)
+  // Dùng 2 query riêng rồi merge để tránh Supabase giới hạn OR phức tạp
+  const [{ data: logsAssistant }, { data: logsAdmin }] = await Promise.all([
+    db.from('alerts').select('*')
+      .ilike('reason', '%bởi Trợ lý%')
+      .order('created_at', { ascending: false })
+      .limit(500),
+    db.from('alerts').select('*')
+      .ilike('reason', '%bởi Admin%')
+      .order('created_at', { ascending: false })
+      .limit(500),
+  ]);
+
+  // Merge + dedup theo id + sort mới nhất trước
+  const seen = new Set();
+  const merged = [...(logsAssistant||[]), ...(logsAdmin||[])]
+    .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  _allAssistantLogs = merged;
+
+  // Đếm stats theo danh mục
+  const createCnt = _allAssistantLogs.filter(l => (l.reason||'').includes('Tạo tài khoản')).length;
+  const editCnt   = _allAssistantLogs.filter(l =>
+    (l.reason||'').includes('Sửa tài khoản') ||
+    (l.reason||'').includes('[Bài học]') ||
+    (l.reason||'').includes('[Nhóm bài]') ||
+    (l.reason||'').includes('[Thông báo]') ||
+    (l.reason||'').includes('[Lịch học]') ||
+    (l.reason||'').includes('[Lớp học]') ||
+    (l.reason||'').includes('[File]') ||
+    (l.reason||'').includes('[Thư mục]') ||
+    (l.reason||'').includes('[Video]') ||
+    (l.reason||'').includes('[Tài liệu]')
+  ).length;
+  const delCnt = _allAssistantLogs.filter(l => (l.reason||'').includes('Xóa')).length;
+
+  document.getElementById('alogTotalCount').textContent  = _allAssistantLogs.length;
+  document.getElementById('alogCreateCount').textContent = createCnt;
+  document.getElementById('alogEditCount').textContent   = editCnt;
+  document.getElementById('alogDeleteCount').textContent = delCnt;
+
+  // Badge sidebar
+  const badge = document.getElementById('assistantLogsBadge');
+  const todayLogs = _allAssistantLogs.filter(l => (l.created_at||'').startsWith(today));
+  if (todayLogs.length > 0) {
+    badge.textContent = todayLogs.length;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // Populate assistant filter — trích tên từ "bởi Trợ lý X" hoặc "bởi Admin X"
+  const names = [...new Set(_allAssistantLogs.map(l => {
+    const m = (l.reason||'').match(/bởi (?:Trợ lý|Admin) (.+?)(?:\s*$)/);
+    return m ? m[1].trim() : null;
+  }).filter(Boolean))].sort();
+
+  const sel = document.getElementById('alogAssistantFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tất cả trợ lý</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+  if (cur) sel.value = cur;
+
+  renderAlogTable();
+}
+
+function renderAlogTable() {
+  const dateFilter = document.getElementById('alogDateFilter').value;
+  const assistant  = document.getElementById('alogAssistantFilter').value;
+  const action     = document.getElementById('alogActionFilter').value;
+  const q          = document.getElementById('alogSearch').value.toLowerCase().trim();
+
+  let list = _allAssistantLogs.filter(l => {
+    if (dateFilter && !(l.created_at||'').startsWith(dateFilter)) return false;
+    if (assistant  && !(l.reason||'').includes(assistant)) return false;
+    if (action     && !(l.reason||'').includes(action)) return false;
+    if (q && !(l.student_name||'').toLowerCase().includes(q) &&
+             !(l.username||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  document.getElementById('alogMeta').textContent = `Hiển thị ${list.length} bản ghi`;
+
+  const actionBadge = (reason) => {
+    if ((reason||'').includes('Tạo tài khoản')) return '<span class="badge badge-green">➕ Tạo HS</span>';
+    if ((reason||'').includes('Sửa tài khoản')) return '<span class="badge badge-orange">✏️ Sửa HS</span>';
+    if ((reason||'').includes('Xóa tài khoản')) return '<span class="badge badge-red">🗑 Xóa HS</span>';
+    if ((reason||'').includes('[Bài học]'))   return '<span class="badge badge-blue">📚 Bài học</span>';
+    if ((reason||'').includes('[Nhóm bài]'))  return '<span class="badge badge-blue">📂 Nhóm bài</span>';
+    if ((reason||'').includes('[Video]'))     return '<span class="badge badge-purple">🎬 Video</span>';
+    if ((reason||'').includes('[Tài liệu]'))  return '<span class="badge badge-purple">📄 Tài liệu</span>';
+    if ((reason||'').includes('[Lớp học]'))   return '<span class="badge badge-green">🏫 Lớp học</span>';
+    if ((reason||'').includes('[Thông báo]')) return '<span class="badge badge-orange">📢 Thông báo</span>';
+    if ((reason||'').includes('[Lịch học]'))  return '<span class="badge badge-blue">📅 Lịch học</span>';
+    if ((reason||'').includes('[File]'))      return '<span class="badge badge-gray">🗂️ File</span>';
+    if ((reason||'').includes('[Thư mục]'))   return '<span class="badge badge-gray">📁 Thư mục</span>';
+    if ((reason||'').includes('tài khoản trợ lý')) return '<span class="badge badge-orange">🤝 Trợ lý</span>';
+    return '<span class="badge badge-gray">— Khác</span>';
+  };
+
+  const extractActor = (reason) => {
+    const m = (reason||'').match(/bởi (?:Trợ lý|Admin) (.+)$/);
+    return m ? m[1] : '—';
+  };
+
+  document.getElementById('alogTableBody').innerHTML = list.length
+    ? list.map((l, i) => `
+      <tr>
+        <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:800;flex-shrink:0">
+              ${extractActor(l.reason).charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <span style="font-size:.83rem;font-weight:700">${extractActor(l.reason)}</span>
+              <div style="font-size:.68rem;color:var(--muted)">${(l.reason||'').includes('bởi Trợ lý') ? '🤝 Trợ lý' : '👨‍🏫 Giáo viên'}</div>
+            </div>
+          </div>
+        </td>
+        <td>${actionBadge(l.reason)}</td>
+        <td>
+          <div style="font-size:.84rem;font-weight:700">${l.student_name||'—'}</div>
+          ${l.username && l.username !== '' ? `<div style="font-size:.72rem;color:var(--muted)">${l.username}</div>` : ''}
+        </td>
+        <td style="font-size:.79rem;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.reason||'').replace(/"/g,'&quot;')}">
+          ${(l.reason||'').replace(/— bởi .+$/, '').trim()}
+        </td>
+        <td>${l.class_name && l.class_name !== 'Trợ lý' ? `<span class="badge badge-purple">${l.class_name}</span>` : '—'}</td>
+        <td style="font-size:.78rem;color:var(--muted);white-space:nowrap">${fmtDate(l.created_at)}</td>
+      </tr>`)
+      .join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Không có dữ liệu</td></tr>';
+}
+
+document.getElementById('alogDateFilter').addEventListener('change', renderAlogTable);
+document.getElementById('alogAssistantFilter').addEventListener('change', renderAlogTable);
+document.getElementById('alogActionFilter').addEventListener('change', renderAlogTable);
+document.getElementById('alogSearch').addEventListener('input', renderAlogTable);
+
+// ══════════════════════════════════════════════════
+// REALTIME — Nhận sự kiện tức thì từ Supabase
+// ══════════════════════════════════════════════════
+let _notifs = [];
+let _unreadCount = 0;
+let _notifOpen = false;
+
+// Cập nhật trạng thái kết nối realtime trên topbar
+function setRtStatus(status) {
+  const el    = document.getElementById('saRealtimeIndicator');
+  const label = document.getElementById('saRtLabel');
+  el.className = '';
+  if (status === 'connected') {
+    el.classList.add('connected');
+    label.textContent = 'Realtime';
+  } else if (status === 'error') {
+    el.classList.add('error');
+    label.textContent = 'Mất kết nối';
+  } else {
+    label.textContent = 'Đang kết nối';
+  }
+}
+
+// Thêm 1 notification mới vào bell
+function pushNotif({ icon, color, title, sub, time }) {
+  const item = { icon, color, title, sub, time: time || new Date(), id: Date.now() };
+  _notifs.unshift(item);
+  if (_notifs.length > 50) _notifs.pop();
+  _unreadCount++;
+  renderNotifList();
+  updateNotifBadge();
+  // Flash stat cards
+  document.querySelectorAll('.sa-stat-card').forEach(c => {
+    c.classList.remove('flash-new');
+    void c.offsetWidth; // reflow
+    c.classList.add('flash-new');
+  });
+  // Browser notification khi tab không active
+  if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+    new Notification(`DHDT SysAdmin — ${title}`, { body: sub || '', icon: 'icons/icon-192.png' });
+  }
+}
+
+function renderNotifList() {
+  const list = document.getElementById('saNotifList');
+  if (!_notifs.length) {
+    list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.84rem">Chưa có thông báo</div>';
+    return;
+  }
+  list.innerHTML = _notifs.map(n => `
+    <div class="sa-notif-item">
+      <div class="sa-notif-dot" style="background:${n.color||'#6366f1'}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="sa-notif-text"><b>${n.icon||''} ${n.title}</b></div>
+        ${n.sub ? `<div class="sa-notif-text" style="color:var(--muted);margin-top:.1rem">${n.sub}</div>` : ''}
+      </div>
+      <div class="sa-notif-time">${timeAgo(n.time)}</div>
+    </div>`).join('');
+}
+
+function updateNotifBadge() {
+  const badge = document.getElementById('saNotifBadge');
+  if (_unreadCount > 0) {
+    badge.textContent = _unreadCount > 99 ? '99+' : _unreadCount;
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function clearNotifs() {
+  _notifs = [];
+  _unreadCount = 0;
+  renderNotifList();
+  updateNotifBadge();
+}
+
+// Toggle dropdown thông báo
+document.getElementById('saNotifBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  _notifOpen = !_notifOpen;
+  document.getElementById('saNotifDropdown').style.display = _notifOpen ? 'block' : 'none';
+  if (_notifOpen) {
+    _unreadCount = 0;
+    updateNotifBadge();
+  }
+});
+document.addEventListener('click', () => {
+  if (_notifOpen) {
+    _notifOpen = false;
+    document.getElementById('saNotifDropdown').style.display = 'none';
+  }
+});
+
+// Xin quyền browser notification
+if ('Notification' in window && Notification.permission === 'default') {
+  setTimeout(() => Notification.requestPermission(), 2000);
+}
+
+// ──────────────────────────────────────────────────
+// Khởi động Supabase Realtime channels
+// ──────────────────────────────────────────────────
+function initRealtime() {
+  setRtStatus('connecting');
+
+  // ── CHANNEL 1: students — theo dõi online/offline + tạo/xóa ──
+  db.channel('sysadmin-students')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, (payload) => {
+      const ev = payload.eventType;
+      const rec = payload.new || payload.old || {};
+
+      if (ev === 'INSERT') {
+        pushNotif({ icon:'🎓', color:'#10b981', title:'Học sinh mới', sub:`${rec.full_name||'—'} — ${rec.class_name||''}` });
+        // Cập nhật stat
+        const el = document.getElementById('statStudents');
+        if (el && el.textContent !== '—') el.textContent = parseInt(el.textContent||0) + 1;
+      }
+      if (ev === 'DELETE') {
+        pushNotif({ icon:'🗑', color:'#ef4444', title:'Xóa học sinh', sub:`${rec.full_name||'—'}` });
+        const el = document.getElementById('statStudents');
+        if (el && el.textContent !== '—') el.textContent = Math.max(0, parseInt(el.textContent||0) - 1);
+      }
+      if (ev === 'UPDATE') {
+        // Refresh online count từ DB
+        _refreshOnlineCount();
+        // Nếu trang students đang mở → cập nhật row đó
+        if (document.getElementById('pageStudents').classList.contains('active')) {
+          _patchStudentRow(payload.new);
+        }
+        // Nếu trang sessions đang mở → refresh
+        if (document.getElementById('pageSessions').classList.contains('active')) {
+          renderSessions();
+        }
+      }
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') setRtStatus('connected');
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRtStatus('error');
+    });
+
+  // ── CHANNEL 2: alerts — nhật ký cảnh báo mới ──
+  db.channel('sysadmin-alerts')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alerts' }, (payload) => {
+      const rec = payload.new || {};
+      const reason = rec.reason || '';
+      const isActivityLog = reason.includes('bởi Trợ lý') || reason.includes('bởi Admin') ||
+                            rec.class_name === 'Trợ lý';
+
+      if (isActivityLog) {
+        // ── Nhật ký hoạt động (trợ lý + teacher) ──
+        // Chọn icon theo danh mục
+        const catIcon = reason.includes('[Bài học]') ? '📚'
+          : reason.includes('[Nhóm bài]') ? '📂'
+          : reason.includes('[Video]')    ? '🎬'
+          : reason.includes('[Tài liệu]') ? '📄'
+          : reason.includes('[Lớp học]')  ? '🏫'
+          : reason.includes('[Thông báo]')? '📢'
+          : reason.includes('[Lịch học]') ? '📅'
+          : reason.includes('[File]')     ? '🗂️'
+          : reason.includes('[Thư mục]')  ? '📁'
+          : '🤝';
+
+        const actor = reason.match(/bởi (?:Trợ lý|Admin) (.+?)(?:\s*$)/)?.[1] || '—';
+        pushNotif({
+          icon: catIcon,
+          color: reason.includes('bởi Trợ lý') ? '#f59e0b' : '#6366f1',
+          title: `${actor} — ${rec.student_name||''}`,
+          sub: reason.replace(/— bởi .+$/, '').trim()
+        });
+
+        // Badge sidebar nhật ký trợ lý
+        const b = document.getElementById('assistantLogsBadge');
+        const cur = parseInt(b.textContent || 0) || 0;
+        b.textContent = cur + 1;
+        b.style.display = 'inline-block';
+
+        // Nếu trang assistant-logs đang mở → thêm vào đầu cache và re-render
+        if (document.getElementById('pageAssistantLogs').classList.contains('active')) {
+          _allAssistantLogs.unshift(rec);
+          // Cập nhật stats
+          document.getElementById('alogTotalCount').textContent  = _allAssistantLogs.length;
+          document.getElementById('alogCreateCount').textContent = _allAssistantLogs.filter(l=>(l.reason||'').includes('Tạo tài khoản')).length;
+          document.getElementById('alogEditCount').textContent   = _allAssistantLogs.filter(l=>
+            ['[Bài học]','[Nhóm bài]','[Thông báo]','[Lịch học]','[Lớp học]','[File]','[Thư mục]','[Video]','[Tài liệu]','Sửa tài khoản'].some(k=>(l.reason||'').includes(k))
+          ).length;
+          document.getElementById('alogDeleteCount').textContent = _allAssistantLogs.filter(l=>(l.reason||'').includes('Xóa')).length;
+          renderAlogTable();
+        }
+
+      } else {
+        // ── Cảnh báo học sinh thường ──
+        pushNotif({ icon:'⚠️', color:'#ef4444', title:'Cảnh báo mới', sub:`${rec.student_name||'—'} — ${reason}` });
+        const el = document.getElementById('statAlerts');
+        if (el && el.textContent !== '—') el.textContent = parseInt(el.textContent||0) + 1;
+        const b = document.getElementById('alertsBadge');
+        b.style.display = 'inline-block';
+        if (document.getElementById('pageLogs').classList.contains('active')) {
+          _allLogs.unshift(rec);
+          renderLogsTable();
+        }
+      }
+    })
+    .subscribe();
+
+  // ── CHANNEL 3: homework_submissions — bài nộp mới ──
+  db.channel('sysadmin-submissions')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'homework_submissions' }, (payload) => {
+      const rec = payload.new || {};
+      pushNotif({
+        icon: '📬', color: '#6366f1',
+        title: 'Bài nộp mới',
+        sub: `${rec.student_name||'—'} — ${rec.class_name||''} (${rec.score != null ? rec.score + '/' + rec.max_score : '?'}đ)`
+      });
+      const el = document.getElementById('statSubmissions');
+      if (el && el.textContent !== '—') el.textContent = parseInt(el.textContent||0) + 1;
+    })
+    .subscribe();
+
+  // ── CHANNEL 4: exam_progress — học sinh đang làm bài ──
+  db.channel('sysadmin-exam')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'exam_progress' }, (payload) => {
+      const rec = payload.new || {};
+      pushNotif({ icon:'📝', color:'#06b6d4', title:'Học sinh bắt đầu làm bài', sub:`${rec.student_name||'—'} — ${rec.class_name||''}` });
+      if (document.getElementById('pageSessions').classList.contains('active')) {
+        renderSessions();
+      }
+    })
+    .subscribe();
+
+  // ── CHANNEL 5: file_items — file mới upload ──
+  db.channel('sysadmin-files')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'file_items' }, (payload) => {
+      const rec = payload.new || {};
+      pushNotif({ icon:'📁', color:'#8b5cf6', title:'File mới được tải lên', sub:`${rec.display_name||'—'}` });
+      const el = document.getElementById('statFiles');
+      if (el && el.textContent !== '—') el.textContent = parseInt(el.textContent||0) + 1;
+    })
+    .subscribe();
+}
+
+// ── Helpers cho realtime patch ──
+async function _refreshOnlineCount() {
+  const { count } = await db.from('students')
+    .select('*', { count:'exact', head:true })
+    .eq('is_online', true)
+    .eq('active', true);
+  const cnt = count ?? 0;
+  document.getElementById('saOnlineCount').textContent = cnt;
+  document.getElementById('onlineBadge').textContent   = cnt;
+  const el = document.getElementById('statOnline');
+  if (el) el.textContent = cnt;
+}
+
+function _patchStudentRow(updated) {
+  if (!updated) return;
+  const idx = _allStudents.findIndex(s => s.id === updated.id);
+  if (idx >= 0) {
+    // Giữ _allClasses đã tính, chỉ merge các field mới
+    const prev = _allStudents[idx];
+    _allStudents[idx] = { ...prev, ...updated, _allClasses: prev._allClasses };
+    renderStudentTable();
+  }
+}
+
+// ══════════════════════════════════════════════════
+// AUTO-REFRESH nhẹ mỗi 30s cho số liệu overview
+// (chỉ cập nhật số, không re-render toàn bộ trang)
+// ══════════════════════════════════════════════════
+
+// Đồng hồ chạy liên tục mỗi giây
+setInterval(() => {
+  const now = new Date().toLocaleString('vi-VN');
+  // Cập nhật dòng thời gian ở overview
+  const timeEl = document.getElementById('overviewTime');
+  if (timeEl) timeEl.textContent = 'Cập nhật lúc ' + now;
+}, 1000);
+
+// Auto-refresh online count every 30s
+setInterval(async () => {
+  _refreshOnlineCount();
+}, 30000);
+
+// Auto-refresh nhật ký trợ lý mỗi 60s (phòng Realtime miss event)
+setInterval(async () => {
+  if (document.getElementById('pageAssistantLogs')?.classList.contains('active')) {
+    await renderAssistantLogs();
+  }
+  if (document.getElementById('pageLogs')?.classList.contains('active')) {
+    await renderLogs();
+  }
+}, 60000);
+
+// ══════════════════════════════════════════════════
+// TEACHERS — Tài khoản giáo viên (lưu localStorage)
+// ══════════════════════════════════════════════════
+
+function _getTeachers() {
+  try {
+    // Lấy tài khoản chính từ dh_teacher
+    const main = JSON.parse(localStorage.getItem('dh_teacher') || 'null');
+    // Lấy danh sách thêm từ dh_teachers (mảng)
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    const all = [];
+    if (main) all.push({ ...main, _isMain: true, _idx: 'main' });
+    extra.forEach((t, i) => all.push({ ...t, _isMain: false, _idx: i }));
+    return all;
+  } catch { return []; }
+}
+
+function _saveExtraTeachers(list) {
+  localStorage.setItem('dh_teachers', JSON.stringify(list));
+}
+
+function renderTeachers() {
+  const teachers = _getTeachers();
+  const tbody = document.getElementById('teacherTableBody');
+
+  if (!teachers.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Không có tài khoản nào</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = teachers.map((t, i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <div style="width:32px;height:32px;border-radius:50%;
+            background:linear-gradient(135deg,#6366f1,#4f46e5);
+            display:flex;align-items:center;justify-content:center;
+            color:#fff;font-size:.85rem;font-weight:800;flex-shrink:0">
+            ${(t.full_name||'?').trim().split(' ').pop().charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <b>${t.full_name||'—'}</b>
+            ${t._isMain ? '<span class="badge badge-blue" style="margin-left:.35rem;font-size:.65rem">Tài khoản chính</span>' : ''}
+          </div>
+        </div>
+      </td>
+      <td style="font-size:.82rem;font-family:monospace;color:var(--muted)">${t.username||'—'}</td>
+      <td><span class="badge badge-green">✅ Hoạt động</span></td>
+      <td style="white-space:nowrap">
+        <button class="sa-btn sa-btn-outline sa-btn-sm"
+          onclick="openTeacherModal(${JSON.stringify(t).replace(/"/g,'&quot;')},${i})">✏️</button>
+        ${!t._isMain ? `<button class="sa-btn sa-btn-danger sa-btn-sm"
+          onclick="deleteTeacher(${t._idx},'${(t.full_name||'').replace(/'/g,"\\'")}')">🗑</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+function openTeacherModal(teacher = null, displayIdx = null) {
+  const isEdit = teacher !== null;
+  document.getElementById('teacherModalTitle').textContent = isEdit ? '✏️ Sửa tài khoản giáo viên' : '➕ Thêm tài khoản giáo viên';
+  document.getElementById('teacherEditIndex').value = isEdit ? (teacher._isMain ? 'main' : teacher._idx) : '';
+  document.getElementById('teacherName').value     = isEdit ? (teacher.full_name || '') : '';
+  document.getElementById('teacherUsername').value = isEdit ? (teacher.username || '') : '';
+  document.getElementById('teacherPassword').value = '';
+  document.getElementById('teacherErr').textContent = '';
+  document.getElementById('teacherPwHint').style.display = isEdit ? 'inline' : 'none';
+  document.getElementById('teacherModal').classList.add('open');
+}
+
+async function saveTeacher() {
+  const editIdx  = document.getElementById('teacherEditIndex').value;
+  const name     = document.getElementById('teacherName').value.trim();
+  const username = document.getElementById('teacherUsername').value.trim();
+  const pw       = document.getElementById('teacherPassword').value;
+  const errEl    = document.getElementById('teacherErr');
+  errEl.textContent = '';
+
+  if (!name)     { errEl.textContent = 'Vui lòng nhập họ tên.'; return; }
+  if (!username) { errEl.textContent = 'Vui lòng nhập tên đăng nhập.'; return; }
+  if (!editIdx && !pw) { errEl.textContent = 'Vui lòng nhập mật khẩu.'; return; }
+  if (pw && pw.length < 6) { errEl.textContent = 'Mật khẩu cần ít nhất 6 ký tự.'; return; }
+
+  if (editIdx === 'main') {
+    // Cập nhật tài khoản chính
+    const main = JSON.parse(localStorage.getItem('dh_teacher') || '{}');
+    main.full_name = name;
+    main.username  = username;
+    if (pw) main.passwordHash = await hashPw(pw);
+    main.hashed = true;
+    localStorage.setItem('dh_teacher', JSON.stringify(main));
+    showToast('Đã cập nhật tài khoản chính');
+  } else if (editIdx !== '') {
+    // Cập nhật tài khoản phụ
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    const idx = parseInt(editIdx);
+    if (extra[idx]) {
+      extra[idx].full_name = name;
+      extra[idx].username  = username;
+      if (pw) extra[idx].passwordHash = await hashPw(pw);
+    }
+    _saveExtraTeachers(extra);
+    showToast('Đã cập nhật tài khoản giáo viên');
+  } else {
+    // Thêm mới
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    // Kiểm tra trùng username
+    const allTeachers = _getTeachers();
+    if (allTeachers.some(t => t.username === username)) {
+      errEl.textContent = 'Tên đăng nhập đã tồn tại.'; return;
+    }
+    extra.push({ full_name: name, username, passwordHash: await hashPw(pw), hashed: true });
+    _saveExtraTeachers(extra);
+    showToast('Đã thêm tài khoản giáo viên');
+  }
+
+  document.getElementById('teacherModal').classList.remove('open');
+  logActivity('Hệ thống', editIdx ? 'Sửa tài khoản giáo viên' : 'Thêm tài khoản giáo viên', name);
+  renderTeachers();
+}
+
+function deleteTeacher(idx, name) {
+  saConfirm(`Xóa tài khoản giáo viên "${name}"?`, async () => {
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    extra.splice(idx, 1);
+    _saveExtraTeachers(extra);
+    showToast('Đã xóa tài khoản giáo viên');
+    logActivity('Hệ thống', 'Xóa tài khoản giáo viên', name);
+    renderTeachers();
+  }, { icon:'🗑', title:'Xóa giáo viên', okText:'Xóa' });
+}
+
+// ══════════════════════════════════════════════════
+// GUIDE — Hướng dẫn sử dụng
+// ══════════════════════════════════════════════════
+const GUIDE_DATA = [
+  // ── HỌC SINH ──
+  { cat:'student', icon:'➕', title:'Thêm học sinh mới', steps:[
+    'Vào <b>Admin → Thêm học viên mới</b>',
+    'Nhập Gmail (bắt buộc), Họ tên, SĐT, chọn Lớp',
+    'Mã học sinh tự động tạo — cũng là mật khẩu đăng nhập ban đầu',
+    'Bấm <b>Lưu</b> — hệ thống tự gửi email thông tin tài khoản',
+    '⚠️ Gmail phải là @gmail.com hợp lệ, không trùng tài khoản khác',
+  ]},
+  { cat:'student', icon:'📋', title:'Import hàng loạt từ Excel', steps:[
+    'Vào <b>Admin → Thêm học viên → Import hàng loạt</b>',
+    'Chuẩn bị file Excel/CSV: cột <b>Họ tên, Gmail</b> bắt buộc',
+    'Kéo thả file → xem preview → kiểm tra trùng Gmail',
+    'Bấm <b>Tạo tất cả</b> — gửi email tự động cho từng học sinh',
+  ]},
+  { cat:'student', icon:'✏️', title:'Sửa thông tin học sinh', steps:[
+    'Danh sách học sinh → nút <b>⋮</b> → <b>Sửa</b>',
+    'Có thể sửa: Họ tên, Gmail, SĐT, Mã HS, Ghi chú',
+    'Thêm/xóa lớp phụ trong tab <b>Lớp học</b>',
+    '<b>Trợ lý không được sửa ngày hết hạn</b>',
+  ]},
+  { cat:'student', icon:'🔒', title:'Khóa / Mở khóa tài khoản', steps:[
+    'Danh sách học sinh → nút <b>⋮</b> → <b>Khóa/Mở khóa</b>',
+    'Học sinh bị khóa không đăng nhập được — hiện badge 🔒',
+    'Tài khoản tự khóa khi nhập sai mật khẩu quá nhiều lần',
+  ]},
+  { cat:'student', icon:'🔄', title:'Đồng bộ Gmail → Lớp phụ', steps:[
+    'Danh sách học sinh → <b>Công cụ → Đồng bộ Gmail → Lớp</b>',
+    'Upload file Excel/CSV danh sách Gmail hoặc dán trực tiếp',
+    'Chọn lớp → Phân tích → Xem danh sách cần thêm',
+    'Bấm <b>Đồng bộ</b> — tự thêm lớp và gửi thông báo',
+  ]},
+  // ── BÀI HỌC ──
+  { cat:'lesson', icon:'📂', title:'Tạo nhóm bài học', steps:[
+    'Admin → <b>Nhóm bài học → Thêm nhóm</b>',
+    'Nhập tên nhóm, chọn lớp, giới hạn học sinh nếu cần',
+    'Nhóm có thể có nhóm con (tối đa 3 cấp)',
+    'Kéo thả để sắp xếp thứ tự nhóm',
+  ]},
+  { cat:'lesson', icon:'📚', title:'Thêm bài học', steps:[
+    'Nhóm bài học → click nhóm → <b>Thêm bài học</b>',
+    'Nhập tên bài, mô tả, link video/tài liệu ngay khi tạo',
+    'Kéo thả để sắp xếp thứ tự bài trong nhóm',
+  ]},
+  { cat:'lesson', icon:'🎬', title:'Thêm video cho bài học', steps:[
+    'Click vào bài → tab <b>Video</b> → <b>Thêm video</b>',
+    '3 cách: <b>Link URL</b> (Drive/YouTube), <b>Mã nhúng iframe</b>, <b>Upload file</b>',
+    'Google Drive: phải chọn "Chia sẻ → Bất kỳ ai có link"',
+  ]},
+  { cat:'lesson', icon:'📄', title:'Thêm tài liệu cho bài học', steps:[
+    'Click vào bài → tab <b>Tài liệu</b> → <b>Tải lên</b>',
+    'Hỗ trợ Link URL, file PDF/Word/Excel/ảnh',
+    'Loại <b>Bản viết tay</b>: ảnh chụp tay — phân loại riêng',
+  ]},
+  // ── LỚP HỌC ──
+  { cat:'class', icon:'🏫', title:'Tạo lớp học mới', steps:[
+    'Admin → <b>Lớp học → Tạo lớp</b>',
+    'Nhập tên lớp, ngày khai giảng, ngày kết thúc',
+    'Ngày kết thúc tự đặt làm ngày hết hạn tài khoản học sinh',
+    'Tên lớp không được trùng',
+  ]},
+  { cat:'class', icon:'🗑️', title:'Xóa lớp học', steps:[
+    'Lớp học → nút xóa bên cạnh tên lớp',
+    'Chọn <b>Giữ học sinh</b> hoặc <b>Xóa luôn tất cả học sinh</b>',
+    '⚠️ Xóa luôn không thể hoàn tác',
+  ]},
+  // ── FILE ──
+  { cat:'file', icon:'📁', title:'Tạo thư mục tài liệu', steps:[
+    'Admin → <b>Lưu trữ → Tạo thư mục</b>',
+    'Đặt tên, icon, màu sắc, chọn lớp học phù hợp',
+    'Thư mục có thể ghim lên đầu danh sách',
+  ]},
+  { cat:'file', icon:'⬆️', title:'Upload file tài liệu', steps:[
+    'Vào thư mục → bấm <b>Tải lên</b>',
+    'Kéo thả nhiều file hoặc nhập link ngoài (Google Drive...)',
+    'File lưu Supabase Storage — có link tải vĩnh viễn',
+    'Xem lượt tải từng file trong <b>Lịch sử tải</b>',
+  ]},
+  // ── HỆ THỐNG ──
+  { cat:'system', icon:'🔧', title:'Bật/tắt chế độ bảo trì', steps:[
+    'Quản trị → <b>Cài đặt → Chế độ bảo trì</b>',
+    'Bật toggle → học sinh thấy trang thông báo',
+    'Nhập nội dung thông báo → bấm Lưu',
+    'Tắt khi xong bảo trì',
+  ]},
+  { cat:'system', icon:'📢', title:'Gửi thông báo cho học sinh', steps:[
+    'Admin → <b>Thông báo → Tạo thông báo</b>',
+    'Chọn đối tượng: Tất cả / theo lớp / 1 học sinh cụ thể',
+    'Có thể ghim, đặt hết hạn 24h, lên lịch gửi',
+  ]},
+  { cat:'system', icon:'🔑', title:'Đổi mật khẩu Admin', steps:[
+    'Quản trị → <b>Cài đặt → Đổi mật khẩu Admin</b>',
+    'Nhập mật khẩu mới (tối thiểu 6 ký tự) → Xác nhận',
+    'Mật khẩu hash SHA-256 — không lưu plaintext',
+    'Đăng xuất và đăng nhập lại bằng mật khẩu mới',
+  ]},
+  { cat:'system', icon:'🧹', title:'Dọn dẹp dữ liệu cũ', steps:[
+    'Quản trị → <b>Bảo trì</b>',
+    'exam_progress cũ > 7 ngày, alerts cũ > 30 ngày, access_logs > 30 ngày',
+    'File thùng rác: xóa vĩnh viễn',
+    '⚠️ Không thể hoàn tác — nên thực hiện hàng tháng',
+  ]},
+  // ── TRỢ LÝ ──
+  { cat:'assistant', icon:'🤝', title:'Tạo tài khoản trợ lý', steps:[
+    'Quản trị → <b>Tài khoản trợ lý → Thêm trợ lý</b>',
+    'Nhập họ tên, tên đăng nhập, mật khẩu',
+    'Trợ lý đăng nhập tại <b>login.html</b> → vào thẳng trang Admin',
+  ]},
+  { cat:'assistant', icon:'🔐', title:'Quyền hạn trợ lý', steps:[
+    '✅ Có thể: thêm/sửa học sinh, bài học, file, thông báo, lịch học',
+    '❌ Không thể: vào trang Quản trị hệ thống',
+    '❌ Không được đặt ngày hết hạn tài khoản',
+    'Toàn bộ thao tác ghi vào <b>Nhật ký trợ lý</b>',
+  ]},
+  { cat:'assistant', icon:'📋', title:'Xem nhật ký trợ lý', steps:[
+    'Quản trị → <b>Nhật ký trợ lý</b>',
+    'Lọc theo ngày, tên trợ lý, loại hành động',
+    'Badge màu: 🎓 Học sinh | 📚 Bài học | 🏫 Lớp | 📢 Thông báo...',
+    'Cập nhật realtime — không cần reload',
+  ]},
+  // ── GIÁO VIÊN ──
+  { cat:'teacher', icon:'👨‍🏫', title:'Thêm tài khoản giáo viên', steps:[
+    'Quản trị → <b>Tài khoản giáo viên → Thêm giáo viên</b>',
+    'Nhập họ tên, tên đăng nhập, mật khẩu (tối thiểu 6 ký tự)',
+    'Tài khoản lưu trong <code>localStorage</code> của trình duyệt này',
+    '⚠️ Mỗi thiết bị/trình duyệt cần thiết lập riêng',
+    'Đăng nhập tại <b>login.html</b> — có đầy đủ quyền Teacher',
+  ]},
+  { cat:'teacher', icon:'✏️', title:'Sửa / Đổi mật khẩu giáo viên', steps:[
+    'Quản trị → <b>Tài khoản giáo viên</b> → bấm ✏️',
+    'Có thể sửa họ tên, tên đăng nhập',
+    'Để trống ô mật khẩu = giữ nguyên mật khẩu cũ',
+    'Nhập mật khẩu mới để đổi — được hash SHA-256 tự động',
+  ]},
+  { cat:'teacher', icon:'🔑', title:'Tài khoản giáo viên chính', steps:[
+    'Tài khoản chính được tạo sẵn từ đầu — không thể xóa',
+    'Có thể sửa tên và mật khẩu tài khoản chính',
+    'Tài khoản chính luôn có quyền cao nhất — vào được Quản trị hệ thống',
+    'Nếu quên mật khẩu: xóa <code>localStorage[\'dh_teacher\']</code> → mặc định sẽ reset',
+  ]},
+];
+
+let _guideTab = 'all';
+
+function renderGuide() {
+  // Reset tab về all khi mở lần đầu
+  filterGuide(document.getElementById('guideSearch')?.value || '');
+}
+
+function setGuideTab(tab, btn) {
+  _guideTab = tab;
+  document.querySelectorAll('#guideTabs button').forEach(b => {
+    b.className = 'sa-btn sa-btn-outline sa-btn-sm';
+  });
+  if (btn) btn.className = 'sa-btn sa-btn-primary sa-btn-sm';
+  filterGuide(document.getElementById('guideSearch')?.value || '');
+}
+
+function filterGuide(q) {
+  q = (q||'').toLowerCase().trim();
+  const filtered = GUIDE_DATA.filter(item => {
+    if (_guideTab !== 'all' && item.cat !== _guideTab) return false;
+    if (!q) return true;
+    return item.title.toLowerCase().includes(q) ||
+           item.steps.some(s => s.toLowerCase().includes(q));
+  });
+
+  const container = document.getElementById('guideContent');
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;color:var(--muted);padding:3rem">
+      <div style="font-size:2.5rem;margin-bottom:.5rem">🔍</div>
+      Không tìm thấy hướng dẫn phù hợp
+    </div>`;
+    return;
+  }
+
+  const catMeta = {
+    student:   { label:'🎓 Học sinh',  color:'#eef2ff', border:'#6366f1' },
+    lesson:    { label:'📚 Bài học',   color:'#fef3c7', border:'#f59e0b' },
+    class:     { label:'🏫 Lớp học',  color:'#d1fae5', border:'#10b981' },
+    file:      { label:'🗂️ File',     color:'#e0f2fe', border:'#0ea5e9' },
+    system:    { label:'⚙️ Hệ thống', color:'#ede9fe', border:'#8b5cf6' },
+    assistant: { label:'🤝 Trợ lý',   color:'#fce7f3', border:'#ec4899' },
+    teacher:   { label:'👨‍🏫 Giáo viên', color:'#f0fdf4', border:'#22c55e' },
+  };
+
+  const groups = {};
+  filtered.forEach(item => {
+    if (!groups[item.cat]) groups[item.cat] = [];
+    groups[item.cat].push(item);
+  });
+
+  container.innerHTML = Object.entries(groups).map(([cat, items]) => {
+    const meta = catMeta[cat] || { label:cat, color:'#f1f5f9', border:'#94a3b8' };
+    return `
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem;padding:.5rem .9rem;
+          background:${meta.color};border-radius:10px;border-left:3px solid ${meta.border}">
+          <span style="font-size:.88rem;font-weight:800;color:var(--text)">${meta.label}</span>
+          <span style="font-size:.72rem;color:var(--muted);background:rgba(0,0,0,.07);padding:.1rem .45rem;border-radius:20px">${items.length} hướng dẫn</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.85rem">
+          ${items.map(item => `
+            <div class="sa-card" style="margin-bottom:0;border-left:3px solid ${meta.border}">
+              <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">
+                <span style="font-size:1.2rem">${item.icon}</span>
+                <span style="font-size:.88rem;font-weight:800;color:var(--text)">${item.title}</span>
+              </div>
+              <ol style="margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.4rem">
+                ${item.steps.map(s => `<li style="font-size:.81rem;color:var(--text);line-height:1.65">${s}</li>`).join('')}
+              </ol>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Mở trang hướng dẫn với tab cụ thể ──
+function _openGuide(tab) {
+  showPage('guide');
+  _guideTab = tab;
+  // Cập nhật active tab button
+  const tabBtns = document.querySelectorAll('#guideTabs button');
+  const tabMap = { all:0, student:1, lesson:2, class:3, file:4, system:5, assistant:6, teacher:7 };
+  tabBtns.forEach((b, i) => {
+    b.className = i === (tabMap[tab] ?? 0)
+      ? 'sa-btn sa-btn-primary sa-btn-sm'
+      : 'sa-btn sa-btn-outline sa-btn-sm';
+  });
+  filterGuide('');
+  // Clear search
+  const searchEl = document.getElementById('guideSearch');
+  if (searchEl) searchEl.value = '';
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+async function loadAllData() {
+  showToast('Đang làm mới...', true);
+  const active = document.querySelector('.sa-page.active');
+  if (!active) return renderOverview();
+  const id = active.id.replace('page','').toLowerCase().replace(/([A-Z])/g, m => '-' + m.toLowerCase());
+  showPage(id);
+}
+
+// Khởi động
+renderOverview();
+initRealtime();
+</script>
+</body>
+</html>

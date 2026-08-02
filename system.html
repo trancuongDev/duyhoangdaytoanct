@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quản Trị Hệ Thống - DHDTCT LMS</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#4f46e5"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    /* ── System page overrides ── */
+    .sys-layout { display:flex; min-height:100vh; }
+    .sys-sidebar {
+      width: 240px; flex-shrink:0;
+      background: linear-gradient(180deg,#1e1b4b 0%,#312e81 100%);
+      display:flex; flex-direction:column;
+      position:sticky; top:0; height:100vh; overflow-y:auto;
+    }
+    .sys-sidebar-brand {
+      display:flex; align-items:center; gap:.65rem;
+      padding:1.1rem 1rem .9rem;
+      border-bottom:1px solid rgba(255,255,255,.1);
+    }
+    .sys-sidebar-brand img { width:36px;height:36px;border-radius:8px;object-fit:cover; }
+    .sys-sidebar-brand span { font-size:.88rem;font-weight:800;color:#fff;letter-spacing:-.2px; }
+    .sys-nav { display:flex;flex-direction:column;gap:.15rem;padding:.75rem .6rem;flex:1; }
+    .sys-nav-item {
+      display:flex; align-items:center; gap:.65rem;
+      padding:.6rem .85rem; border-radius:10px;
+      color:rgba(255,255,255,.6); font-size:.85rem; font-weight:600;
+      cursor:pointer; transition:all .18s; text-decoration:none;
+      position:relative;
+    }
+    .sys-nav-item:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.9); }
+    .sys-nav-item.active { background:rgba(99,102,241,.35); color:#fff; border-left:3px solid #a5b4fc; }
+    .sys-nav-item .nav-icon { font-size:1rem; flex-shrink:0; width:20px; text-align:center; }
+    .sys-nav-badge {
+      background:#ef4444; color:#fff; font-size:.62rem; font-weight:800;
+      padding:.1rem .4rem; border-radius:20px; margin-left:auto; line-height:1.4;
+    }
+    .sys-main { flex:1; overflow-y:auto; background:var(--bg); }
+    .sys-topbar {
+      background:var(--card); border-bottom:1px solid var(--border);
+      padding:.75rem 1.5rem; display:flex; align-items:center; gap:1rem;
+      position:sticky; top:0; z-index:100; box-shadow:var(--shadow);
+    }
+    .sys-topbar h1 { font-size:1rem;font-weight:800;color:var(--text);flex:1; }
+    .sys-content { padding:1.5rem; }
+    .sys-section { display:none; }
+    .sys-section.active { display:block; }
+
+    /* ── Cards / Stats ── */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .stat-card {
+      background:var(--card); border-radius:var(--radius); padding:1.1rem 1rem;
+      box-shadow:var(--shadow); border:1px solid var(--border);
+      display:flex; flex-direction:column; gap:.35rem;
+    }
+    .stat-card .stat-icon { font-size:1.6rem; }
+    .stat-card .stat-val { font-size:1.75rem; font-weight:900; color:var(--primary); line-height:1; }
+    .stat-card .stat-label { font-size:.75rem; font-weight:600; color:var(--muted); }
+
+    /* ── Tables ── */
+    .tbl-wrap { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); overflow:hidden; }
+    .tbl-wrap table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    .tbl-wrap th { background:var(--bg); padding:.7rem 1rem; text-align:left; font-size:.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--border); }
+    .tbl-wrap td { padding:.7rem 1rem; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+    .tbl-wrap tr:last-child td { border-bottom:none; }
+    .tbl-wrap tr:hover td { background:rgba(99,102,241,.04); }
+    .tbl-empty { text-align:center; color:var(--muted); padding:2rem 1rem; font-size:.85rem; }
+
+    /* ── Buttons ── */
+    .btn { padding:.5rem 1rem; border-radius:9px; font-size:.85rem; font-weight:700; cursor:pointer; transition:all .18s; border:none; display:inline-flex; align-items:center; gap:.4rem; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-primary:hover { background:var(--primary-dark); }
+    .btn-danger { background:var(--danger); color:#fff; }
+    .btn-danger:hover { background:#dc2626; }
+    .btn-ghost { background:transparent; border:1.5px solid var(--border); color:var(--text); }
+    .btn-ghost:hover { border-color:var(--primary); color:var(--primary); }
+    .btn-sm { padding:.35rem .75rem; font-size:.78rem; border-radius:7px; }
+    .btn-success { background:var(--success); color:#fff; }
+    .btn-warning { background:var(--warning); color:#fff; }
+
+    /* ── Forms / Settings ── */
+    .settings-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); padding:1.25rem 1.4rem; margin-bottom:1rem; }
+    .settings-card h3 { font-size:.9rem; font-weight:800; margin-bottom:1rem; color:var(--text); padding-bottom:.6rem; border-bottom:1px solid var(--border); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; margin-bottom:.85rem; }
+    .form-row.single { grid-template-columns:1fr; }
+    .form-group { display:flex; flex-direction:column; gap:.35rem; }
+    .form-group label { font-size:.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      padding:.55rem .8rem; border:1.5px solid var(--border); border-radius:9px;
+      font-size:.88rem; color:var(--text); background:var(--card);
+      outline:none; transition:border-color .2s, box-shadow .2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color:var(--primary); box-shadow:0 0 0 3px rgba(99,102,241,.1);
+    }
+
+    /* ── Toggle switch ── */
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:.7rem 0; border-bottom:1px solid var(--border); }
+    .toggle-row:last-child { border-bottom:none; }
+    .toggle-label { font-size:.87rem; font-weight:600; color:var(--text); }
+    .toggle-desc { font-size:.75rem; color:var(--muted); margin-top:.15rem; }
+    .toggle-sw { position:relative; width:46px; height:26px; flex-shrink:0; }
+    .toggle-sw input { opacity:0; width:0; height:0; position:absolute; }
+    .toggle-sw .slider {
+      position:absolute; inset:0; background:#cbd5e1; border-radius:20px;
+      cursor:pointer; transition:background .25s;
+    }
+    .toggle-sw .slider::before {
+      content:''; position:absolute; width:20px; height:20px;
+      left:3px; top:3px; background:#fff; border-radius:50%;
+      transition:transform .25s; box-shadow:0 1px 4px rgba(0,0,0,.2);
+    }
+    .toggle-sw input:checked + .slider { background:var(--primary); }
+    .toggle-sw input:checked + .slider::before { transform:translateX(20px); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,.55); z-index:9000;
+      align-items:center; justify-content:center; padding:1rem;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal-box {
+      background:var(--card); border-radius:18px; padding:1.75rem;
+      width:100%; max-width:480px; box-shadow:var(--shadow-lg);
+      max-height:90vh; overflow-y:auto;
+    }
+    .modal-box h3 { font-size:1.05rem; font-weight:800; margin-bottom:1.25rem; color:var(--text); }
+    .modal-actions { display:flex; gap:.6rem; justify-content:flex-end; margin-top:1.25rem; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; gap:.65rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
+    .filter-bar input, .filter-bar select {
+      padding:.45rem .75rem; border:1.5px solid var(--border); border-radius:9px;
+      font-size:.83rem; background:var(--card); color:var(--text); outline:none;
+    }
+    .filter-bar input:focus, .filter-bar select:focus { border-color:var(--primary); }
+
+    /* ── Section header ── */
+    .sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:.5rem; }
+    .sec-header h2 { font-size:1.05rem; font-weight:800; color:var(--text); }
+
+    /* ── Activity feed ── */
+    .activity-item { display:flex; gap:.75rem; align-items:flex-start; padding:.65rem 0; border-bottom:1px solid var(--border); }
+    .activity-item:last-child { border-bottom:none; }
+    .activity-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:.35rem; }
+    .activity-text { font-size:.83rem; color:var(--text); line-height:1.5; }
+    .activity-time { font-size:.72rem; color:var(--muted); margin-top:.1rem; }
+
+    /* ── Backup section ── */
+    .backup-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-bottom:1rem; }
+    .backup-card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:1rem; box-shadow:var(--shadow); }
+    .backup-card .bc-title { font-size:.82rem; font-weight:700; color:var(--text); margin-bottom:.35rem; }
+    .backup-card .bc-count { font-size:1.4rem; font-weight:900; color:var(--primary); margin-bottom:.5rem; }
+
+    /* ── Danger zone ── */
+    .danger-zone { background:#fff5f5; border:1.5px solid #fca5a5; border-radius:var(--radius); padding:1.1rem 1.25rem; }
+    body.dark-mode .danger-zone { background:#450a0a; border-color:#7f1d1d; }
+    .danger-zone h4 { color:#dc2626; font-size:.9rem; font-weight:800; margin-bottom:.75rem; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .sys-sidebar { width:200px; }
+      .form-row { grid-template-columns:1fr; }
+      .stats-grid { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width: 600px) {
+      .sys-sidebar { display:none; }
+      .sys-content { padding:1rem; }
+    }
+
+    /* ── Badge online ── */
+    .online-dot { display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:.3rem; animation:pulse-green 2s infinite; }
+    @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4)} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0)} }
+  </style>
+</head>
+
+<body class="dashboard-page">
+
+<!-- TOAST -->
+<div id="sysToast" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;padding:.7rem 1.4rem;border-radius:12px;font-size:.88rem;font-weight:600;z-index:99999;opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;max-width:90vw;text-align:center"></div>
+
+<!-- ACCESS DENIED SCREEN -->
+<div id="accessDenied" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem">
+  <div style="font-size:4rem">🚫</div>
+  <h2 style="font-size:1.4rem;font-weight:900;color:var(--text)">Không có quyền truy cập</h2>
+  <p style="color:var(--muted);font-size:.9rem">Trang này chỉ dành cho giáo viên quản trị hệ thống.</p>
+  <a href="login.html" class="btn btn-primary" style="margin-top:.5rem">🔑 Đăng nhập lại</a>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="sys-layout" id="mainLayout" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sys-sidebar">
+    <div class="sys-sidebar-brand">
+      <img src="icons/icon-192.png" alt="Logo"/>
+      <span>Quản Trị HT</span>
+    </div>
+    <nav class="sys-nav">
+      <a class="sys-nav-item active" data-tab="overview" href="#">
+        <span class="nav-icon">📊</span> Tổng quan
+      </a>
+      <a class="sys-nav-item" data-tab="assistants" href="#">
+        <span class="nav-icon">👤</span> Quản lý trợ lý
+      </a>
+      <a class="sys-nav-item" data-tab="settings" href="#">
+        <span class="nav-icon">⚙️</span> Cài đặt hệ thống
+      </a>
+      <a class="sys-nav-item" data-tab="syslogs" href="#">
+        <span class="nav-icon">📋</span> Nhật ký hệ thống
+      </a>
+      <a class="sys-nav-item" data-tab="assistlogs" href="#">
+        <span class="nav-icon">🔍</span> Nhật ký trợ lý
+        <span class="sys-nav-badge" id="assistLogBadge" style="display:none">!</span>
+      </a>
+      <a class="sys-nav-item" data-tab="backup" href="#">
+        <span class="nav-icon">💾</span> Backup & Export
+      </a>
+    </nav>
+    <div style="padding:.6rem .75rem;border-top:1px solid rgba(255,255,255,.1);margin-top:auto;display:flex;flex-direction:column;gap:.3rem">
+      <a href="admin.html" style="display:flex;align-items:center;gap:.55rem;padding:.5rem .85rem;border-radius:9px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);font-size:.8rem;font-weight:600;text-decoration:none;transition:all .18s" onmouseover="this.style.background='rgba(255,255,255,.13)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,.07)';this.style.color='rgba(255,255,255,.6)'">
+        <span>⬅️</span> Về Admin
+      </a>
+      <button id="logoutBtn" style="display:flex;align-items:center;gap:.55rem;padding:.5rem .85rem;border-radius:9px;background:rgba(239,68,68,.15);color:#fca5a5;font-size:.8rem;font-weight:600;cursor:pointer;border:none;width:100%;transition:all .18s" onmouseover="this.style.background='rgba(239,68,68,.3)'" onmouseout="this.style.background='rgba(239,68,68,.15)'">
+        <span>🚪</span> Đăng xuất
+      </button>
+    </div>
+    <div style="padding:.4rem 1rem .7rem;font-size:.65rem;color:rgba(255,255,255,.2);font-weight:600;letter-spacing:.3px">v1.4.9 System</div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="sys-main">
+    <header class="sys-topbar">
+      <h1 id="topbarTitle">📊 Tổng quan hệ thống</h1>
+      <div style="display:flex;gap:.6rem;align-items:center">
+        <span id="topbarUser" style="font-size:.8rem;color:var(--muted);font-weight:600"></span>
+        <button id="darkModeBtn" title="Chế độ tối" style="background:none;border:1.5px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .2s">🌙</button>
+      </div>
+    </header>
+
+    <div class="sys-content">
+
+      <!-- ══════════════ OVERVIEW ══════════════ -->
+      <section class="sys-section active" id="tab-overview">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">👨‍🎓</div>
+            <div class="stat-val" id="statStudents">—</div>
+            <div class="stat-label">Học sinh</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-val" id="statLessons">—</div>
+            <div class="stat-label">Bài học</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-val" id="statHomework">—</div>
+            <div class="stat-label">Bài tập</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🚨</div>
+            <div class="stat-val" id="statAlerts">—</div>
+            <div class="stat-label">Cảnh báo</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-val" id="statAssistants">—</div>
+            <div class="stat-label">Trợ lý</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><span class="online-dot"></span></div>
+            <div class="stat-val" id="statOnline">—</div>
+            <div class="stat-label">Online hôm nay</div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>🕐 Hoạt động gần đây</h3>
+          <div id="activityFeed">
+            <div class="tbl-empty">Đang tải...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ ASSISTANTS ══════════════ -->
+      <section class="sys-section" id="tab-assistants">
+        <div class="sec-header">
+          <h2>👤 Quản lý tài khoản trợ lý</h2>
+          <button class="btn btn-primary" onclick="openAssistantModal()">➕ Thêm trợ lý</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Họ tên</th>
+                <th>Tên đăng nhập</th>
+                <th>Ngày tạo</th>
+                <th style="text-align:right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="assistantsTableBody">
+              <tr><td colspan="5" class="tbl-empty">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══════════════ SETTINGS ══════════════ -->
+      <section class="sys-section" id="tab-settings">
+        <h2 style="font-size:1.05rem;font-weight:800;margin-bottom:1rem">⚙️ Cài đặt hệ thống</h2>
+
+        <div class="settings-card">
+          <h3>📝 Thông tin hệ thống</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tên hệ thống</label>
+              <input type="text" id="set_sys_name" placeholder="DHDTCT LMS"/>
+            </div>
+            <div class="form-group">
+              <label>Tên giáo viên</label>
+              <input type="text" id="set_teacher_name" placeholder="Thầy Duy Hoàng"/>
+            </div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group">
+              <label>Thông báo toàn hệ thống</label>
+              <textarea id="set_global_notice" rows="3" placeholder="Để trống nếu không có thông báo..."></textarea>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveGeneralSettings()">💾 Lưu thông tin</button>
+        </div>
+
+        <div class="settings-card">
+          <h3>🔧 Chế độ bảo trì</h3>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Bật chế độ bảo trì</div>
+              <div class="toggle-desc">Khi bật, học sinh sẽ thấy thông báo bảo trì khi đăng nhập.</div>
+            </div>
+            <label class="toggle-sw">
+              <input type="checkbox" id="set_maintenance" onchange="saveMaintenanceMode(this.checked)"/>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>🔑 Đổi mật khẩu Admin</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Mật khẩu mới</label>
+              <input type="password" id="set_new_pw" placeholder="Nhập mật khẩu mới"/>
+            </div>
+            <div class="form-group">
+              <label>Xác nhận mật khẩu</label>
+              <input type="password" id="set_confirm_pw" placeholder="Nhập lại mật khẩu"/>
+            </div>
+          </div>
+          <button class="btn btn-warning" onclick="openChangePwModal()">🔐 Đổi mật khẩu</button>
+        </div>
+
+        <div class="settings-card">
+          <h3>🔒 Tự động khóa tài khoản hết hạn</h3>
+          <p style="font-size:.83rem;color:var(--muted);margin-bottom:.85rem">Chạy thủ công để khóa ngay các tài khoản học sinh đã hết hạn.</p>
+          <button class="btn btn-danger" onclick="runAutoLock()">▶️ Chạy Auto Lock</button>
+        </div>
+      </section>
+
+      <!-- ══════════════ SYSTEM LOGS ══════════════ -->
+      <section class="sys-section" id="tab-syslogs">
+        <div class="sec-header">
+          <h2>📋 Nhật ký hệ thống</h2>
+          <button class="btn btn-ghost btn-sm" onclick="exportSysLogsCSV()">📥 Xuất CSV</button>
+        </div>
+        <div class="filter-bar">
+          <input type="date" id="syslog_from" title="Từ ngày"/>
+          <input type="date" id="syslog_to" title="Đến ngày"/>
+          <select id="syslog_type">
+            <option value="">-- Tất cả loại --</option>
+            <option value="login">Đăng nhập</option>
+            <option value="alert">Cảnh báo</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="loadSysLogs()">🔍 Lọc</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Loại</th>
+                <th>Người dùng</th>
+                <th>Chi tiết</th>
+              </tr>
+            </thead>
+            <tbody id="syslogsTableBody">
+              <tr><td colspan="4" class="tbl-empty">Chọn bộ lọc và nhấn Lọc để tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══════════════ ASSISTANT LOGS ══════════════ -->
+      <section class="sys-section" id="tab-assistlogs">
+        <div class="sec-header">
+          <h2>🔍 Nhật ký trợ lý</h2>
+          <button class="btn btn-ghost btn-sm" onclick="exportAssistLogsCSV()">📥 Xuất CSV</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="al_filter_name" placeholder="Tên trợ lý..." style="width:160px"/>
+          <input type="date" id="al_filter_from"/>
+          <input type="date" id="al_filter_to"/>
+          <button class="btn btn-primary btn-sm" onclick="loadAssistLogs()">🔍 Lọc</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Trợ lý</th>
+                <th>Hành động</th>
+                <th>Học sinh</th>
+                <th>Lớp</th>
+                <th>Chi tiết</th>
+              </tr>
+            </thead>
+            <tbody id="assistlogsTableBody">
+              <tr><td colspan="6" class="tbl-empty">Đang tải nhật ký trợ lý...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══════════════ BACKUP & EXPORT ══════════════ -->
+      <section class="sys-section" id="tab-backup">
+        <h2 style="font-size:1.05rem;font-weight:800;margin-bottom:1rem">💾 Backup & Export dữ liệu</h2>
+
+        <div class="settings-card">
+          <h3>📊 Thống kê bản ghi</h3>
+          <div class="backup-grid" id="backupStats">
+            <div class="backup-card">
+              <div class="bc-title">👨‍🎓 Học sinh</div>
+              <div class="bc-count" id="bc_students">—</div>
+              <button class="btn btn-primary btn-sm" onclick="exportTable('students')">📥 Xuất Excel</button>
+            </div>
+            <div class="backup-card">
+              <div class="bc-title">📚 Bài học</div>
+              <div class="bc-count" id="bc_lessons">—</div>
+              <button class="btn btn-primary btn-sm" onclick="exportTable('lessons')">📥 Xuất Excel</button>
+            </div>
+            <div class="backup-card">
+              <div class="bc-title">📝 Bài tập</div>
+              <div class="bc-count" id="bc_homework">—</div>
+              <button class="btn btn-primary btn-sm" onclick="exportTable('homework')">📥 Xuất Excel</button>
+            </div>
+            <div class="backup-card">
+              <div class="bc-title">🚨 Cảnh báo</div>
+              <div class="bc-count" id="bc_alerts">—</div>
+              <button class="btn btn-primary btn-sm" onclick="exportTable('alerts')">📥 Xuất Excel</button>
+            </div>
+            <div class="backup-card">
+              <div class="bc-title">🕐 Login logs</div>
+              <div class="bc-count" id="bc_login_logs">—</div>
+              <button class="btn btn-primary btn-sm" onclick="exportTable('login_logs')">📥 Xuất Excel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="danger-zone">
+            <h4>⚠️ Vùng nguy hiểm — Xóa dữ liệu cũ</h4>
+            <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+              <button class="btn btn-danger btn-sm" onclick="confirmDeleteOld('alerts',30)">🗑️ Xóa cảnh báo &gt;30 ngày</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmDeleteOld('logs',90)">🗑️ Xóa logs &gt;90 ngày</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /sys-content -->
+  </div><!-- /sys-main -->
+</div><!-- /sys-layout -->
+
+<!-- ══════════════ MODAL: Thêm/sửa trợ lý ══════════════ -->
+<div class="modal-overlay" id="modalAssistant">
+  <div class="modal-box">
+    <h3 id="modalAssistantTitle">➕ Thêm trợ lý mới</h3>
+    <input type="hidden" id="ma_id"/>
+    <div class="form-group" style="margin-bottom:.75rem">
+      <label>Họ và tên</label>
+      <input type="text" id="ma_full_name" placeholder="Nguyễn Văn A"/>
+    </div>
+    <div class="form-group" style="margin-bottom:.75rem">
+      <label>Tên đăng nhập</label>
+      <input type="text" id="ma_username" placeholder="tro_ly_01" autocomplete="off"/>
+    </div>
+    <div class="form-group" style="margin-bottom:.75rem">
+      <label id="ma_pw_label">Mật khẩu</label>
+      <input type="password" id="ma_password" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password"/>
+    </div>
+    <p id="ma_pw_hint" style="font-size:.75rem;color:var(--muted);margin-top:.25rem;display:none">Để trống nếu không đổi mật khẩu</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalAssistant')">Hủy</button>
+      <button class="btn btn-primary" id="saveAssistantBtn" onclick="saveAssistant()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: Đổi mật khẩu Admin ══════════════ -->
+<div class="modal-overlay" id="modalChangePw">
+  <div class="modal-box">
+    <h3>🔑 Xác nhận đổi mật khẩu</h3>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">Mật khẩu mới sẽ được lưu vào localStorage và backup lên Supabase.</p>
+    <div class="form-group" style="margin-bottom:.75rem">
+      <label>Mật khẩu hiện tại</label>
+      <input type="password" id="cp_current" placeholder="Nhập mật khẩu hiện tại để xác nhận"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalChangePw')">Hủy</button>
+      <button class="btn btn-warning" onclick="doChangePw()">✅ Xác nhận đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: Confirm nguy hiểm ══════════════ -->
+<div class="modal-overlay" id="modalConfirmDanger">
+  <div class="modal-box" style="max-width:400px">
+    <h3 style="color:#dc2626">⚠️ Xác nhận hành động nguy hiểm</h3>
+    <p id="confirmDangerText" style="font-size:.88rem;color:var(--text);margin-bottom:1.25rem;line-height:1.65"></p>
+    <p style="font-size:.8rem;color:var(--muted)">Gõ <b>XOA</b> để xác nhận:</p>
+    <input type="text" id="confirmDangerInput" placeholder="XOA" style="width:100%;margin-top:.4rem;padding:.5rem .75rem;border:1.5px solid #fca5a5;border-radius:8px;font-size:.9rem;outline:none;background:var(--card);color:var(--text)"/>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalConfirmDanger')">Hủy</button>
+      <button class="btn btn-danger" id="confirmDangerBtn">🗑️ Xóa</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Supabase ─────────────────────────────────────────────────────
+const db = supabase.createClient(
+  'https://gojpmogjretoxplydjvg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
+);
+
+// ── Auth Guard ────────────────────────────────────────────────────
+(function authGuard() {
+  const role = sessionStorage.getItem('dh_role');
+  if (role !== 'teacher') {
+    document.getElementById('accessDenied').style.display = 'flex';
+    return;
+  }
+  document.getElementById('mainLayout').style.display = 'flex';
+  const name = sessionStorage.getItem('dh_name') || sessionStorage.getItem('dh_user') || '';
+  document.getElementById('topbarUser').textContent = '👤 ' + name;
+})();
+
+// ── Dark mode ─────────────────────────────────────────────────────
+(function initDark() {
+  if (localStorage.getItem('dh_dark') === '1') document.body.classList.add('dark-mode');
+  document.getElementById('darkModeBtn').addEventListener('click', () => {
+    const on = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('dh_dark', on ? '1' : '0');
+    document.getElementById('darkModeBtn').textContent = on ? '☀️' : '🌙';
+  });
+  if (localStorage.getItem('dh_dark') === '1') document.getElementById('darkModeBtn').textContent = '☀️';
+})();
+
+// ── Logout ────────────────────────────────────────────────────────
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  sessionStorage.clear();
+  window.location.href = 'login.html';
+});
+
+// ── Toast ─────────────────────────────────────────────────────────
+let _toastT = null;
+function showToast(msg, ok = true) {
+  const t = document.getElementById('sysToast');
+  if (!t) return;
+  t.textContent = (ok ? '✅ ' : '❌ ') + msg;
+  t.style.background = ok ? '#1e293b' : '#7f1d1d';
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  if (_toastT) clearTimeout(_toastT);
+  _toastT = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(80px)';
+  }, 3500);
+}
+
+// ── SHA-256 hash ──────────────────────────────────────────────────
+async function hashPw(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ── Tab navigation ────────────────────────────────────────────────
+const TAB_TITLES = {
+  overview:   '📊 Tổng quan hệ thống',
+  assistants: '👤 Quản lý trợ lý',
+  settings:   '⚙️ Cài đặt hệ thống',
+  syslogs:    '📋 Nhật ký hệ thống',
+  assistlogs: '🔍 Nhật ký trợ lý',
+  backup:     '💾 Backup & Export',
+};
+
+document.querySelectorAll('.sys-nav-item[data-tab]').forEach(item => {
+  item.addEventListener('click', e => {
+    e.preventDefault();
+    const tab = item.dataset.tab;
+    document.querySelectorAll('.sys-nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.sys-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('topbarTitle').textContent = TAB_TITLES[tab] || tab;
+    onTabOpen(tab);
+  });
+});
+
+function onTabOpen(tab) {
+  if (tab === 'overview') loadOverview();
+  if (tab === 'assistants') loadAssistants();
+  if (tab === 'settings') loadSettings();
+  if (tab === 'syslogs') { /* manual filter */ }
+  if (tab === 'assistlogs') loadAssistLogs();
+  if (tab === 'backup') loadBackupStats();
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── Date helpers ──────────────────────────────────────────────────
+function fmtDt(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('vi-VN');
+}
+
+// ════════════════════════════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════════════════════════════
+async function loadOverview() {
+  try {
+    const [
+      { count: cStudents },
+      { count: cLessons },
+      { count: cHomework },
+      { count: cAlerts },
+      { count: cAssistants },
+    ] = await Promise.all([
+      db.from('students').select('*', { count:'exact', head:true }),
+      db.from('lessons').select('*', { count:'exact', head:true }),
+      db.from('homework').select('*', { count:'exact', head:true }),
+      db.from('alerts').select('*', { count:'exact', head:true }),
+      db.from('assistants').select('*', { count:'exact', head:true }),
+    ]);
+    document.getElementById('statStudents').textContent   = cStudents  ?? 0;
+    document.getElementById('statLessons').textContent    = cLessons   ?? 0;
+    document.getElementById('statHomework').textContent   = cHomework  ?? 0;
+    document.getElementById('statAlerts').textContent     = cAlerts    ?? 0;
+    document.getElementById('statAssistants').textContent = cAssistants ?? 0;
+
+    // Online hôm nay (login_logs today)
+    const today = new Date(); today.setHours(0,0,0,0);
+    const { count: cOnline } = await db.from('login_logs')
+      .select('*', { count:'exact', head:true })
+      .gte('created_at', today.toISOString());
+    document.getElementById('statOnline').textContent = cOnline ?? 0;
+
+    // Activity feed from alerts (recent 10)
+    const { data: acts } = await db.from('alerts')
+      .select('student_name, reason, created_at, class_name')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const feed = document.getElementById('activityFeed');
+    if (!acts || acts.length === 0) {
+      feed.innerHTML = '<div class="tbl-empty">Chưa có hoạt động nào.</div>';
+    } else {
+      feed.innerHTML = acts.map(a => `
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#ef4444"></div>
+          <div>
+            <div class="activity-text">🚨 <b>${a.student_name || '?'}</b> (${a.class_name || '?'}) — ${a.reason || ''}</div>
+            <div class="activity-time">${fmtDt(a.created_at)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch(err) {
+    showToast('Lỗi tải tổng quan: ' + err.message, false);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ASSISTANTS
+// ════════════════════════════════════════════════════════════════
+let _assistants = [];
+
+async function loadAssistants() {
+  const tbody = document.getElementById('assistantsTableBody');
+  tbody.innerHTML = '<tr><td colspan="5" class="tbl-empty">Đang tải...</td></tr>';
+  const { data, error } = await db.from('assistants')
+    .select('id, username, full_name, created_at')
+    .order('created_at', { ascending: false });
+  if (error) { showToast('Lỗi tải trợ lý: ' + error.message, false); return; }
+  _assistants = data || [];
+  if (_assistants.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="tbl-empty">Chưa có trợ lý nào.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _assistants.map((a, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><b>${a.full_name || '—'}</b></td>
+      <td style="font-family:monospace;font-size:.82rem">${a.username}</td>
+      <td>${fmtDate(a.created_at)}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openAssistantModal(${a.id})">✏️ Sửa</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="deleteAssistant(${a.id},'${escHtml(a.full_name || a.username)}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openAssistantModal(id) {
+  document.getElementById('ma_id').value = id || '';
+  document.getElementById('ma_full_name').value = '';
+  document.getElementById('ma_username').value = '';
+  document.getElementById('ma_password').value = '';
+  document.getElementById('ma_pw_hint').style.display = 'none';
+  document.getElementById('ma_pw_label').textContent = 'Mật khẩu';
+  document.getElementById('modalAssistantTitle').textContent = id ? '✏️ Sửa trợ lý' : '➕ Thêm trợ lý mới';
+
+  if (id) {
+    const a = _assistants.find(x => x.id === id);
+    if (a) {
+      document.getElementById('ma_full_name').value = a.full_name || '';
+      document.getElementById('ma_username').value = a.username || '';
+    }
+    document.getElementById('ma_pw_label').textContent = 'Mật khẩu mới';
+    document.getElementById('ma_pw_hint').style.display = 'block';
+  }
+  openModal('modalAssistant');
+}
+
+async function saveAssistant() {
+  const id        = document.getElementById('ma_id').value;
+  const full_name = document.getElementById('ma_full_name').value.trim();
+  const username  = document.getElementById('ma_username').value.trim();
+  const pw        = document.getElementById('ma_password').value;
+
+  if (!full_name || !username) { showToast('Vui lòng nhập đầy đủ họ tên và tên đăng nhập.', false); return; }
+  if (!id && !pw) { showToast('Cần nhập mật khẩu khi tạo trợ lý mới.', false); return; }
+  if (!id && pw.length < 6) { showToast('Mật khẩu tối thiểu 6 ký tự.', false); return; }
+
+  const btn = document.getElementById('saveAssistantBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang lưu...';
+
+  try {
+    let payload = { full_name, username };
+    if (pw) payload.password = await hashPw(pw);
+
+    let error;
+    if (id) {
+      ({ error } = await db.from('assistants').update(payload).eq('id', id));
+    } else {
+      ({ error } = await db.from('assistants').insert(payload));
+    }
+    if (error) throw error;
+    showToast(id ? 'Đã cập nhật trợ lý.' : 'Đã thêm trợ lý mới.');
+    closeModal('modalAssistant');
+    loadAssistants();
+  } catch(err) {
+    showToast('Lỗi: ' + err.message, false);
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Lưu';
+  }
+}
+
+async function deleteAssistant(id, name) {
+  if (!confirm(`Xóa trợ lý "${name}"?\nHành động này không thể hoàn tác.`)) return;
+  const { error } = await db.from('assistants').delete().eq('id', id);
+  if (error) { showToast('Lỗi xóa: ' + error.message, false); return; }
+  showToast('Đã xóa trợ lý ' + name);
+  loadAssistants();
+}
+
+// ════════════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════════════
+async function loadSettings() {
+  const { data } = await db.from('app_settings').select('key, value');
+  const map = {};
+  (data || []).forEach(r => { map[r.key] = r.value; });
+  document.getElementById('set_sys_name').value     = map['sys_name']     || '';
+  document.getElementById('set_teacher_name').value = map['teacher_name'] || '';
+  document.getElementById('set_global_notice').value= map['global_notice']|| '';
+  document.getElementById('set_maintenance').checked= map['maintenance']  === 'true';
+}
+
+async function upsertSetting(key, value) {
+  await db.from('app_settings').upsert({ key, value }, { onConflict: 'key' });
+}
+
+async function saveGeneralSettings() {
+  const sys_name     = document.getElementById('set_sys_name').value.trim();
+  const teacher_name = document.getElementById('set_teacher_name').value.trim();
+  const global_notice= document.getElementById('set_global_notice').value.trim();
+  try {
+    await Promise.all([
+      upsertSetting('sys_name',      sys_name),
+      upsertSetting('teacher_name',  teacher_name),
+      upsertSetting('global_notice', global_notice),
+    ]);
+    showToast('Đã lưu cài đặt hệ thống.');
+  } catch(err) {
+    showToast('Lỗi lưu cài đặt: ' + err.message, false);
+  }
+}
+
+async function saveMaintenanceMode(on) {
+  await upsertSetting('maintenance', on ? 'true' : 'false');
+  showToast(on ? 'Đã bật chế độ bảo trì.' : 'Đã tắt chế độ bảo trì.');
+}
+
+function openChangePwModal() {
+  const newPw  = document.getElementById('set_new_pw').value;
+  const confPw = document.getElementById('set_confirm_pw').value;
+  if (!newPw) { showToast('Nhập mật khẩu mới trước.', false); return; }
+  if (newPw.length < 6) { showToast('Mật khẩu tối thiểu 6 ký tự.', false); return; }
+  if (newPw !== confPw) { showToast('Mật khẩu xác nhận không khớp.', false); return; }
+  document.getElementById('cp_current').value = '';
+  openModal('modalChangePw');
+}
+
+async function doChangePw() {
+  const newPw   = document.getElementById('set_new_pw').value;
+  const current = document.getElementById('cp_current').value;
+  if (!current) { showToast('Nhập mật khẩu hiện tại để xác nhận.', false); return; }
+
+  // Verify current password from localStorage
+  const stored = localStorage.getItem('dh_teacher');
+  let storedPwHash = null;
+  try { storedPwHash = JSON.parse(stored)?.passwordHash; } catch(_) {}
+  const currentHash = await hashPw(current);
+  if (storedPwHash && storedPwHash !== currentHash) {
+    showToast('Mật khẩu hiện tại không đúng.', false); return;
+  }
+
+  const newHash = await hashPw(newPw);
+  // Save to localStorage
+  const teacherData = JSON.parse(localStorage.getItem('dh_teacher') || '{}');
+  teacherData.passwordHash = newHash;
+  localStorage.setItem('dh_teacher', JSON.stringify(teacherData));
+  // Backup to Supabase
+  await upsertSetting('admin_password_hash', newHash);
+  showToast('Đã đổi mật khẩu admin thành công.');
+  closeModal('modalChangePw');
+  document.getElementById('set_new_pw').value    = '';
+  document.getElementById('set_confirm_pw').value = '';
+}
+
+async function runAutoLock() {
+  if (!confirm('Khóa tất cả tài khoản học sinh đã hết hạn?\nHành động này ảnh hưởng đến học sinh không đăng nhập được.')) return;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await db.from('students')
+      .update({ active: false })
+      .lt('expires_at', today)
+      .eq('active', true)
+      .select('id');
+    if (error) throw error;
+    showToast(`Đã khóa ${(data || []).length} tài khoản hết hạn.`);
+  } catch(err) {
+    showToast('Lỗi auto lock: ' + err.message, false);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// SYSTEM LOGS
+// ════════════════════════════════════════════════════════════════
+let _sysLogsData = [];
+
+async function loadSysLogs() {
+  const from  = document.getElementById('syslog_from').value;
+  const to    = document.getElementById('syslog_to').value;
+  const type  = document.getElementById('syslog_type').value;
+  const tbody = document.getElementById('syslogsTableBody');
+  tbody.innerHTML = '<tr><td colspan="4" class="tbl-empty">Đang tải...</td></tr>';
+  _sysLogsData = [];
+
+  try {
+    let rows = [];
+
+    if (!type || type === 'login') {
+      let q = db.from('login_logs').select('created_at, username, action, detail, student_name').order('created_at', { ascending: false }).limit(200);
+      if (from) q = q.gte('created_at', from + 'T00:00:00');
+      if (to)   q = q.lte('created_at', to   + 'T23:59:59');
+      const { data } = await q;
+      (data || []).forEach(r => rows.push({ time: r.created_at, type: 'login', user: r.username || r.student_name || '?', detail: r.detail || r.action || '' }));
+    }
+
+    if (!type || type === 'alert') {
+      let q = db.from('alerts').select('created_at, username, student_name, reason, class_name').order('created_at', { ascending: false }).limit(200);
+      if (from) q = q.gte('created_at', from + 'T00:00:00');
+      if (to)   q = q.lte('created_at', to   + 'T23:59:59');
+      const { data } = await q;
+      (data || []).forEach(r => rows.push({ time: r.created_at, type: 'alert', user: r.student_name || r.username || '?', detail: r.reason || '' }));
+    }
+
+    rows.sort((a, b) => new Date(b.time) - new Date(a.time));
+    _sysLogsData = rows;
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="tbl-empty">Không có dữ liệu.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td style="white-space:nowrap;font-size:.8rem">${fmtDt(r.time)}</td>
+        <td><span style="background:${r.type==='login'?'#dbeafe':'#fee2e2'};color:${r.type==='login'?'#1d4ed8':'#dc2626'};padding:.15rem .5rem;border-radius:6px;font-size:.75rem;font-weight:700">${r.type==='login'?'LOGIN':'ALERT'}</span></td>
+        <td>${escHtml(r.user)}</td>
+        <td style="font-size:.82rem;color:var(--muted)">${escHtml(r.detail)}</td>
+      </tr>
+    `).join('');
+  } catch(err) {
+    showToast('Lỗi tải logs: ' + err.message, false);
+  }
+}
+
+function exportSysLogsCSV() {
+  if (_sysLogsData.length === 0) { showToast('Chưa có dữ liệu để xuất.', false); return; }
+  const header = ['Thời gian', 'Loại', 'Người dùng', 'Chi tiết'];
+  const rows   = _sysLogsData.map(r => [fmtDt(r.time), r.type, r.user, r.detail]);
+  downloadCSV([header, ...rows], 'nhat_ky_he_thong');
+}
+
+// ════════════════════════════════════════════════════════════════
+// ASSISTANT LOGS
+// ════════════════════════════════════════════════════════════════
+let _assistLogsData = [];
+let _assistLogSub   = null;
+let _hasNewAssistLog = false;
+
+async function loadAssistLogs() {
+  const name = document.getElementById('al_filter_name').value.trim();
+  const from = document.getElementById('al_filter_from').value;
+  const to   = document.getElementById('al_filter_to').value;
+  const tbody= document.getElementById('assistlogsTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Đang tải...</td></tr>';
+
+  try {
+    let q = db.from('assistant_logs')
+      .select('id, assistant_name, assistant_username, action, target_name, target_username, target_class, detail, created_at')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (name) q = q.ilike('assistant_name', '%' + name + '%');
+    if (from) q = q.gte('created_at', from + 'T00:00:00');
+    if (to)   q = q.lte('created_at', to   + 'T23:59:59');
+
+    const { data, error } = await q;
+    if (error) throw error;
+    _assistLogsData = data || [];
+    renderAssistLogs(_assistLogsData);
+    checkAssistLogBadge();
+    subscribeAssistLogs();
+  } catch(err) {
+    showToast('Lỗi tải nhật ký trợ lý: ' + err.message, false);
+  }
+}
+
+function renderAssistLogs(rows) {
+  const tbody = document.getElementById('assistlogsTableBody');
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Không có dữ liệu.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td style="white-space:nowrap;font-size:.8rem">${fmtDt(r.created_at)}</td>
+      <td><b>${escHtml(r.assistant_name || '?')}</b><br><span style="font-size:.72rem;color:var(--muted)">${escHtml(r.assistant_username || '')}</span></td>
+      <td><span style="background:var(--primary-light);color:var(--primary);padding:.15rem .5rem;border-radius:6px;font-size:.78rem;font-weight:700">${escHtml(r.action || '')}</span></td>
+      <td>${escHtml(r.target_name || '—')}<br><span style="font-size:.72rem;color:var(--muted)">${escHtml(r.target_username || '')}</span></td>
+      <td style="font-size:.82rem">${escHtml(r.target_class || '—')}</td>
+      <td style="font-size:.8rem;color:var(--muted);max-width:200px;word-break:break-word">${escHtml(r.detail || '')}</td>
+    </tr>
+  `).join('');
+}
+
+function subscribeAssistLogs() {
+  if (_assistLogSub) { db.removeChannel(_assistLogSub); _assistLogSub = null; }
+  _assistLogSub = db.channel('assistant_logs_rt')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'assistant_logs' }, payload => {
+      const newRow = payload.new;
+      _assistLogsData.unshift(newRow);
+      renderAssistLogs(_assistLogsData);
+      _hasNewAssistLog = true;
+      document.getElementById('assistLogBadge').style.display = 'inline';
+      showToast('🔍 Trợ lý ' + (newRow.assistant_name || newRow.assistant_username || '?') + ' vừa thực hiện: ' + (newRow.action || ''));
+    })
+    .subscribe();
+}
+
+async function checkAssistLogBadge() {
+  const since24h = new Date(Date.now() - 86400000).toISOString();
+  const { count } = await db.from('assistant_logs')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', since24h);
+  const badge = document.getElementById('assistLogBadge');
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function exportAssistLogsCSV() {
+  if (_assistLogsData.length === 0) { showToast('Chưa có dữ liệu.', false); return; }
+  const header = ['Thời gian', 'Trợ lý', 'Username trợ lý', 'Hành động', 'Học sinh', 'Username học sinh', 'Lớp', 'Chi tiết'];
+  const rows   = _assistLogsData.map(r => [fmtDt(r.created_at), r.assistant_name, r.assistant_username, r.action, r.target_name, r.target_username, r.target_class, r.detail]);
+  downloadCSV([header, ...rows], 'nhat_ky_tro_ly');
+}
+
+// ════════════════════════════════════════════════════════════════
+// BACKUP & EXPORT
+// ════════════════════════════════════════════════════════════════
+async function loadBackupStats() {
+  const tables = ['students','lessons','homework','alerts','login_logs'];
+  const ids    = ['bc_students','bc_lessons','bc_homework','bc_alerts','bc_login_logs'];
+  const results = await Promise.all(
+    tables.map(t => db.from(t).select('*', { count:'exact', head:true }))
+  );
+  results.forEach((r, i) => {
+    document.getElementById(ids[i]).textContent = r.count ?? '?';
+  });
+}
+
+async function exportTable(tableName) {
+  showToast('Đang xuất ' + tableName + '...');
+  try {
+    const { data, error } = await db.from(tableName).select('*').limit(10000);
+    if (error) throw error;
+    if (!data || data.length === 0) { showToast('Không có dữ liệu để xuất.', false); return; }
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, tableName);
+    XLSX.writeFile(wb, `${tableName}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Đã xuất ' + tableName + '.xlsx');
+  } catch(err) {
+    showToast('Lỗi xuất: ' + err.message, false);
+  }
+}
+
+function confirmDeleteOld(type, days) {
+  const text = type === 'alerts'
+    ? `Xóa toàn bộ cảnh báo cũ hơn ${days} ngày.\nDữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục.`
+    : `Xóa toàn bộ nhật ký (login_logs + assistant_logs) cũ hơn ${days} ngày.\nDữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục.`;
+
+  document.getElementById('confirmDangerText').textContent = text;
+  document.getElementById('confirmDangerInput').value = '';
+
+  const btn = document.getElementById('confirmDangerBtn');
+  const handler = async () => {
+    if (document.getElementById('confirmDangerInput').value !== 'XOA') {
+      showToast('Gõ XOA để xác nhận.', false); return;
+    }
+    btn.disabled = true; btn.textContent = '⏳ Đang xóa...';
+    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+    try {
+      if (type === 'alerts') {
+        const { error } = await db.from('alerts').delete().lt('created_at', cutoff);
+        if (error) throw error;
+        showToast(`Đã xóa cảnh báo cũ hơn ${days} ngày.`);
+      } else {
+        const [r1, r2] = await Promise.all([
+          db.from('login_logs').delete().lt('created_at', cutoff),
+          db.from('assistant_logs').delete().lt('created_at', cutoff),
+        ]);
+        if (r1.error) throw r1.error;
+        if (r2.error) throw r2.error;
+        showToast(`Đã xóa logs cũ hơn ${days} ngày.`);
+      }
+      loadBackupStats();
+      closeModal('modalConfirmDanger');
+    } catch(err) {
+      showToast('Lỗi xóa: ' + err.message, false);
+    } finally {
+      btn.disabled = false; btn.textContent = '🗑️ Xóa';
+      btn.removeEventListener('click', handler);
+    }
+  };
+
+  // Remove old listener and attach fresh one
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  document.getElementById('confirmDangerBtn').addEventListener('click', handler);
+  openModal('modalConfirmDanger');
+}
+
+// ════════════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════════════
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function downloadCSV(rows, filename) {
+  const bom = '\uFEFF';
+  const csv = bom + rows.map(r => r.map(c => {
+    const s = String(c ?? '').replace(/"/g, '""');
+    return /[,"\n]/.test(s) ? '"' + s + '"' : s;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Initial load ──────────────────────────────────────────────────
+(function init() {
+  if (sessionStorage.getItem('dh_role') !== 'teacher') return;
+  loadOverview();
+  checkAssistLogBadge();
+})();
+</script>
+</body>
+</html>

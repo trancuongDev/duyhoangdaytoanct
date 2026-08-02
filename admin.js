@@ -299,6 +299,19 @@ async function logAccountActivity(action, student) {
   });
 }
 
+// ---- Ghi log hoạt động hệ thống tổng quát ----
+// category: 'Học sinh' | 'Bài học' | 'Nhóm bài' | 'Video' | 'Tài liệu' | 'Lớp học' | 'Thông báo' | 'Lịch học' | 'File' | 'Thư mục' | 'Hệ thống'
+async function logActivity(category, action, detail = '', extra = '') {
+  const by   = sessionStorage.getItem('dh_name') || 'Admin';
+  const role = isTeacher ? 'Admin' : 'Trợ lý';
+  await db.from('alerts').insert({
+    student_name: detail,      // Dùng student_name để lưu tên đối tượng
+    username:     extra || '', // Dùng username để lưu thông tin phụ (lớp, v.v.)
+    class_name:   category,    // Dùng class_name để lưu danh mục
+    reason:       `[${category}] ${action} — bởi ${role} ${by}`
+  }).catch(() => {}); // Không chặn UI nếu log lỗi
+}
+
 const displayName = sessionStorage.getItem('dh_name') || 'Admin';
 const displayRole = isTeacher ? 'Admin' : 'Trợ lý';
 document.getElementById('teacherName').textContent = displayName;
@@ -306,22 +319,15 @@ document.getElementById('profileName').textContent  = displayName;
 document.querySelector('.av-role').textContent      = displayRole;
 
 if (!isTeacher) {
-  document.querySelectorAll('[data-page="create-student"]').forEach(el => el.style.display = 'none');
-  // Ẩn tất cả các phần liên quan đến duy trì tài khoản (expiry/gia hạn)
-  const _hideForAssistant = [
-    'expiryReminderPanel',   // Panel nhắc nhở sắp hết hạn (tổng quan)
-    'classExpiryNotices',    // Thông báo lớp hết hạn (tổng quan)
-    'syncExpiryBtn',         // Nút đồng bộ hết hạn (danh sách học sinh)
-    'studentFilterExpiry',   // Filter lọc theo hết hạn (danh sách học sinh)
-    'csExpiryGroup',         // Trường ngày hết hạn (form tạo học viên)
-    'esExpiryGroup',         // Trường ngày hết hạn (modal sửa học viên)
-    'addExpiryGroup',        // Trường ngày hết hạn (modal thêm học viên)
-  ];
-  _hideForAssistant.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
+  // Ẩn duy nhất link Quản trị hệ thống (chỉ dành cho teacher)
+  document.querySelectorAll('a[href="sysadmin.html"]').forEach(el => el.style.display = 'none');
+
+  // Ẩn các field ngày hết hạn (trợ lý không được đặt)
+  ['expiryReminderPanel','classExpiryNotices','syncExpiryBtn',
+   'studentFilterExpiry','csExpiryGroup','esExpiryGroup','addExpiryGroup'
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 }
+
 document.getElementById('logoutBtn').addEventListener('click', e => { e.preventDefault(); sessionStorage.clear(); location.href='login.html'; });
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('open');
@@ -600,6 +606,7 @@ async function renderGroups() {
       showConfirm(`Xóa nhóm "${g.name}"? Nhóm con và bài học bên trong cũng bị ảnh hưởng.`, async () => {
         await db.from('lessons').update({ group_id: null, group_name: null }).eq('group_id', g.id);
         await db.from('lesson_groups').delete().eq('id', g.id);
+        logActivity('Nhóm bài', 'Xóa nhóm bài học', g.name, g.class_name||'');
         renderGroups();
       });
     });
@@ -631,7 +638,7 @@ async function renderGroups() {
           inner.appendChild(buildLessonItem(l, idx,
             () => openLessonDetail(l.id),
             () => openLessonModal(l),
-            () => showConfirm(`Xóa bài học "${l.name}"?`, async () => { await db.from('lessons').delete().eq('id', l.id); renderGroups(); })
+            () => showConfirm(`Xóa bài học "${l.name}"?`, async () => { await db.from('lessons').delete().eq('id', l.id); logActivity('Bài học', 'Xóa bài học', l.name, l.class_name||''); renderGroups(); })
           ));
         });
 
@@ -829,6 +836,7 @@ document.getElementById('groupSaveBtn').addEventListener('click', async () => {
     if (error) { err.textContent = 'Tên nhóm đã tồn tại.'; return; }
   }
   document.getElementById('groupModal').classList.remove('open');
+  logActivity('Nhóm bài', editingGroupId ? 'Sửa nhóm bài học' : 'Thêm nhóm bài học', name, cls||'');
   renderGroups();
 });
 
@@ -1517,6 +1525,7 @@ function renderStudentRow(s, today, expiredClasses) {
     const updates = { active: newActive, login_attempts: 0 };
     if (newActive) updates.manually_unlocked = true; else updates.manually_unlocked = false;
     await db.from('students').update(updates).eq('id', s.id);
+    logActivity('Học sinh', newActive ? 'Mở khóa tài khoản' : 'Khóa tài khoản', s.full_name, s.class_name||'');
     renderStudents();
   });
   if (tr.querySelector('[data-action="reset-attempts"]')) {
@@ -2007,6 +2016,7 @@ async function renderEsClassList(studentId) {
       <button type="button" data-scid="${sc.id}" style="background:none;border:none;cursor:pointer;color:#6366f1;font-size:.85rem;padding:0;line-height:1">✕</button>`;
     tag.querySelector('button').addEventListener('click', async () => {
       await db.from('student_classes').delete().eq('id', sc.id);
+      logActivity('Học sinh', 'Xóa khỏi lớp', sc.class_name, `student:${studentId}`);
       renderEsClassList(studentId);
     });
     el.appendChild(tag);
@@ -2023,6 +2033,7 @@ document.getElementById('esAddClassBtn')?.addEventListener('click', async () => 
   // Lấy thông tin học sinh để gửi email
   const { data: stu } = await db.from('students').select('full_name,username').eq('id', editingStudentId).maybeSingle();
   if (stu?.username) sendClassAddedEmail({ username: stu.username, full_name: stu.full_name }, cls).catch(() => {});
+  logActivity('Học sinh', 'Thêm vào lớp', cls, `student:${editingStudentId}`);
 
   renderEsClassList(editingStudentId);
   document.getElementById('esAddClassSelect').value = '';
@@ -2332,7 +2343,7 @@ async function _doRenderLessons() {
           const eb = document.createElement('button'); eb.className = 'btn-sm'; eb.textContent = String.fromCharCode(9999,65039);
           eb.addEventListener('click', e => { e.stopPropagation(); openLessonModal(l); });
           const db2 = document.createElement('button'); db2.className = 'btn-sm btn-danger'; db2.textContent = String.fromCharCode(128465);
-          db2.addEventListener('click', e => { e.stopPropagation(); showConfirm(`Xoa bai hoc "${l.name}"?`, async () => { _saveAdminLessonState(); await db.from('lessons').delete().eq('id',l.id); await renderLessons(); await _restoreAdminLessonState(); }); });
+          db2.addEventListener('click', e => { e.stopPropagation(); showConfirm(`Xoa bai hoc "${l.name}"?`, async () => { _saveAdminLessonState(); await db.from('lessons').delete().eq('id',l.id); logActivity('Bài học', 'Xóa bài học', l.name, l.class_name||''); await renderLessons(); await _restoreAdminLessonState(); }); });
           acts.appendChild(openBtn); acts.appendChild(eb); acts.appendChild(db2);
           item.appendChild(handle); item.appendChild(num); item.appendChild(info); item.appendChild(acts);
           item.addEventListener('click', () => openLessonDetail(l.id));
@@ -2567,6 +2578,7 @@ document.getElementById('lSaveBtn').addEventListener('click', async () => {
 
   btn.textContent = 'Lưu'; btn.disabled = false;
   document.getElementById('lessonModal').classList.remove('open');
+  logActivity('Bài học', editingLessonId ? 'Sửa bài học' : 'Thêm bài học', name, cls||'');
   _saveAdminLessonState(); // lưu trạng thái trước khi render lại
   await renderLessons();
   await _restoreAdminLessonState(); // khôi phục sau khi render xong
@@ -2622,6 +2634,7 @@ async function renderLessonVideos(lessonId) {
     card.querySelector('.del-btn').addEventListener('click', async ()=>{
       if (!isLink && v.storage_path) await db.storage.from('lessons').remove([v.storage_path]);
       await db.from('lesson_videos').delete().eq('id',v.id);
+      logActivity('Video', 'Xóa video', v.title||'', `lesson:${lessonId}`);
       renderLessonVideos(lessonId);
     });
     grid.appendChild(card);
@@ -2649,6 +2662,7 @@ async function renderLessonDocs(lessonId) {
       e.stopPropagation();
       if (!isLink && !isHandwritten && d.storage_path) await db.storage.from('lessons').remove([d.storage_path]);
       await db.from('lesson_docs').delete().eq('id',d.id);
+      logActivity('Tài liệu', 'Xóa tài liệu', d.title||'', `lesson:${lessonId}`);
       renderLessonDocs(lessonId);
     });
     el.appendChild(row);
@@ -2748,6 +2762,7 @@ document.getElementById('lvSaveBtn').addEventListener('click', async () => {
   document.getElementById('lessonPreviewVideo').src = '';
   document.getElementById('lvEmbedInput').value = '';
   pendingLessonVideoFile = null;
+  logActivity('Video', 'Thêm video', title, `lesson:${currentLessonId}`);
   renderLessonVideos(currentLessonId);
 });
 
@@ -2858,6 +2873,7 @@ document.getElementById('ldSaveBtn').addEventListener('click', async ()=>{
   document.getElementById('ldLinkInput').value='';
   document.getElementById('ldHandwrittenInput').value='';
   pendingLessonDocFile=null;
+  logActivity('Tài liệu', 'Thêm tài liệu', title, `lesson:${currentLessonId}`);
   renderLessonDocs(currentLessonId);
 });
 
@@ -3075,6 +3091,7 @@ async function deleteClassRecord(className) {
   _invalidateClassesCache();
   await db.from('classes').delete().eq('name', className);
   await db.from('student_classes').delete().eq('class_name', className);
+  logActivity('Lớp học', 'Xóa lớp học', className);
 
   // Lấy lessons + groups song song, rồi update song song
   const [{ data: allLessons }, { data: allGroups }] = await Promise.all([
@@ -3278,6 +3295,7 @@ document.getElementById('editClassSaveBtn').addEventListener('click', async ()=>
   }
   document.getElementById('editClassModal').classList.remove('open');
   _invalidateClassesCache();
+  logActivity('Lớp học', 'Sửa lớp học', newName, `trước: ${editingClassName}`);
   renderClasses(); populateClassFilters();
 });
 
@@ -3298,6 +3316,7 @@ document.getElementById('addClassSaveBtn').addEventListener('click', async ()=>{
   if (error) { err.textContent='Tên lớp đã tồn tại.'; return; }
   document.getElementById('addClassModal').classList.remove('open');
   _invalidateClassesCache();
+  logActivity('Lớp học', 'Thêm lớp học mới', name, `${start||''}→${end||''}`);
   renderClasses(); populateClassFilters();
 });
 
@@ -3603,6 +3622,7 @@ function _renderAnnCards(all) {
     clearBtn.addEventListener('click', () => {
       showConfirm(`Xóa ${items.length} thông báo?`, async () => {
         await Promise.all(items.map(a => db.from('announcements').delete().eq('id', a.id)));
+        logActivity('Thông báo', `Xóa ${items.length} thông báo hàng loạt`, '');
         renderAnnouncements();
       }, { title: 'Xóa thông báo', icon: '📢', okText: 'Xóa tất cả' });
     }, { once: true });
@@ -3665,6 +3685,7 @@ function _renderAnnCards(all) {
       showConfirm(`Xóa thông báo "${a.title}"?`, async () => {
         const { error } = await db.from('announcements').delete().eq('id', a.id);
         if (error) { console.error('[Ann delete]', error); showToast('❌ Lỗi xóa: ' + error.message); return; }
+        logActivity('Thông báo', 'Xóa thông báo', a.title, a.class_name||'');
         renderAnnouncements();
       });
     });
@@ -3713,6 +3734,7 @@ document.getElementById('annSaveBtn')?.addEventListener('click', async () => {
   } else {
     await db.from('announcements').insert(payload);
   }
+  logActivity('Thông báo', editingAnnId ? 'Sửa thông báo' : 'Gửi thông báo', title, finalClass||target_username||'');
   closeAnnForm();
   renderAnnouncements();
 });
@@ -4765,6 +4787,7 @@ async function renderSchedule() {
       const subj = btn.dataset.schedSubj || 'buổi học này';
       showConfirm(`Xóa "${subj}"?`, async () => {
         await db.from('schedule_slots').delete().eq('id', id);
+        logActivity('Lịch học', 'Xóa lịch học', subj);
         renderSchedule();
       });
     });
@@ -5066,6 +5089,7 @@ document.getElementById('schedSaveBtn')?.addEventListener('click', async () => {
 
   _editingSlotId = null;
   document.getElementById('addScheduleModal').classList.remove('open');
+  logActivity('Lịch học', _editingSlotId ? 'Sửa lịch học' : 'Thêm lịch học', subject||session, cls||'');
   schedCurrentWeekStart = weekStart;
   renderSchedule();
 });
@@ -5500,6 +5524,7 @@ async function saveFolder() {
   document.getElementById('folderModal').classList.remove('open');
   await loadFileManagerData();
   renderFileManager();
+  logActivity('Thư mục', editId ? 'Sửa thư mục' : 'Tạo thư mục', name, cls||'');
   showToast(editId ? '✅ Đã cập nhật thư mục' : '📁 Đã tạo thư mục');
 }
 
@@ -5508,6 +5533,7 @@ async function deleteFolder(id, name) {
     // Chuyển file về root
     await db.from('file_items').update({ folder_id: null }).eq('folder_id', id);
     await db.from('file_folders').delete().eq('id', id);
+    logActivity('Thư mục', 'Xóa thư mục', name);
     await loadFileManagerData();
     renderFileManager();
     showToast('🗑 Đã xóa thư mục');
@@ -5593,6 +5619,7 @@ async function doUpload() {
     await loadFileManagerData();
     _populateTagFilter();
     renderFileManager();
+    logActivity('File', 'Thêm link tài liệu', displayName, cls||'');
     showToast('🔗 Đã thêm link tài liệu');
     return;
   }
@@ -5626,6 +5653,7 @@ async function doUpload() {
   await loadFileManagerData();
   _populateTagFilter();
   renderFileManager();
+  logActivity('File', `Tải lên ${done} file`, displayName || `${done} file`, cls||'');
   showToast(`✅ Đã tải lên ${done} file thành công`);
 }
 
@@ -5674,20 +5702,25 @@ async function saveFileEdit() {
   await loadFileManagerData();
   _populateTagFilter();
   renderFileManager();
+  logActivity('File', 'Sửa thông tin file', name, cls||'');
   showToast('✅ Đã cập nhật thông tin file');
 }
 
 async function softDeleteFile(fileId) {
+  const f = _fmFiles.find(x => x.id == fileId);
   await db.from('file_items').update({ deleted_at: new Date().toISOString() }).eq('id', fileId);
   await loadFileManagerData();
   renderFileManager();
+  logActivity('File', 'Xóa file (thùng rác)', f?.display_name||String(fileId));
   showToast('🗑 Đã chuyển vào thùng rác');
 }
 
 async function restoreFile(fileId) {
+  const f = _fmFiles.find(x => x.id == fileId);
   await db.from('file_items').update({ deleted_at: null }).eq('id', fileId);
   await loadFileManagerData();
   renderFileManager();
+  logActivity('File', 'Khôi phục file', f?.display_name||String(fileId));
   showToast('♻️ Đã khôi phục file');
 }
 
@@ -5702,6 +5735,7 @@ async function permanentDeleteFile(fileId, name) {
     await db.from('file_items').delete().eq('id', fileId);
     await loadFileManagerData();
     renderFileManager();
+    logActivity('File', 'Xóa vĩnh viễn file', name);
     showToast('🗑 Đã xóa vĩnh viễn');
   });
 }
@@ -5719,6 +5753,7 @@ async function emptyFileTrash() {
     if (ids.length) await db.from('file_items').delete().in('id', ids);
     await loadFileManagerData();
     renderFileManager();
+    logActivity('File', `Dọn thùng rác (${ids.length} file)`, '');
     showToast('🗑 Đã dọn sạch thùng rác');
   });
 }
@@ -6097,6 +6132,7 @@ async function doGmailSync() {
   } else {
     showToast(`✅ Đã thêm lớp "${cls}" cho ${successCount} học sinh + gửi thông báo`);
   }
+  logActivity('Học sinh', `Đồng bộ Gmail → Lớp ${cls}`, `${successCount} học sinh`, cls);
   logAccountActivity(`Đồng bộ Gmail → Lớp ${cls}`, { full_name: `${successCount} học sinh`, username: '', class_name: cls });
 }
 
@@ -6523,6 +6559,7 @@ async function doBulkCreate() {
     document.getElementById('bulkStep2Error').textContent = `⚠️ ${failed} dòng tạo thất bại (có thể Gmail đã tồn tại hoặc lỗi mạng).`;
   }
   showToast(`📋 Đã tạo ${done} tài khoản hàng loạt`);
+  logActivity('Học sinh', `Tạo hàng loạt ${done} tài khoản`, `${done} HS${failed ? ` (${failed} lỗi)` : ''}`);
 }
 
 // ============================================================
