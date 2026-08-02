@@ -825,22 +825,6 @@
             return;
           }
 
-          // Kiểm tra tài khoản giáo viên phụ (dh_teachers)
-          const extraTeachers = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
-          const matchedExtra = extraTeachers.find(t => t.username === u);
-          if (matchedExtra) {
-            if (matchedExtra.passwordHash === inputHash) {
-              sessionStorage.setItem('dh_role', 'teacher');
-              sessionStorage.setItem('dh_user', u);
-              sessionStorage.setItem('dh_name', matchedExtra.full_name || u);
-              window.location.href = 'admin.html';
-              return;
-            } else {
-              resetLoading('Sai mật khẩu giáo viên.');
-              return;
-            }
-          }
-
           if (u === teacher.username) {
             const attempts = (parseInt(localStorage.getItem('dh_admin_attempts') || '0')) + 1;
             localStorage.setItem('dh_admin_attempts', attempts);
