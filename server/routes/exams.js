@@ -1,14 +1,37 @@
 const router = require('express').Router();
 const multer = require('multer');
 const path   = require('path');
+const fs     = require('fs');
 const db     = require('../db');
 const { authMiddleware, requireRole } = require('../middleware/auth');
+
+const ALLOWED_EXAM_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
 
 const storage = multer.diskStorage({
   destination: 'uploads/exams/',
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
-const upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } });
+const upload = multer({
+  storage,
+  limits: { fileSize: 200 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_EXAM_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Định dạng file không được hỗ trợ'));
+    }
+  }
+});
 
 // GET /api/exams
 router.get('/', authMiddleware, async (req, res) => {
@@ -38,7 +61,6 @@ router.post('/', authMiddleware, requireRole('teacher','assistant'), upload.sing
 router.delete('/:id', authMiddleware, requireRole('teacher','assistant'), async (req, res) => {
   const [rows] = await db.query('SELECT file_path FROM exams WHERE id=?', [req.params.id]);
   if (rows[0]) {
-    const fs = require('fs');
     const fp = path.join('uploads/exams', rows[0].file_path);
     if (fs.existsSync(fp)) fs.unlinkSync(fp);
   }

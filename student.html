@@ -4,11 +4,52 @@
   <meta charset="UTF-8"/>
   <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Học Sinh - DHDT LMS v1.4.9</title>
+  <title>Học Sinh — Thiên Tuệ English</title>
   <meta http-equiv="X-Frame-Options" content="DENY"/>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
   <link rel="stylesheet" href="style.css"/>
+  <style>
+    .st-game-tab {
+      padding:.5rem 1rem;border:1.5px solid var(--border);border-radius:10px;
+      background:var(--card);color:var(--text);font-size:.84rem;font-weight:600;
+      cursor:pointer;transition:all .18s;
+    }
+    .st-game-tab.active,.st-game-tab:hover {
+      background:var(--primary);color:#fff;border-color:var(--primary);
+    }
+    .st-flashcard {
+      perspective:800px;cursor:pointer;user-select:none;
+      width:100%;max-width:420px;margin:0 auto;height:220px;
+    }
+    .st-flashcard-inner {
+      position:relative;width:100%;height:100%;
+      transition:transform .55s;transform-style:preserve-3d;
+    }
+    .st-flashcard.flipped .st-flashcard-inner { transform:rotateY(180deg); }
+    .st-flashcard-front,.st-flashcard-back {
+      position:absolute;inset:0;border-radius:18px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:1.5rem;backface-visibility:hidden;box-shadow:0 8px 24px rgba(0,0,0,.12);
+    }
+    .st-flashcard-front { background:linear-gradient(135deg,#4338ca,#6366f1);color:#fff; }
+    .st-flashcard-back  { background:linear-gradient(135deg,#059669,#10b981);color:#fff;transform:rotateY(180deg); }
+    .st-match-word,.st-match-meaning {
+      padding:.55rem 1rem;border:2px solid var(--border);border-radius:10px;
+      background:var(--card);cursor:pointer;font-size:.87rem;font-weight:600;
+      transition:all .18s;text-align:center;
+    }
+    .st-match-word.selected,.st-match-meaning.selected {
+      border-color:var(--primary);background:var(--primary-light);color:var(--primary);
+    }
+    .st-match-word.matched,.st-match-meaning.matched {
+      border-color:#10b981;background:#d1fae5;color:#065f46;cursor:default;opacity:.7;
+    }
+    .st-match-word.wrong,.st-match-meaning.wrong {
+      border-color:#ef4444;background:#fee2e2;animation:shake .3s ease;
+    }
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  </style>
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#4f46e5"/>
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -76,8 +117,8 @@
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/></div>
-      <span class="sidebar-brand-text">DHDT LMS</span>
+      <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:contain;border-radius:0"/></div>
+      <span class="sidebar-brand-text">Thiên Tuệ English</span>
       <button id="sidebarClose" class="sidebar-mini-toggle" title="Thu gọn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;transition:all .2s;flex-shrink:0" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
     </div>
     <nav class="sidebar-nav">
@@ -95,6 +136,12 @@
       </a>
       <a href="homework.html" class="slink" data-label="Bài Tập">
         <span class="slink-icon">📝</span><span class="slink-label">Bài Tập</span>
+      </a>
+      <a href="#" class="slink" data-page="vocab" data-label="Từ vựng">
+        <span class="slink-icon">🔤</span><span class="slink-label">Từ vựng</span>
+      </a>
+      <a href="#" class="slink" data-page="grammar" data-label="Ngữ pháp">
+        <span class="slink-icon">📐</span><span class="slink-label">Ngữ pháp</span>
       </a>
       <a href="#" class="slink" data-page="schedule" data-label="Lịch học">
         <span class="slink-icon">📅</span><span class="slink-label">Lịch học</span>
@@ -123,7 +170,7 @@
       <button class="menu-toggle" id="menuToggle">☰</button>
       <div style="font-weight:700;font-size:.95rem;color:var(--text);display:flex;align-items:center;gap:.5rem">
         <img src="icons/icon-192.png" style="width:24px;height:24px;border-radius:6px"/>
-        DHDT LMS
+        Thiên Tuệ English
       </div>
       <div class="topbar-right">
         <button id="studentDarkBtn" title="Chế độ tối" style="background:none;border:1.5px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s">🌙</button>
@@ -148,7 +195,7 @@
     <section class="page active" id="pageHome">
 
       <!-- Greeting banner — chỉ hiện trên tablet/laptop -->
-      <div id="studentGreetingBanner" style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:16px;padding:1.1rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+      <div id="studentGreetingBanner" style="background:linear-gradient(135deg,#96281b,#c0392b,#e67e22,#f39c12);border-radius:16px;padding:1.1rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
         <div>
           <div id="studentGreetingText" style="font-size:1.05rem;font-weight:900;letter-spacing:-.2px"></div>
           <div id="studentGreetingDate" style="font-size:.78rem;opacity:.6;margin-top:.15rem"></div>
@@ -160,7 +207,7 @@
       </style>
 
       <!-- Hero banner -->
-      <div id="heroBanner" style="background:linear-gradient(135deg,#0a0820 0%,#1e1b4b 40%,#312e81 75%,#1e3a5f 100%);border-radius:20px;padding:2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;color:#fff">
+      <div id="heroBanner" style="background:linear-gradient(135deg,#0d0404 0%,#96281b 40%,#c0392b 70%,#e67e22 100%);border-radius:20px;padding:2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;color:#fff">
         <!-- Canvas sao -->
         <canvas id="mathUniverseCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:block;background:transparent;border:none;outline:none"></canvas>
         <!-- Ký hiệu toán học nổi -->
@@ -209,7 +256,7 @@
       <div class="overview-panel" style="margin-bottom:1.25rem">
         <div class="panel-header">
           <div style="display:flex;align-items:center;gap:.6rem">
-            <div style="width:32px;height:32px;background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem">📚</div>
+            <div style="width:32px;height:32px;background:linear-gradient(135deg,#c0392b,#e67e22);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem">📚</div>
             <span style="font-weight:800;font-size:.95rem">Bài học mới nhất</span>
           </div>
           <a href="#" class="link-blue" data-goto="lessons" style="font-size:.8rem;font-weight:600">Xem tất cả →</a>
@@ -221,7 +268,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
 
         <!-- Lưu ý -->
-        <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:16px;padding:1.25rem;color:#fff">
+        <div style="background:linear-gradient(135deg,#96281b,#c0392b,#e67e22);border-radius:16px;padding:1.25rem;color:#fff">
           <div style="font-weight:800;font-size:.9rem;margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem">
             <span style="background:rgba(255,255,255,.15);border-radius:8px;padding:.3rem .5rem">⚠️</span> Lưu ý quan trọng
           </div>
@@ -270,9 +317,21 @@
               <span style="font-size:1.3rem">📞</span>
               <div>
                 <div style="font-weight:700;font-size:.85rem">Cần hỗ trợ?</div>
-                <div style="font-size:.75rem;color:var(--muted)">Liên hệ Trợ Lý Trần Cường hoặc Quốc Toàn — cung cấp tên lớp</div>
+                <div style="font-size:.75rem;color:var(--muted)">Liên hệ trực tiếp <b>Giáo viên</b> để được hỗ trợ</div>
               </div>
             </div>
+            <a href="https://zalo.me/0393549097" target="_blank" rel="noopener"
+              style="display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;background:linear-gradient(135deg,#e8f4fd,#d0eaf8);border-radius:10px;border:1px solid #90cdf4;text-decoration:none;transition:all .18s"
+              onmouseover="this.style.transform='translateX(3px)'" onmouseout="this.style.transform=''">
+              <div style="width:28px;height:28px;background:#0068ff;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><path d="M24 4C13 4 4 12.06 4 22c0 5.5 2.7 10.4 7 13.7L9 42l7-2.5C18.5 40.5 21.2 41 24 41c11 0 20-8.06 20-18S35 4 24 4z" fill="#fff"/><path d="M32 26.5c-.3-.2-2-1-2.3-1.1-.3-.1-.5-.2-.8.1-.3.3-1 1.2-1.2 1.4-.2.2-.4.2-.7.1-.3-.1-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.8-1-2.4-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7s1.1 3.1 1.3 3.3c.2.2 2.2 3.4 5.3 4.7 3.1 1.3 3.1.9 3.7.8.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.5z" fill="#0068ff"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:.85rem;color:#0068ff">Zalo Giáo viên</div>
+                <div style="font-size:.75rem;color:#2d6da3">0393 549 097</div>
+              </div>
+              <span style="margin-left:auto;color:#0068ff;font-weight:700">→</span>
+            </a>
           </div>
         </div>
 
@@ -286,7 +345,7 @@
       <!-- Danh sách bài học -->
       <div id="sLessonListView">
         <!-- Header -->
-        <div style="background:linear-gradient(135deg,#312e81,#4338ca);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+        <div style="background:linear-gradient(135deg,#c0392b,#e67e22);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:1rem">
           <div>
             <h1 style="font-size:1.3rem;font-weight:800;margin:0;letter-spacing:-.3px">📚 Bài học</h1>
             <p style="font-size:.8rem;opacity:.7;margin-top:.2rem">Chọn nhóm bài học để bắt đầu học</p>
@@ -308,7 +367,7 @@
       <div id="sLessonDetailView" style="display:none">
 
         <!-- Header bài học -->
-        <div id="lessonDetailBanner" style="background:linear-gradient(135deg,#0a0820 0%,#1e1b4b 40%,#312e81 75%,#1e3a5f 100%);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;color:#fff;position:relative;overflow:hidden">
+        <div id="lessonDetailBanner" style="background:linear-gradient(135deg,#0d0404 0%,#96281b 40%,#c0392b 70%,#e67e22 100%);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;color:#fff;position:relative;overflow:hidden">
           <canvas id="lessonBannerCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:block;background:transparent"></canvas>
           <div id="lessonBannerSymbols" style="position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden"></div>
           <div style="position:relative;z-index:2">
@@ -321,7 +380,7 @@
         <!-- Video section -->
         <div style="margin-bottom:1.5rem">
           <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem">
-            <div style="width:32px;height:32px;background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem">🎬</div>
+            <div style="width:32px;height:32px;background:linear-gradient(135deg,#c0392b,#e67e22);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem">🎬</div>
             <span style="font-weight:800;font-size:1rem">Video bài giảng</span>
           </div>
           <div class="video-grid" id="sLessonVideoGrid"></div>
@@ -346,22 +405,13 @@
       <h1 class="page-title">📖 Hướng dẫn sử dụng</h1>
       <div class="form-panel" style="max-width:720px;gap:1rem">
 
-        <!-- Dang nhap -->
+        <!-- Đăng nhập -->
         <div style="background:var(--primary-light);border-radius:12px;padding:1rem 1.25rem">
           <div style="font-weight:800;font-size:.95rem;color:var(--primary);margin-bottom:.5rem">🔐 Đăng nhập</div>
-          <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Nhắn <b>Trợ Lý - Trần Cường hoặc Quốc Toàn</b> cung cấp tên lớp, Gmail + SĐT để nhận thông tin đăng nhập. Mỗi tài khoản chỉ hoạt động trên <b>01 thiết bị</b> tại một thời điểm. Sau <b>5 lần nhập sai</b> mật khẩu, tài khoản sẽ bị khóa tự động.</p>
-          <div style="background:#fff;border-radius:8px;padding:.6rem .9rem;margin-top:.6rem;border:1px solid var(--primary-light,#e0e7ff);font-size:.82rem;color:var(--primary)">
-            <div style="font-weight:700;margin-bottom:.35rem">📌 Mẫu nhắn tin (4 tin riêng):</div>
-            <div style="display:flex;flex-direction:column;gap:.25rem;font-family:monospace">
-              <span><b>Tin 1:</b> xin cấp tài khoản học tập trên web</span>
-              <span><b>Tin 2:</b> Tên lớp (VD: vsat 6)</span>
-              <span><b>Tin 3:</b> Số điện thoại</span>
-              <span><b>Tin 4:</b> Gmail</span>
-            </div>
-          </div>
+          <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Liên hệ giáo viên để được cấp tài khoản. Mỗi tài khoản chỉ hoạt động trên <b>01 thiết bị</b> tại một thời điểm. Sau <b>5 lần nhập sai</b> mật khẩu, tài khoản sẽ bị khóa tự động.</p>
         </div>
 
-        <!-- Xem bai hoc -->
+        <!-- Xem bài học -->
         <div style="background:#e0f2fe;border-radius:12px;padding:1rem 1.25rem">
           <div style="font-weight:800;font-size:.95rem;color:#0369a1;margin-bottom:.5rem">📚 Xem bài học</div>
           <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Vào mục <b>Bài học</b> → chọn nhóm bài → nhấn vào bài học để xem video và tài liệu. Hệ thống chỉ hiển thị nội dung đúng lớp bạn đã đăng ký. Dùng ô <b>tìm kiếm</b> để tìm nhanh bài học theo tên.</p>
@@ -373,13 +423,13 @@
           <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Nhấn vào thumbnail để phát video. Với điện thoại, nên <b>xoay ngang màn hình</b> để có trải nghiệm tốt nhất. Video được bảo vệ bản quyền và <b>không hỗ trợ tải xuống</b> dưới mọi hình thức.</p>
         </div>
 
-        <!-- Tai lieu -->
+        <!-- Tài liệu -->
         <div style="background:#fef3c7;border-radius:12px;padding:1rem 1.25rem">
           <div style="font-weight:800;font-size:.95rem;color:#92400e;margin-bottom:.5rem">📄 Tài liệu học tập</div>
           <p style="font-size:.88rem;line-height:1.7;color:var(--text)">Nhấn vào tài liệu để xem trực tiếp trên trình duyệt. Một số tài liệu hỗ trợ tải xuống. Tài liệu chỉ dành cho học viên đã đăng ký và <b>không được phép chia sẻ</b> ra ngoài.</p>
         </div>
 
-        <!-- Bao mat -->
+        <!-- Bảo mật -->
         <div style="background:#fee2e2;border-radius:12px;padding:1rem 1.25rem">
           <div style="font-weight:800;font-size:.95rem;color:#991b1b;margin-bottom:.5rem">🚨 Lưu ý bảo mật quan trọng</div>
           <ul style="padding-left:1.25rem;line-height:2.1;font-size:.88rem;color:var(--text)">
@@ -392,22 +442,36 @@
           </ul>
         </div>
 
-        <!-- Lien he -->
+        <!-- Liên hệ -->
         <div style="background:var(--bg);border-radius:12px;padding:1rem 1.25rem;border:1.5px solid var(--border)">
           <div style="font-weight:800;font-size:.95rem;margin-bottom:.75rem">📞 Liên hệ hỗ trợ</div>
           <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.88rem">
             <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:var(--card);border-radius:10px">
               <span style="font-size:1.2rem">🛠️</span>
-              <div><div style="font-weight:700">Kỹ thuật & Tài khoản</div><div style="color:var(--muted);font-size:.8rem">Liên hệ <b>Trợ Lý - Trần Cường hoặc Quốc Toàn</b> — cung cấp tên lớp, Gmail, SĐT và Mã HV</div></div>
+              <div><div style="font-weight:700">Kỹ thuật & Tài khoản</div><div style="color:var(--muted);font-size:.8rem">Liên hệ trực tiếp <b>Giáo viên</b> để được hỗ trợ</div></div>
             </div>
             <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:var(--card);border-radius:10px">
-              <span style="font-size:1.2rem">📐</span>
-              <div><div style="font-weight:700">Thắc mắc chuyên môn</div><div style="color:var(--muted);font-size:.8rem">Liên hệ trực tiếp <b>Duy Hoàng Giáo viên</b></div></div>
+              <span style="font-size:1.2rem">📖</span>
+              <div><div style="font-weight:700">Thắc mắc chuyên môn</div><div style="color:var(--muted);font-size:.8rem">Liên hệ trực tiếp <b>Giáo viên</b></div></div>
             </div>
+            <!-- Zalo liên hệ -->
+            <a href="https://zalo.me/0393549097" target="_blank" rel="noopener"
+              style="display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:linear-gradient(135deg,#e8f4fd,#d0eaf8);border-radius:10px;border:1.5px solid #90cdf4;text-decoration:none;transition:all .18s"
+              onmouseover="this.style.boxShadow='0 4px 16px rgba(0,120,200,.2)';this.style.transform='translateY(-1px)'"
+              onmouseout="this.style.boxShadow='none';this.style.transform=''">
+              <div style="width:36px;height:36px;background:#0068ff;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="22" height="22" viewBox="0 0 48 48" fill="none"><path d="M24 4C13 4 4 12.06 4 22c0 5.5 2.7 10.4 7 13.7L9 42l7-2.5C18.5 40.5 21.2 41 24 41c11 0 20-8.06 20-18S35 4 24 4z" fill="#fff"/><path d="M32 26.5c-.3-.2-2-1-2.3-1.1-.3-.1-.5-.2-.8.1-.3.3-1 1.2-1.2 1.4-.2.2-.4.2-.7.1-.3-.1-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.8-1-2.4-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7s1.1 3.1 1.3 3.3c.2.2 2.2 3.4 5.3 4.7 3.1 1.3 3.1.9 3.7.8.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.5z" fill="#0068ff"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;color:#0068ff;font-size:.88rem">Chat Zalo với Giáo viên</div>
+                <div style="color:#2d6da3;font-size:.78rem;margin-top:.1rem">Nhấn để mở Zalo — 0393 549 097</div>
+              </div>
+              <span style="margin-left:auto;color:#0068ff;font-size:.85rem;font-weight:700">→</span>
+            </a>
           </div>
         </div>
 
-        <p style="text-align:center;font-style:italic;color:var(--muted);font-size:.85rem;padding:.5rem 0">Chúng tôi luôn đồng hành cùng bạn trên hành trình chinh phục đại học. 💪</p>
+        <p style="text-align:center;font-style:italic;color:var(--muted);font-size:.85rem;padding:.5rem 0">Chúc bạn học tốt và tiến bộ mỗi ngày! 💪</p>
       </div>
     </section>
 
@@ -415,7 +479,7 @@
     <section class="page" id="pageSchedule">
 
       <!-- Hero banner -->
-      <div style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:18px;padding:1.1rem 1.4rem;margin-bottom:1rem;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+      <div style="background:linear-gradient(135deg,#96281b,#c0392b,#e67e22);border-radius:18px;padding:1.1rem 1.4rem;margin-bottom:1rem;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
         <div>
           <div style="font-size:1.1rem;font-weight:900;letter-spacing:-.3px">📅 Lịch học</div>
           <div style="font-size:.78rem;opacity:.65;margin-top:.15rem">Lịch học theo từng tuần của lớp bạn</div>
@@ -515,6 +579,63 @@
 
     </section>
 
+    <!-- TỪ VỰNG -->
+    <section class="page" id="pageVocab">
+      <div style="background:linear-gradient(135deg,#4338ca,#6366f1);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff">
+        <h1 style="font-size:1.3rem;font-weight:800;margin:0">🔤 Từ vựng</h1>
+        <p style="font-size:.8rem;opacity:.8;margin-top:.2rem">Học từ vựng tiếng Anh theo chủ đề</p>
+      </div>
+      <!-- Danh sách bộ từ -->
+      <div id="stVocabSetList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem"></div>
+      <!-- Panel học + trò chơi -->
+      <div id="stVocabGamePanel" style="display:none">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+          <button onclick="stCloseVocabGame()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .9rem;cursor:pointer;font-size:.85rem;color:var(--text)">← Quay lại</button>
+          <h2 id="stVocabGameTitle" style="font-size:1rem;font-weight:800;margin:0;flex:1"></h2>
+        </div>
+        <!-- Tab chọn trò chơi -->
+        <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap">
+          <button class="st-game-tab active" data-game="flashcard" onclick="stSwitchVocabGame('flashcard',this)">🃏 Flashcard</button>
+          <button class="st-game-tab" data-game="fillin" onclick="stSwitchVocabGame('fillin',this)">✏️ Điền từ</button>
+          <button class="st-game-tab" data-game="match" onclick="stSwitchVocabGame('match',this)">🔗 Nối từ</button>
+          <button class="st-game-tab" data-game="quiz" onclick="stSwitchVocabGame('quiz',this)">❓ Trắc nghiệm</button>
+        </div>
+        <div id="stVocabGameArea"></div>
+      </div>
+    </section>
+
+    <!-- NGỮ PHÁP -->
+    <section class="page" id="pageGrammar">
+      <div style="background:linear-gradient(135deg,#059669,#10b981);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff">
+        <h1 style="font-size:1.3rem;font-weight:800;margin:0">📐 Ngữ pháp</h1>
+        <p style="font-size:.8rem;opacity:.8;margin-top:.2rem">Lý thuyết & luyện tập ngữ pháp</p>
+      </div>
+      <div id="stGrammarList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem"></div>
+      <!-- Panel bài học + quiz -->
+      <div id="stGrammarLessonPanel" style="display:none">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+          <button onclick="stCloseGrammarLesson()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .9rem;cursor:pointer;font-size:.85rem;color:var(--text)">← Quay lại</button>
+          <h2 id="stGrammarLessonTitle" style="font-size:1rem;font-weight:800;margin:0;flex:1"></h2>
+        </div>
+        <!-- Nội dung bài -->
+        <div id="stGrammarContent" style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;line-height:1.85;font-size:.9rem;color:var(--text)"></div>
+        <!-- Quiz -->
+        <div id="stGrammarQuizWrap" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+            <h3 style="font-size:.95rem;font-weight:800;margin:0">❓ Luyện tập</h3>
+            <div id="stGrammarQuizScore" style="font-size:.82rem;color:var(--muted);font-weight:600"></div>
+          </div>
+          <div id="stGrammarQuizList" style="display:flex;flex-direction:column;gap:1rem"></div>
+          <div id="stGrammarQuizResult" style="display:none;margin-top:1.25rem;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1.5px solid #10b981;border-radius:14px;padding:1.25rem;text-align:center"></div>
+          <div style="text-align:center;margin-top:1rem">
+            <button id="stGrammarSubmitBtn" onclick="stSubmitGrammarQuiz()" style="display:none;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:12px;padding:.7rem 2rem;font-size:.9rem;font-weight:700;cursor:pointer">📊 Nộp bài</button>
+            <button id="stGrammarRetryBtn" onclick="stStartGrammarQuiz()" style="display:none;background:linear-gradient(135deg,#4338ca,#6366f1);color:#fff;border:none;border-radius:12px;padding:.7rem 2rem;font-size:.9rem;font-weight:700;cursor:pointer;margin-left:.5rem">🔄 Làm lại</button>
+          </div>
+        </div>
+        <button id="stGrammarStartQuizBtn" onclick="stStartGrammarQuiz()" style="margin-top:.5rem;width:100%;padding:.75rem;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:.95rem;font-weight:700">❓ Làm bài kiểm tra ngữ pháp</button>
+      </div>
+    </section>
+
     <!-- THÔNG BÁO -->
     <section class="page" id="pageNotifications">
       <div style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between">
@@ -529,7 +650,8 @@
 
     <!-- FOOTER -->
     <footer style="text-align:center;padding:1.5rem 1rem;font-size:.76rem;color:#888;background:#0f172a;border-top:1px solid #1e293b;margin-top:auto;line-height:1.9">
-      <p>© Bản quyền thuộc về <b>DHDT LMS</b>. Toàn bộ nội dung trên website bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và hệ thống quản lý đều thuộc quyền sở hữu của chúng tôi và được pháp luật bảo hộ.</p>
+      <p>© Bản quyền thuộc về <b>Thiên Tuệ English</b>. Toàn bộ nội dung trên website bao gồm video bài giảng, tài liệu học tập, đề luyện thi, hình ảnh, giao diện và hệ thống quản lý đều thuộc quyền sở hữu của chúng tôi và được pháp luật bảo hộ.</p>
+      <p style="margin-top:.4rem">Phát triển bởi <a href="https://trancuongdev.github.io/profile-TranCuong/" target="_blank" rel="noopener" style="color:#f39c12;font-weight:700;text-decoration:underline;text-underline-offset:3px">Trần Cường</a></p>
       <p>Nghiêm cấm mọi hành vi sao chép, chỉnh sửa, phát tán, chia sẻ hoặc sử dụng dưới bất kỳ hình thức nào khi chưa có sự cho phép bằng văn bản từ chủ sở hữu.</p>
       <p>Mọi hành vi vi phạm bản quyền sẽ bị xử lý theo quy định của pháp luật hiện hành.</p>
       <p style="margin-top:.5rem;color:#555;font-size:.72rem">Phiên bản <b style="color:#6366f1">v1.4.9</b></p>
@@ -571,8 +693,8 @@
   </script>
   <script>
     const _db = supabase.createClient(
-      'https://gojpmogjretoxplydjvg.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
+      'https://nzoequnbxtqaukyvsvmt.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56b2VxdW5ieHRxYXVreXZzdm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NDY2MDUsImV4cCI6MjEwMTMyMjYwNX0.PFnnvkZ10EtKEH5xXA5VtgnazSYhoyBp9MpBlJCtF7g'
     );
     const overlay = document.getElementById('securityOverlay');
     let lastLogTime = 0;
@@ -1155,7 +1277,7 @@
       resizeCanvas(); initStars(); drawStars();
       window.addEventListener('resize', () => { resizeCanvas(); initStars(); });
 
-      const SYMBOLS = ['∑','∫','π','√','∞','∂','Δ','α','β','γ','θ','λ','μ','σ','φ','ω','≈','≠','≤','≥','∈','∉','⊂','∩','∪','∀','∃','⊕','×','÷','²','³','!','%','±','∓','∝','∇','ℝ','ℤ','ℕ','ℚ','log','lim','sin','cos','tan','f(x)','x²','aₙ','Sₙ'];
+      const SYMBOLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','Hi!','OK','Yes','No','Go!','Nice','Good','Cool','Wow','abc','xyz','IELTS','TOEFL','Vocab','Spell','Read','Write','Speak','Study','Learn','Word','Verb','Noun','Quiz'];
       const colors = ['#a5b4fc','#c4b5fd','#67e8f9','#fde68a','#6ee7b7','#f9a8d4'];
       for (let i = 0; i < 18; i++) {
         const span = document.createElement('span');

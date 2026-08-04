@@ -1,5 +1,5 @@
 const CACHE = 'DHDT-lms-v1.4.9';
-const BASE = '/duyhoangdaytaon-cantho.1.1';
+const BASE = '/duyhoangdaytoan-cantho.1.1';
 const STATIC = [
   `${BASE}/login.html`,
   `${BASE}/admin.html`,

@@ -1,5 +1,9 @@
 const jwt = require('jsonwebtoken');
-const SECRET = process.env.JWT_SECRET || 'duyhoangtoan_secret_2026';
+
+if (!process.env.JWT_SECRET) {
+  console.warn('[AUTH] ⚠️  Biến môi trường JWT_SECRET chưa được đặt. Hãy thêm JWT_SECRET vào file .env trước khi deploy.');
+}
+const SECRET = process.env.JWT_SECRET || 'duyhoangtoan_secret_2026_CHANGE_ME_IN_PRODUCTION';
 
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];

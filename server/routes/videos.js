@@ -1,14 +1,34 @@
 const router = require('express').Router();
 const multer = require('multer');
 const path   = require('path');
+const fs     = require('fs');
 const db     = require('../db');
 const { authMiddleware, requireRole } = require('../middleware/auth');
+
+const ALLOWED_VIDEO_TYPES = [
+  'video/mp4',
+  'video/webm',
+  'video/ogg',
+  'video/quicktime',
+  'video/x-msvideo',
+  'video/x-matroska',
+];
 
 const storage = multer.diskStorage({
   destination: 'uploads/videos/',
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
-const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
+const upload = multer({
+  storage,
+  limits: { fileSize: 500 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_VIDEO_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Chỉ chấp nhận file video (mp4, webm, ogg, mov, avi, mkv)'));
+    }
+  }
+});
 
 // GET /api/videos
 router.get('/', authMiddleware, async (req, res) => {
@@ -37,7 +57,6 @@ router.post('/', authMiddleware, requireRole('teacher','assistant'), upload.sing
 router.delete('/:id', authMiddleware, requireRole('teacher','assistant'), async (req, res) => {
   const [rows] = await db.query('SELECT file_path FROM videos WHERE id=?', [req.params.id]);
   if (rows[0]) {
-    const fs = require('fs');
     const fp = path.join('uploads/videos', rows[0].file_path);
     if (fs.existsSync(fp)) fs.unlinkSync(fp);
   }

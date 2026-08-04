@@ -1,10 +1,10 @@
-
+﻿
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8"/>
   <meta name="google-site-verification" content="sYwxmM0uBuqYK-IhlY67eC_hitCqZFuu1DtAPymm23I" />
-  <title>Quản Trị - DHDTCT LMS v1.4.9</title>
+  <title>Quản Trị — Thiên Tuệ English</title>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
   <link rel="stylesheet" href="style.css"/>
@@ -13,11 +13,11 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-  <meta name="apple-mobile-web-app-title" content="DHDTCT LMS"/>
+  <meta name="apple-mobile-web-app-title" content="Thiên Tuệ English"/>
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <!-- EmailJS để gửi email tự động -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <!-- EmailJS đã bị vô hiệu hóa -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -39,8 +39,8 @@
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/></div>
-      <span class="sidebar-brand-text">DHDTCT LMS</span>
+      <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:contain;border-radius:0"/></div>
+      <span class="sidebar-brand-text">Thiên Tuệ English</span>
       <button class="sidebar-mini-toggle" title="Thu gọn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;transition:all .2s;flex-shrink:0" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
     </div>
     <nav class="sidebar-nav">
@@ -50,13 +50,14 @@
       <a href="#" class="slink" data-page="create-student" data-label="Thêm học viên"><span class="slink-icon">➕</span><span class="slink-label">Thêm học viên mới</span></a>
       <a href="#" class="slink" data-page="students" data-label="Học sinh"><span class="slink-icon">👨‍🎓</span><span class="slink-label">Danh sách học sinh</span></a>
       <a href="#" class="slink" data-page="classes" data-label="Lớp học"><span class="slink-icon">🏫</span><span class="slink-label">Lớp học</span></a>
-      <a href="members.html" class="slink" data-label="Quản lý lớp FB"><span class="slink-icon">👥</span><span class="slink-label">Quản lý lớp FB</span></a>
       <a href="#" class="slink" data-page="security" data-label="Cảnh báo"><span class="slink-icon">🚨</span><span class="slink-label">Nhật ký cảnh báo <span id="alertNavBadge" class="nav-badge" style="display:none"></span></span></a>
       <a href="#" class="slink" data-page="devices" data-label="Thiết bị"><span class="slink-icon">📱</span><span class="slink-label">Cảnh báo thiết bị</span></a>
       <a href="#" class="slink" data-page="access-stats" data-label="Thống kê"><span class="slink-icon">📈</span><span class="slink-label">Thống kê truy cập</span></a>
       <a href="#" class="slink" data-page="login-history" data-label="Đăng nhập"><span class="slink-icon">🕐</span><span class="slink-label">Lịch sử đăng nhập</span></a>
       <a href="#" class="slink" data-page="announcements" data-label="Thông báo"><span class="slink-icon">📢</span><span class="slink-label">Thông báo</span></a>
       <a href="homework.html" class="slink" data-label="Bài Tập"><span class="slink-icon">📝</span><span class="slink-label">Bài Tập</span></a>
+      <a href="#" class="slink" data-page="vocab" data-label="Từ vựng"><span class="slink-icon">🔤</span><span class="slink-label">Từ vựng</span></a>
+      <a href="#" class="slink" data-page="grammar" data-label="Ngữ pháp"><span class="slink-icon">📐</span><span class="slink-label">Ngữ pháp</span></a>
       <a href="#" class="slink" data-page="files" data-label="Lưu trữ"><span class="slink-icon">🗂️</span><span class="slink-label">Lưu trữ tài liệu</span></a>
       <a href="#" class="slink" data-page="schedule" data-label="Lịch học"><span class="slink-icon">📅</span><span class="slink-label">Lịch học</span></a>
       <a href="#" class="slink" data-page="profile" data-label="Hồ sơ"><span class="slink-icon"></span><span class="slink-label">Hồ sơ</span></a>
@@ -65,6 +66,20 @@
     <a href="index.html" style="display:flex;align-items:center;gap:.6rem;margin:.3rem .75rem .5rem;padding:.45rem .85rem;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:.78rem;font-weight:600;transition:all .18s;text-decoration:none" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.5)'">
       <span style="font-size:.9rem">🌐</span><span class="slink-label">Về trang chủ</span>
     </a>
+    <!-- Chỉ hiện với Admin (teacher) -->
+    <a href="sysadmin.html" id="sysAdminLink" style="display:none;align-items:center;gap:.6rem;margin:.3rem .75rem .5rem;padding:.45rem .85rem;border-radius:10px;border:1px solid rgba(243,156,18,.35);background:rgba(243,156,18,.1);color:rgba(253,230,138,.85);font-size:.78rem;font-weight:700;transition:all .18s;text-decoration:none" onmouseover="this.style.background='rgba(243,156,18,.22)';this.style.color='#fde68a'" onmouseout="this.style.background='rgba(243,156,18,.1)';this.style.color='rgba(253,230,138,.85)'">
+      <span style="font-size:.9rem">⚙️</span><span class="slink-label">Quản lý hệ thống</span>
+    </a>
+    <script>
+      // Hiện ngay khi DOM parse tới đây — không cần đợi DOMContentLoaded
+      (function(){
+        var r = sessionStorage.getItem('dh_role');
+        if(r === 'teacher'){
+          var el = document.getElementById('sysAdminLink');
+          if(el) el.style.display = 'flex';
+        }
+      })();
+    </script>
     <a href="#" class="slink" id="maintenanceSideBtn" style="margin:.4rem .75rem" data-label="Bảo trì"><span class="slink-icon">🔧</span><span class="slink-label">Chế độ bảo trì</span></a>
     <div class="sidebar-version" style="padding:.6rem 1.25rem;font-size:.7rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.3px">v1.4.9</div>
     <div class="sidebar-mini-reopen">
@@ -103,6 +118,8 @@
             <div class="av-name" id="teacherName">Giáo viên</div>
             <div class="av-role">Admin</div>
           </div>
+          <!-- Tag lớp GV — chỉ hiện khi có lớp phân công -->
+          <div id="teacherClassTags" style="display:none;flex-wrap:wrap;gap:.3rem;margin-left:.5rem"></div>
         </div>
       </div>
     </header>
@@ -117,7 +134,7 @@
     </div>
     <!-- PAGE: TỔNG QUAN -->
     <section class="page active" id="pageOverview">
-      <div id="greetingBanner" style="background:linear-gradient(135deg,#1e1b4b,#4338ca);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+      <div id="greetingBanner" style="background:linear-gradient(135deg,#96281b,#c0392b,#e67e22,#f39c12);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
         <div>
           <div id="greetingText" style="font-size:1.15rem;font-weight:900;letter-spacing:-.3px"></div>
           <div id="greetingDate" style="font-size:.8rem;opacity:.65;margin-top:.2rem"></div>
@@ -332,7 +349,7 @@
               </button>
               <button class="btn-outline" id="syncGmailBtn"
                 title="Đồng bộ danh sách Gmail từ file Excel/CSV vào lớp" data-teacher-only
-                onclick="document.getElementById('toolsDropdownMenu').classList.remove('open');openGmailSyncModal()"
+                onclick="document.getElementById('toolsDropdownMenu').style.display='none';openGmailSyncModal()"
                 style="width:100%;border:none;border-radius:0;text-align:left;padding:.65rem 1rem;font-size:.85rem;border-bottom:1px solid var(--border);color:#4338ca;font-weight:700">
                 📥 Đồng bộ Gmail → Lớp
               </button>
@@ -738,6 +755,63 @@
 
       <!-- Nội dung file manager -->
       <div id="fileManagerContent"></div>
+    </section>
+
+    <!-- ══════════ PAGE: TỪ VỰNG ══════════ -->
+    <section class="page" id="pageVocab">
+      <div class="page-header">
+        <h1 class="page-title">🔤 Từ vựng</h1>
+        <button class="btn-primary" id="openAddVocabSetBtn" onclick="openVocabSetModal()">➕ Tạo bộ từ vựng</button>
+      </div>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+        <input id="vocabSetSearch" type="text" placeholder="🔍 Tìm bộ từ vựng..."
+          oninput="renderVocabSets()"
+          style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg);color:var(--text);width:220px"/>
+        <select id="vocabClassFilter" onchange="renderVocabSets()"
+          style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg);color:var(--text)">
+          <option value="">Tất cả lớp</option>
+        </select>
+      </div>
+      <div id="vocabSetList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem"></div>
+      <!-- Panel từng từ trong bộ -->
+      <div id="vocabWordsPanel" style="display:none;margin-top:1.5rem">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+          <button onclick="closeVocabWordsPanel()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .8rem;cursor:pointer;font-size:.85rem;color:var(--text)">← Quay lại</button>
+          <h2 id="vocabWordsPanelTitle" style="font-size:1rem;font-weight:800;margin:0;flex:1"></h2>
+          <button class="btn-primary" style="font-size:.82rem" onclick="openAddWordModal()">➕ Thêm từ</button>
+          <button class="btn-outline" style="font-size:.82rem" onclick="openBulkWordModal()">📋 Nhập hàng loạt</button>
+        </div>
+        <div id="vocabWordList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.85rem"></div>
+      </div>
+    </section>
+
+    <!-- ══════════ PAGE: NGỮ PHÁP ══════════ -->
+    <section class="page" id="pageGrammar">
+      <div class="page-header">
+        <h1 class="page-title">📐 Ngữ pháp</h1>
+        <button class="btn-primary" onclick="openGrammarLessonModal()">➕ Tạo bài ngữ pháp</button>
+      </div>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+        <input id="grammarSearch" type="text" placeholder="🔍 Tìm bài ngữ pháp..."
+          oninput="renderGrammarLessons()"
+          style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg);color:var(--text);width:220px"/>
+        <select id="grammarClassFilter" onchange="renderGrammarLessons()"
+          style="padding:.5rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.87rem;background:var(--bg);color:var(--text)">
+          <option value="">Tất cả lớp</option>
+        </select>
+      </div>
+      <div id="grammarLessonList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem"></div>
+      <!-- Panel câu hỏi quiz -->
+      <div id="grammarQPanel" style="display:none;margin-top:1.5rem">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+          <button onclick="closeGrammarQPanel()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .8rem;cursor:pointer;font-size:.85rem;color:var(--text)">← Quay lại</button>
+          <h2 id="grammarQPanelTitle" style="font-size:1rem;font-weight:800;margin:0;flex:1"></h2>
+          <button class="btn-primary" style="font-size:.82rem" onclick="openAddGrammarQModal()">➕ Thêm câu hỏi</button>
+        </div>
+        <!-- Preview nội dung bài -->
+        <div id="grammarLessonPreview" style="background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:.88rem;line-height:1.8;color:var(--text)"></div>
+        <div id="grammarQList" style="display:flex;flex-direction:column;gap:.85rem"></div>
+      </div>
     </section>
 
   <!-- MODAL: Đồng bộ Gmail → Lớp phụ -->
@@ -1379,6 +1453,10 @@
       <input type="date" id="addClassStart"/>
       <label>Ngày kết thúc <span class="muted">(tuỳ chọn)</span></label>
       <input type="date" id="addClassEnd"/>
+      <label>Gán giáo viên <span class="muted">(tuỳ chọn)</span></label>
+      <select id="addClassTeacher" style="padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;background:var(--card);color:var(--text)">
+        <option value="">-- Không gán --</option>
+      </select>
       <div id="addClassError" class="error-msg"></div>
       <div class="modal-actions">
         <button id="addClassCancelBtn" class="btn-outline">Hủy</button>
@@ -1676,6 +1754,105 @@
     </div>
   </div>
 
+  <!-- ══ MODAL: Tạo/Sửa bộ từ vựng ══ -->
+  <div class="modal-overlay" id="vocabSetModal">
+    <div class="modal" style="max-width:480px">
+      <h3 id="vocabSetModalTitle" style="font-weight:800;margin-bottom:1rem">➕ Tạo bộ từ vựng</h3>
+      <input type="hidden" id="vocabSetEditId"/>
+      <div class="form-group"><label>Tiêu đề bộ từ *</label><input id="vsTitle" placeholder="VD: Unit 1 – Family"/></div>
+      <div class="form-group"><label>Mô tả</label><input id="vsDesc" placeholder="Mô tả ngắn (tuỳ chọn)"/></div>
+      <div class="form-group"><label>Lớp</label>
+        <select id="vsClass"><option value="">-- Tất cả lớp --</option></select>
+      </div>
+      <div id="vsErr" style="color:var(--danger);font-size:.82rem;margin-top:.25rem"></div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="document.getElementById('vocabSetModal').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveVocabSet()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Thêm/Sửa từ đơn ══ -->
+  <div class="modal-overlay" id="vocabWordModal">
+    <div class="modal" style="max-width:500px">
+      <h3 id="vocabWordModalTitle" style="font-weight:800;margin-bottom:1rem">➕ Thêm từ</h3>
+      <input type="hidden" id="vocabWordEditId"/>
+      <div class="form-group"><label>Từ tiếng Anh *</label><input id="vwWord" placeholder="VD: beautiful"/></div>
+      <div class="form-group"><label>Phiên âm</label><input id="vwPhonetic" placeholder="VD: /ˈbjuːtɪfəl/"/></div>
+      <div class="form-group"><label>Nghĩa tiếng Việt *</label><input id="vwMeaning" placeholder="VD: đẹp, xinh đẹp"/></div>
+      <div class="form-group"><label>Câu ví dụ</label><input id="vwExample" placeholder="VD: She is a beautiful girl."/></div>
+      <div class="form-group"><label>Link ảnh minh họa (tuỳ chọn)</label><input id="vwImage" placeholder="https://..."/></div>
+      <div id="vwErr" style="color:var(--danger);font-size:.82rem;margin-top:.25rem"></div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="document.getElementById('vocabWordModal').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveVocabWord()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Nhập từ hàng loạt ══ -->
+  <div class="modal-overlay" id="bulkWordModal">
+    <div class="modal" style="max-width:560px">
+      <h3 style="font-weight:800;margin-bottom:.5rem">📋 Nhập từ hàng loạt</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">Mỗi dòng: <code style="background:var(--bg);padding:.1rem .4rem;border-radius:4px">từ | phiên âm | nghĩa | ví dụ</code> (phiên âm và ví dụ tuỳ chọn)</p>
+      <textarea id="bulkWordText" rows="10" placeholder="beautiful | /ˈbjuːtɪfəl/ | đẹp, xinh đẹp | She is beautiful.&#10;happy | /ˈhæpi/ | vui vẻ | I feel happy today.&#10;run | | chạy | He runs every morning."
+        style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:10px;font-size:.85rem;outline:none;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+      <div id="bulkWordErr" style="color:var(--danger);font-size:.82rem;margin-top:.25rem"></div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="document.getElementById('bulkWordModal').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveBulkWords()">💾 Lưu tất cả</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Tạo/Sửa bài ngữ pháp ══ -->
+  <div class="modal-overlay" id="grammarLessonModal">
+    <div class="modal" style="max-width:600px">
+      <h3 id="grammarLessonModalTitle" style="font-weight:800;margin-bottom:1rem">➕ Tạo bài ngữ pháp</h3>
+      <input type="hidden" id="grammarLessonEditId"/>
+      <div class="form-group"><label>Tiêu đề bài *</label><input id="glTitle" placeholder="VD: Thì hiện tại đơn (Simple Present)"/></div>
+      <div class="form-group"><label>Lớp</label>
+        <select id="glClass"><option value="">-- Tất cả lớp --</option></select>
+      </div>
+      <div class="form-group"><label>Nội dung giải thích *</label>
+        <textarea id="glContent" rows="8" placeholder="Giải thích ngữ pháp, cấu trúc, cách dùng, ví dụ...&#10;Hỗ trợ HTML đơn giản: <b>in đậm</b>, <i>in nghiêng</i>, <br> xuống dòng"
+          style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:10px;font-size:.85rem;outline:none;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+      </div>
+      <div id="glErr" style="color:var(--danger);font-size:.82rem;margin-top:.25rem"></div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="document.getElementById('grammarLessonModal').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveGrammarLesson()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Thêm/Sửa câu hỏi quiz ngữ pháp ══ -->
+  <div class="modal-overlay" id="grammarQModal">
+    <div class="modal" style="max-width:560px">
+      <h3 id="grammarQModalTitle" style="font-weight:800;margin-bottom:1rem">➕ Thêm câu hỏi quiz</h3>
+      <input type="hidden" id="gqEditId"/>
+      <div class="form-group"><label>Câu hỏi *</label><input id="gqQuestion" placeholder="VD: Choose the correct form: She ___ to school every day."/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem">
+        <div class="form-group" style="margin:0"><label>A</label><input id="gqA" placeholder="goes"/></div>
+        <div class="form-group" style="margin:0"><label>B</label><input id="gqB" placeholder="go"/></div>
+        <div class="form-group" style="margin:0"><label>C</label><input id="gqC" placeholder="going"/></div>
+        <div class="form-group" style="margin:0"><label>D</label><input id="gqD" placeholder="gone"/></div>
+      </div>
+      <div class="form-group"><label>Đáp án đúng</label>
+        <select id="gqAnswer" style="width:100%;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:10px;outline:none;font-size:.9rem;background:var(--bg);color:var(--text)">
+          <option value="A">A</option><option value="B">B</option>
+          <option value="C">C</option><option value="D">D</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Giải thích (tuỳ chọn)</label><input id="gqExplanation" placeholder="VD: Thì hiện tại đơn với chủ ngữ ngôi 3 số ít dùng V-s/es"/></div>
+      <div id="gqErr" style="color:var(--danger);font-size:.82rem;margin-top:.25rem"></div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="document.getElementById('grammarQModal').classList.remove('open')">Hủy</button>
+        <button class="btn-primary" onclick="saveGrammarQuestion()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
   <script src="admin.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -1709,9 +1886,9 @@
     .cp-bar .cp-dot { width: 4px; height: 4px; background: rgba(165,180,252,.3); border-radius: 50%; }
   </style>
   <div class="cp-bar">
-    <span>© 2026 <b>DHDTCT LMS Education System</b></span>
+    <span>© 2026 <b>Thiên Tuệ English</b></span>
     <span class="cp-dot"></span>
-    <span>Thiết kế &amp; Phát triển bởi <b>Tr.Cường08</b> &amp; <b>Quốc Toàn</b></span>
+    <span>Thiết kế &amp; Phát triển bởi <a href="https://trancuongdev.github.io/profile-TranCuong/" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px">Trần Cường</a></span>
     <span class="cp-dot"></span>
     <span><b>v1.4.9</b></span>
   </div>
