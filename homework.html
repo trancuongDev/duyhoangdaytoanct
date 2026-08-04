@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bài Tập — Thiên Tuệ English</title>
+  <title>Bài Tập - DHDT LMS</title>
   <meta http-equiv="X-Frame-Options" content="DENY"/>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <link rel="stylesheet" href="style.css"/>
@@ -527,8 +527,8 @@
 <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:contain;border-radius:0"/></div>
-    <span class="sidebar-brand-text">Thiên Tuệ English</span>
+    <div class="sidebar-brand-icon"><img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/></div>
+    <span class="sidebar-brand-text">DHDT LMS</span>
     <button id="sidebarClose" class="sidebar-mini-toggle" title="Thu gọn"
       style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:6px;flex-shrink:0"
       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">◀</button>
@@ -551,7 +551,7 @@
   <header class="topbar">
     <button class="menu-toggle" id="menuToggle">☰</button>
     <div style="font-weight:700;font-size:.95rem;color:var(--text);display:flex;align-items:center;gap:.5rem">
-      <img src="icons/icon-192.png" style="width:24px;height:24px;border-radius:6px"/> Thiên Tuệ English — Bài Tập
+      <img src="icons/icon-192.png" style="width:24px;height:24px;border-radius:6px"/> DHDT LMS — Bài Tập
     </div>
     <div class="topbar-right">
       <button id="darkBtn" title="Chế độ tối"
@@ -614,8 +614,8 @@
     <!-- Footer bản quyền -->
     <div style="margin-top:2.5rem;padding:1rem 0;border-top:1.5px solid var(--border);text-align:center">
       <div style="font-size:.75rem;color:var(--muted);line-height:1.9">
-        <span style="font-weight:800;color:var(--text)">© Thiên Tuệ English</span> — Hệ thống bài tập trực tuyến<br/>
-        <span style="font-size:.72rem">Phát triển bởi <a href="https://trancuongdev.github.io/profile-TranCuong/" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700;text-decoration:underline">Trần Cường</a></span><br/>
+        <span style="font-weight:800;color:var(--text)">© DHDT LMS</span> — Hệ thống bài tập trực tuyến<br/>
+        <span style="font-size:.72rem">Bản quyền sở hữu trí tuệ thuộc về <b>DHDT LMS</b> · Phát triển &amp; điều hành bởi <b>Tr. Cường</b></span><br/>
         <span style="font-size:.68rem;opacity:.55">Nghiêm cấm sao chép, phân phối dưới mọi hình thức khi chưa được cho phép.</span>
       </div>
     </div>
@@ -997,8 +997,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════
 // CONFIG & STATE
 // ═══════════════════════════════════════════
-const SUPA_URL = 'https://nzoequnbxtqaukyvsvmt.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56b2VxdW5ieHRxYXVreXZzdm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NDY2MDUsImV4cCI6MjEwMTMyMjYwNX0.PFnnvkZ10EtKEH5xXA5VtgnazSYhoyBp9MpBlJCtF7g';
+const SUPA_URL = 'https://gojpmogjretoxplydjvg.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ── Kiểm tra bảo trì ──────────────────────────────────────
@@ -1343,14 +1343,7 @@ function setSideTab(tab) {
 let _hwSelectedClasses = [];
 
 async function loadClasses() {
-  const _gvClass = sessionStorage.getItem('dh_teacher_class') || null;
-  const _gvClasses = _gvClass ? _gvClass.split(',').map(c=>c.trim()).filter(Boolean) : null;
-  const { data: allData } = await sb.from('classes').select('name').order('name');
-  // GV chỉ thấy lớp được phân công trong dropdown
-  // So sánh trim + lowercase để tránh lỗi khoảng trắng thừa
-  const data = _gvClasses && _gvClasses.length
-    ? (allData||[]).filter(c => _gvClasses.some(gc => gc.toLowerCase() === c.name.trim().toLowerCase()))
-    : (allData||[]);
+  const { data } = await sb.from('classes').select('name').order('name');
   const opts = document.getElementById('hwClassOptions');
   if (!opts) return;
   opts.innerHTML = '';
@@ -1504,25 +1497,11 @@ function _setHwClassSelect(value) {
 let allStudentCodes = {}; // username → student_code
 
 async function loadAdminData() {
-  // GV chỉ thấy bài tập của lớp mình
-  const _gvClass = sessionStorage.getItem('dh_teacher_class') || null;
-  const _gvClasses = _gvClass ? _gvClass.split(',').map(c=>c.trim()).filter(Boolean) : null;
-
-  let hwQuery = sb.from('homework').select('*').is('deleted_at', null).order('created_at',{ascending:false});
-  // Nếu là GV có lớp → chỉ lấy bài của lớp đó
-  if (_gvClasses && _gvClasses.length) {
-    const orFilter = _gvClasses.map(c => `class_name.eq.${c}`).join(',');
-    hwQuery = hwQuery.or(`class_name.is.null,${orFilter}`);
-  }
-
-  let subQuery = sb.from('homework_submissions').select('*').order('submitted_at',{ascending:false});
-  // GV chỉ thấy bài nộp của lớp mình
-  if (_gvClasses && _gvClasses.length) {
-    const orFilter2 = _gvClasses.map(c => `class_name.eq.${c}`).join(',');
-    subQuery = subQuery.or(orFilter2);
-  }
-
-  const [hwR,subR] = await Promise.all([hwQuery, subQuery]);
+  const [hwR,subR] = await Promise.all([
+    // Chỉ lấy bài chưa xóa (deleted_at IS NULL)
+    sb.from('homework').select('*').is('deleted_at', null).order('created_at',{ascending:false}),
+    sb.from('homework_submissions').select('*').order('submitted_at',{ascending:false})
+  ]);
   allHomework    = hwR.data  || [];
   allSubmissions = subR.data || [];
 
@@ -1962,28 +1941,18 @@ function renderAdminList() {
 // ═══════════════════════════════════════════
 async function renderAdminNotDone() {
   const el = document.getElementById('hwContent');
-  const myToken = _adminTabToken;
+  const myToken = _adminTabToken; // snapshot token khi bắt đầu
   el.innerHTML = `<div class="hw-empty"><div class="hw-empty-icon">⏳</div><p>Đang tải...</p></div>`;
 
-  // GV chỉ thấy học sinh lớp mình
-  const _gvClass = sessionStorage.getItem('dh_teacher_class') || null;
-  const _gvClasses = _gvClass ? _gvClass.split(',').map(c=>c.trim()).filter(Boolean) : null;
-
-  // Fetch học sinh — có filter lớp nếu là GV
+  // Fetch tất cả học sinh — dùng nhiều batch để vượt giới hạn 1000 rows của Supabase
   let allFetched = [], from = 0, batchSize = 1000;
   while (true) {
-    if (_adminTabToken !== myToken) return;
-    let q = sb.from('students')
+    if (_adminTabToken !== myToken) return; // tab đã đổi → dừng
+    const { data: batch } = await sb.from('students')
       .select('username,full_name,class_name,student_code,active,id')
       .neq('active', false)
       .order('full_name', { ascending: true })
       .range(from, from + batchSize - 1);
-    // GV: chỉ lấy học sinh lớp mình
-    if (_gvClasses && _gvClasses.length) {
-      const orFilter = _gvClasses.map(c => `class_name.ilike.%${c}%`).join(',');
-      q = q.or(orFilter);
-    }
-    const { data: batch } = await q;
     if (!batch || batch.length === 0) break;
     allFetched = allFetched.concat(batch);
     if (batch.length < batchSize) break;
@@ -2042,17 +2011,11 @@ async function renderAdminNotDone() {
 
   function _render() {
     // Lấy danh sách lớp từ cả bảng classes, students và student_classes
-    // GV chỉ thấy lớp mình trong dropdown filter
-    const _gvClassR = sessionStorage.getItem('dh_teacher_class') || null;
-    const _gvClassesR = _gvClassR ? _gvClassR.split(',').map(c=>c.trim()).filter(Boolean) : null;
     const fromClasses  = (classesTable||[]).map(c=>c.name);
     const fromStudents = allStudents.flatMap(s =>
       (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean)
     );
-    let classes = [...new Set([...fromClasses, ...fromStudents])].sort();
-    if (_gvClassesR && _gvClassesR.length) {
-      classes = classes.filter(c => _gvClassesR.some(gc => gc.toLowerCase() === c.trim().toLowerCase()));
-    }
+    const classes = [...new Set([...fromClasses, ...fromStudents])].sort();
 
     let filtered = _cls === 'all' ? allStudents
       : allStudents.filter(s => {
@@ -2810,15 +2773,10 @@ async function renderAdminLive() {
 
   // Load lớp vào filter
   try {
-    const _gvClass2 = sessionStorage.getItem('dh_teacher_class') || null;
-    const _gvClasses2 = _gvClass2 ? _gvClass2.split(',').map(c=>c.trim()).filter(Boolean) : null;
     const { data: clsData } = await sb.from('classes').select('name').order('name');
     const clsSel = document.getElementById('liveClassFilter');
     if (clsSel && clsData) {
-      const filtered = _gvClasses2 && _gvClasses2.length
-        ? clsData.filter(c => _gvClasses2.some(gc => gc.toLowerCase() === c.name.trim().toLowerCase()))
-        : clsData;
-      filtered.forEach(c => {
+      clsData.forEach(c => {
         const o = document.createElement('option'); o.value = c.name; o.textContent = c.name;
         clsSel.appendChild(o);
       });
@@ -3267,18 +3225,11 @@ async function _renderLiveStats(activeRows) {
 
   if (!targetHws.length) { statEl.innerHTML = ''; return; }
 
-  // Fetch tất cả HS — cache 30s để tránh gọi liên tục, filter theo lớp GV
+  // Fetch tất cả HS — cache 30s để tránh gọi liên tục
   const now30 = Date.now();
   if (!_liveStudentsCache || now30 - _liveStudentsCacheAt > 30000) {
     try {
-      const _gvClass2 = sessionStorage.getItem('dh_teacher_class') || null;
-      const _gvClasses2 = _gvClass2 ? _gvClass2.split(',').map(c=>c.trim()).filter(Boolean) : null;
-      let q2 = sb.from('students').select('username,class_name,active').neq('active', false).limit(2000);
-      if (_gvClasses2 && _gvClasses2.length) {
-        const orF = _gvClasses2.map(c => `class_name.ilike.%${c}%`).join(',');
-        q2 = q2.or(orF);
-      }
-      const { data } = await q2;
+      const { data } = await sb.from('students').select('username,class_name,active').neq('active', false).limit(2000);
       _liveStudentsCache   = data || [];
       _liveStudentsCacheAt = now30;
     } catch(e) { return; }
@@ -3775,15 +3726,6 @@ function openModalHW() {
   document.getElementById('hwAntiPaste').checked = false;
   document.getElementById('hwOpenAt').value = '';
   _resetHwClassSelect();
-  // GV: tự điền lớp được phân công mặc định
-  const _gvClass = sessionStorage.getItem('dh_teacher_class') || null;
-  if (_gvClass) {
-    const gvClasses = _gvClass.split(',').map(c=>c.trim()).filter(Boolean);
-    gvClasses.forEach(c => {
-      if (!_hwSelectedClasses.includes(c)) _hwSelectedClasses.push(c);
-    });
-    _renderHwClassTags();
-  }
   _resetHwStudentSelect();
   renderQuestionList();
   document.getElementById('modalHW').classList.add('open');
@@ -7121,9 +7063,9 @@ window.addEventListener('pagehide', function(e) {
   // Dùng sendBeacon để mark submitted ngay cả khi tab đóng
   if (doHWId && currentUser?.username) {
     try {
-      const url = `https://nzoequnbxtqaukyvsvmt.supabase.co/rest/v1/exam_progress?homework_id=eq.${doHWId}&username=eq.${encodeURIComponent(currentUser.username)}`;
+      const url = `https://gojpmogjretoxplydjvg.supabase.co/rest/v1/exam_progress?homework_id=eq.${doHWId}&username=eq.${encodeURIComponent(currentUser.username)}`;
       const body = JSON.stringify({ status: 'submitted', updated_at: new Date().toISOString() });
-      navigator.sendBeacon && navigator.sendBeacon(url + '&apikey=' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56b2VxdW5ieHRxYXVreXZzdm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NDY2MDUsImV4cCI6MjEwMTMyMjYwNX0.PFnnvkZ10EtKEH5xXA5VtgnazSYhoyBp9MpBlJCtF7g',
+      navigator.sendBeacon && navigator.sendBeacon(url + '&apikey=' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA',
         new Blob([body], { type: 'application/json' }));
     } catch(e) {}
   }
@@ -8632,7 +8574,7 @@ async function exportHW(hwId) {
 </style></head><body>`,
 
     // Page header
-    '<div class="page-header"><span>Thiên Tuệ English</span><span>',
+    '<div class="page-header"><span>DHDT LMS</span><span>',
     isStudent ? studentName : '📋 ĐÁP ÁN — Dành cho giáo viên',
     '</span></div>',
 
@@ -8655,7 +8597,7 @@ async function exportHW(hwId) {
     qHtml,
 
     // Footer
-    `<div class="footer">Thiên Tuệ English — Xuất ngày ${exportDate}</div>`,
+    `<div class="footer">DHDT LMS — Xuất ngày ${exportDate}</div>`,
 
     // ── TRANG ĐÁP ÁN TỔNG HỢP (chỉ bản giáo viên) ──
     ...(!isStudent ? (() => {
@@ -8821,7 +8763,7 @@ async function exportHW(hwId) {
         <span style="font-size:1.2rem">📖</span>
         <div>
           <div style="font-weight:900;font-size:.95rem">Hướng dẫn sử dụng</div>
-          <div style="font-size:.7rem;opacity:.65">Thiên Tuệ English — Trang Bài Tập</div>
+          <div style="font-size:.7rem;opacity:.65">DHDT LMS — Trang Bài Tập</div>
         </div>
       </div>
       <button onclick="document.getElementById('modalGuide').classList.remove('open')"
@@ -8958,7 +8900,7 @@ async function exportHW(hwId) {
 
       <!-- Bản quyền -->
       <div style="text-align:center;padding:.75rem 0 .25rem;font-size:.68rem;color:var(--muted);border-top:1px dashed var(--border)">
-        © Thiên Tuệ English · Bản quyền sở hữu trí tuệ · Phát triển &amp; điều hành bởi <b>Tr. Cường</b>
+        © DHDT LMS · Bản quyền sở hữu trí tuệ · Phát triển &amp; điều hành bởi <b>Tr. Cường</b>
       </div>
 
     </div>

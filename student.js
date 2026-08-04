@@ -1,7 +1,7 @@
-﻿// Khởi tạo Supabase client
+// Khởi tạo Supabase client
 const db = supabase.createClient(
-  'https://nzoequnbxtqaukyvsvmt.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56b2VxdW5ieHRxYXVreXZzdm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NDY2MDUsImV4cCI6MjEwMTMyMjYwNX0.PFnnvkZ10EtKEH5xXA5VtgnazSYhoyBp9MpBlJCtF7g'
+  'https://gojpmogjretoxplydjvg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
 );
 
 // ---- Giải mã link AES-GCM ----
@@ -54,7 +54,7 @@ if (sessionStorage.getItem('dh_role') !== 'student') location.href = 'login.html
               Chúng tôi đang nâng cấp hệ thống để phục vụ bạn tốt hơn.<br/>
               Vui lòng quay lại sau ít phút.
             </div>
-            <div style="font-size:.82rem;color:#94a3b8">trợ lý và giáo viên không hỗ trợ duy trì tài khoản.</div>
+            <div style="font-size:.82rem;color:#94a3b8">trợ lý và giáo viên ko hổ trợ duy trì tài khoản.</div>
           </div>
         </div>`;
     }
@@ -176,10 +176,10 @@ async function loadMe() {
     const bg    = daysLeft === 0 ? '#fee2e2' : isUrgent ? '#fef3c7' : '#eff6ff';
     const icon  = daysLeft === 0 ? '🔴' : isUrgent ? '⚠️' : '📅';
     const msg   = daysLeft === 0
-      ? `Tài khoản hết hạn <b>hôm nay</b>! trợ lý và giáo viên ko hỗ trợ duy trì tài khoản.`
+      ? `Tài khoản hết hạn <b>hôm nay</b>! trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`
       : daysLeft < 0
-      ? `Tài khoản đã hết hạn vào <b>${dateStr}</b>. trợ lý và giáo viên ko hỗ trợ duy trì tài khoản.`
-      : `${type === 'class' ? `Khóa học <b>${myClass}</b>` : 'Tài khoản'} sẽ hết hạn vào <b>${dateStr}</b> — còn <b>${daysLeft} ngày</b>. trợ lý và giáo viên ko hỗ trợ duy trì tài khoản.`;
+      ? `Tài khoản đã hết hạn vào <b>${dateStr}</b>. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`
+      : `${type === 'class' ? `Khóa học <b>${myClass}</b>` : 'Tài khoản'} sẽ hết hạn vào <b>${dateStr}</b> — còn <b>${daysLeft} ngày</b>. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`;
     banner.style.cssText = `display:block;background:${bg};border-left:4px solid ${color};border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.88rem;color:${color};font-weight:600`;
     banner.innerHTML = `${icon} ${msg}`;
   }
@@ -212,7 +212,7 @@ async function loadMe() {
 
   // Nếu bị khóa → đăng xuất ngay
   if (locked) {
-    alert('Khóa học của bạn đã kết thúc. Tài khoản đã bị khóa. trợ lý và giáo viên ko hỗ trợ duy trì tài khoản.');
+    alert('Khóa học của bạn đã kết thúc. Tài khoản đã bị khóa. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.');
     sessionStorage.clear();
     location.href = 'login.html';
     return;
@@ -299,7 +299,7 @@ function showPage(pg) {
   sessionStorage.removeItem('st_lesson_id'); // reset bài khi chuyển trang
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.slink').forEach(l => l.classList.remove('active'));
-  const map = { home:'Home', lessons:'Lessons', profile:'Profile', guide:'Guide', notifications:'Notifications', vocab:'Vocab', grammar:'Grammar' };
+  const map = { home:'Home', lessons:'Lessons', profile:'Profile', guide:'Guide', notifications:'Notifications' };
   const el = document.getElementById('page' + (map[pg] || pg.charAt(0).toUpperCase()+pg.slice(1)));
   if (el) el.classList.add('active');
   document.querySelectorAll(`[data-page="${pg}"]`).forEach(l => l.classList.add('active'));
@@ -307,8 +307,6 @@ function showPage(pg) {
   if (pg === 'lessons')       renderLessonList();
   if (pg === 'notifications') renderNotifications();
   if (pg === 'schedule')      renderStudentSchedule();
-  if (pg === 'vocab')         renderStVocabSets();
-  if (pg === 'grammar')       renderStGrammarLessons();
 }
 document.querySelectorAll('.slink[data-page]').forEach(l => {
   l.addEventListener('click', e => { e.preventDefault(); showPage(l.dataset.page); document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('show'); });
@@ -1222,7 +1220,7 @@ db.channel('student-lock-' + currentUser)
           <div style="color:#ef4444;font-size:1.3rem;font-weight:800">Tài khoản đã bị khóa</div>
           <div style="color:rgba(255,255,255,.75);font-size:.95rem;max-width:320px;line-height:1.7">
             Tài khoản của bạn vừa bị khóa bởi quản trị viên.<br/>
-            trợ lý và giáo viên ko hỗ trợ duy trì tài khoản.
+            trợ lý và giáo viên ko hổ trợ duy trì tài khoản.
           </div>
           <div id="_lockCountdown" style="color:rgba(255,255,255,.5);font-size:.85rem">Tự động chuyển về đăng nhập sau <b style="color:#fff">3</b> giây...</div>
           <button onclick="location.href='login.html'" style="margin-top:.5rem;background:#6366f1;color:#fff;border:none;padding:.75rem 2rem;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
@@ -1484,7 +1482,7 @@ setInterval(async () => {
 
   // Tài khoản bị khóa thủ công
   if (!data.active) {
-    alert('Tài khoản của bạn đã bị khóa. trợ lý và giáo viên ko hỗ trợ duy trì tài khoản.');
+    alert('Tài khoản của bạn đã bị khóa. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.');
     await setOffline();
     sessionStorage.clear();
     location.href = 'login.html';
@@ -1500,7 +1498,7 @@ setInterval(async () => {
     const allExpired = (clsList||[]).filter(c=>c.end_date).every(c => new Date(c.end_date) < today);
     if (!hasActive && allExpired && (clsList||[]).some(c=>c.end_date)) {
       await db.from('students').update({ active: false }).eq('username', currentUser);
-      alert(`Tất cả khóa học đã kết thúc. Tài khoản đã bị khóa. trợ lý và giáo viên ko hỗ trợ duy trì tài khoản.`);
+      alert(`Tất cả khóa học đã kết thúc. Tài khoản đã bị khóa. trợ lý và giáo viên ko hổ trợ duy trì tài khoản.`);
       await setOffline();
       sessionStorage.clear();
       location.href = 'login.html';
@@ -1973,463 +1971,4 @@ document.getElementById('sNextWeek')?.addEventListener('click', () => {
 
 function openScheduleViewer(s) {
   // legacy — không dùng nữa nhưng giữ để không lỗi nếu còn ref cũ
-}
-
-
-// ══════════════════════════════════════════════════════════════════
-// TỪ VỰNG CHO HỌC SINH — Flashcard, Điền từ, Nối từ, Quiz
-// ══════════════════════════════════════════════════════════════════
-let _stCurrentVocabSetId = null;
-let _stCurrentVocabWords = [];
-let _stCurrentGame = 'flashcard';
-
-async function renderStVocabSets() {
-  const list = document.getElementById('stVocabSetList');
-  if (!list) return;
-  list.innerHTML = '<div style="color:var(--muted);padding:2rem;text-align:center;grid-column:1/-1">Đang tải...</div>';
-  const { data, error } = await db.from('vocab_sets').select('*').order('sort_order').order('created_at');
-  if (error) { list.innerHTML = `<p style="color:var(--danger)">Lỗi: ${error.message}</p>`; return; }
-  // Lọc theo lớp/username của học sinh hiện tại
-  const rows = (data || []).filter(s => {
-    // Không giới hạn lớp/username → hiện cho tất cả
-    if (!s.class_name && !s.allowed_usernames) return true;
-    // Giới hạn theo username
-    if (s.allowed_usernames) {
-      const allowed = s.allowed_usernames.split(',').map(u => u.trim().toLowerCase()).filter(Boolean);
-      if (allowed.includes((currentUser || '').toLowerCase())) return true;
-    }
-    // Giới hạn theo lớp
-    if (s.class_name && myClasses.length) {
-      const setCls = s.class_name.split(',').map(c => c.trim()).filter(Boolean);
-      if (setCls.some(c => myClasses.includes(c))) return true;
-    }
-    return false;
-  });
-  if (!rows.length) { list.innerHTML = `<div style="color:var(--muted);padding:2rem;text-align:center;grid-column:1/-1">Chưa có bộ từ vựng nào cho bạn.</div>`; return; }
-  list.innerHTML = rows.map(s => `
-    <div style="background:var(--card);border:2px solid var(--border);border-radius:16px;padding:1.25rem;box-shadow:var(--shadow);cursor:pointer;transition:all .18s"
-      onmouseover="this.style.borderColor='var(--primary)';this.style.boxShadow='0 8px 24px rgba(99,102,241,.2)'"
-      onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='var(--shadow)'"
-      onclick="stOpenVocabGame(${s.id},'${(s.title||'').replace(/'/g,"\\'")}')">
-      <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:.4rem">🔤 ${s.title}</div>
-      ${s.description ? `<div style="font-size:.8rem;color:var(--muted);margin-bottom:.65rem">${s.description}</div>` : ''}
-      <div style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem">
-        <div style="background:var(--primary-light);color:var(--primary);font-size:.75rem;font-weight:700;padding:.25rem .65rem;border-radius:20px">Học ngay →</div>
-      </div>
-    </div>`).join('');
-}
-
-async function stOpenVocabGame(setId, title) {
-  _stCurrentVocabSetId = setId;
-  _stCurrentGame = 'flashcard';
-  document.getElementById('stVocabGameTitle').textContent = title;
-  document.getElementById('stVocabSetList').style.display = 'none';
-  document.getElementById('stVocabGamePanel').style.display = 'block';
-  const { data, error } = await db.from('vocab_words').select('*').eq('set_id', setId).order('sort_order').order('created_at');
-  if (error) { showToast('Lỗi: ' + error.message, false); return; }
-  _stCurrentVocabWords = data || [];
-  stSwitchVocabGame('flashcard', document.querySelector('.st-game-tab[data-game="flashcard"]'));
-}
-
-function stCloseVocabGame() {
-  _stCurrentVocabSetId = null;
-  _stCurrentVocabWords = [];
-  document.getElementById('stVocabGamePanel').style.display = 'none';
-  document.getElementById('stVocabSetList').style.display = 'grid';
-}
-
-function stSwitchVocabGame(game, btn) {
-  _stCurrentGame = game;
-  document.querySelectorAll('.st-game-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  const area = document.getElementById('stVocabGameArea');
-  if (!area) return;
-  if (game === 'flashcard') stRenderFlashcard(area);
-  else if (game === 'fillin') stRenderFillIn(area);
-  else if (game === 'match')  stRenderMatch(area);
-  else if (game === 'quiz')   stRenderVocabQuiz(area);
-}
-
-// ── Flashcard ──
-let _fcIdx = 0;
-function stRenderFlashcard(area) {
-  if (!_stCurrentVocabWords.length) { area.innerHTML = '<p style="color:var(--muted);padding:2rem;text-align:center">Bộ từ này chưa có từ nào.</p>'; return; }
-  _fcIdx = 0;
-  const renderCard = () => {
-    const w = _stCurrentVocabWords[_fcIdx];
-    area.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:1rem;gap:.5rem">
-        <button onclick="if(_fcIdx>0){_fcIdx--;arguments.callee.caller()}}" ${_fcIdx===0?'disabled':''} style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .9rem;cursor:pointer;font-size:.85rem;color:var(--text)">◀ Trước</button>
-        <span style="font-size:.85rem;color:var(--muted);font-weight:600">${_fcIdx + 1} / ${_stCurrentVocabWords.length}</span>
-        <button onclick="if(_fcIdx<${_stCurrentVocabWords.length - 1}){_fcIdx++;arguments.callee.caller()}}" ${_fcIdx===_stCurrentVocabWords.length - 1?'disabled':''} style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .9rem;cursor:pointer;font-size:.85rem;color:var(--text)">Sau ▶</button>
-      </div>
-      <div class="st-flashcard" id="stFlashcard" onclick="this.classList.toggle('flipped')">
-        <div class="st-flashcard-inner">
-          <div class="st-flashcard-front">
-            ${w.image_url ? `<img src="${w.image_url}" alt="${w.word}" style="width:100%;max-height:90px;object-fit:contain;margin-bottom:.75rem;border-radius:10px" onerror="this.style.display='none'"/>` : ''}
-            <div style="font-size:1.8rem;font-weight:900;margin-bottom:.35rem">${w.word}</div>
-            ${w.phonetic ? `<div style="font-size:.9rem;opacity:.75;font-style:italic">${w.phonetic}</div>` : ''}
-            <div style="font-size:.75rem;margin-top:auto;opacity:.5">Bấm để xem nghĩa ⟳</div>
-          </div>
-          <div class="st-flashcard-back">
-            <div style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">${w.meaning}</div>
-            ${w.example ? `<div style="font-size:.85rem;font-style:italic;opacity:.9;text-align:center">"${w.example}"</div>` : ''}
-            <div style="font-size:.75rem;margin-top:auto;opacity:.5">Bấm để xem từ ⟳</div>
-          </div>
-        </div>
-      </div>
-      <div style="text-align:center;margin-top:1rem;font-size:.82rem;color:var(--muted)">Nhấp vào thẻ để lật qua lại</div>`;
-  };
-  renderCard();
-  // Override prev/next để re-render
-  window.stFcPrev = () => { if (_fcIdx > 0) { _fcIdx--; renderCard(); } };
-  window.stFcNext = () => { if (_fcIdx < _stCurrentVocabWords.length - 1) { _fcIdx++; renderCard(); } };
-  area.querySelectorAll('button')[0].onclick = window.stFcPrev;
-  area.querySelectorAll('button')[1].onclick = window.stFcNext;
-}
-
-// ── Điền từ ──
-let _fiWords = [], _fiIdx = 0, _fiScore = 0;
-function stRenderFillIn(area) {
-  if (!_stCurrentVocabWords.length) { area.innerHTML = '<p style="color:var(--muted);padding:2rem;text-align:center">Bộ từ này chưa có từ nào.</p>'; return; }
-  _fiWords = [..._stCurrentVocabWords].sort(() => Math.random() - 0.5);
-  _fiIdx = 0; _fiScore = 0;
-  stRenderFillInCard(area);
-}
-function stRenderFillInCard(area) {
-  if (_fiIdx >= _fiWords.length) {
-    area.innerHTML = `
-      <div style="text-align:center;padding:2rem;background:var(--card);border-radius:16px;border:1.5px solid var(--border)">
-        <div style="font-size:3rem;margin-bottom:.75rem">${_fiScore === _fiWords.length ? '🏆' : _fiScore >= _fiWords.length * 0.6 ? '🎉' : '📚'}</div>
-        <div style="font-size:1.3rem;font-weight:900;color:var(--text);margin-bottom:.5rem">Kết quả: ${_fiScore}/${_fiWords.length}</div>
-        <div style="font-size:.9rem;color:var(--muted);margin-bottom:1.25rem">${_fiScore === _fiWords.length ? 'Xuất sắc! Bạn thuộc hết rồi!' : _fiScore >= _fiWords.length * 0.6 ? 'Tốt lắm! Luyện thêm nhé!' : 'Cần ôn thêm, cố lên!'}</div>
-        <button onclick="stRenderFillIn(document.getElementById('stVocabGameArea'))"
-          style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:12px;padding:.65rem 1.75rem;font-size:.9rem;font-weight:700;cursor:pointer">🔄 Chơi lại</button>
-      </div>`;
-    return;
-  }
-  const w = _fiWords[_fiIdx];
-  // Tạo gợi ý: hiện chữ cái đầu + _ cho các chữ còn lại
-  const hint = w.word[0] + '_'.repeat(Math.max(w.word.length - 1, 1));
-  area.innerHTML = `
-    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:1.5rem;max-width:480px;margin:0 auto">
-      <div style="text-align:center;font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:.75rem">Câu ${_fiIdx + 1}/${_fiWords.length} · Điểm: ${_fiScore}</div>
-      ${w.image_url ? `<img src="${w.image_url}" style="width:100%;max-height:120px;object-fit:contain;border-radius:10px;margin-bottom:1rem" onerror="this.style.display='none'"/>` : ''}
-      <div style="font-size:1.05rem;font-weight:700;color:var(--text);text-align:center;margin-bottom:.35rem">${w.meaning}</div>
-      ${w.example ? `<div style="font-size:.8rem;color:var(--muted);text-align:center;font-style:italic;margin-bottom:1rem">${w.example.replace(new RegExp(w.word,'gi'), '___')}</div>` : '<div style="margin-bottom:1rem"></div>'}
-      <div style="text-align:center;font-size:.82rem;color:var(--muted);margin-bottom:.5rem">Gợi ý: <b>${hint}</b> (${w.word.length} chữ cái)</div>
-      <input id="fiInput" type="text" placeholder="Nhập từ tiếng Anh..."
-        style="width:100%;padding:.65rem 1rem;border:2px solid var(--border);border-radius:12px;font-size:1rem;outline:none;text-align:center;background:var(--bg);color:var(--text)"
-        onkeydown="if(event.key==='Enter')stCheckFillIn()"
-        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <div id="fiMsg" style="text-align:center;min-height:28px;margin-top:.6rem;font-size:.88rem;font-weight:700"></div>
-      <div style="display:flex;gap:.65rem;margin-top:.85rem">
-        <button onclick="stCheckFillIn()" style="flex:1;padding:.6rem;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer">✓ Kiểm tra</button>
-        <button onclick="_fiIdx++;stRenderFillInCard(document.getElementById('stVocabGameArea'))" style="padding:.6rem 1rem;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--muted);cursor:pointer;font-size:.85rem">Bỏ qua ▶</button>
-      </div>
-    </div>`;
-  setTimeout(() => document.getElementById('fiInput')?.focus(), 50);
-}
-function stCheckFillIn() {
-  const input = document.getElementById('fiInput');
-  const msg   = document.getElementById('fiMsg');
-  if (!input || !msg) return;
-  const val  = input.value.trim().toLowerCase();
-  const correct = _fiWords[_fiIdx].word.toLowerCase();
-  if (val === correct) {
-    msg.style.color = '#10b981';
-    msg.textContent = '✅ Chính xác!';
-    _fiScore++;
-    input.disabled = true;
-    setTimeout(() => { _fiIdx++; stRenderFillInCard(document.getElementById('stVocabGameArea')); }, 900);
-  } else {
-    msg.style.color = '#ef4444';
-    msg.textContent = `❌ Sai rồi! Đáp án: ${_fiWords[_fiIdx].word}`;
-    input.style.borderColor = '#ef4444';
-    setTimeout(() => { _fiIdx++; stRenderFillInCard(document.getElementById('stVocabGameArea')); }, 1600);
-  }
-}
-
-// ── Nối từ ──
-let _matchSelected = { type: null, id: null };
-let _matchPairs = [];
-let _matchMatched = new Set();
-function stRenderMatch(area) {
-  if (!_stCurrentVocabWords.length) { area.innerHTML = '<p style="color:var(--muted);padding:2rem;text-align:center">Bộ từ này chưa có từ nào.</p>'; return; }
-  _matchSelected = { type: null, id: null };
-  _matchMatched  = new Set();
-  // Lấy tối đa 8 từ ngẫu nhiên
-  _matchPairs = [..._stCurrentVocabWords].sort(() => Math.random() - 0.5).slice(0, 8);
-  const leftCol  = [..._matchPairs].sort(() => Math.random() - 0.5);
-  const rightCol = [..._matchPairs].sort(() => Math.random() - 0.5);
-  area.innerHTML = `
-    <div style="text-align:center;font-size:.82rem;color:var(--muted);margin-bottom:1rem;font-weight:600">Chọn một từ bên trái rồi chọn nghĩa tương ứng bên phải</div>
-    <div id="matchScoreBar" style="text-align:center;font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:.85rem">Đã ghép: 0 / ${_matchPairs.length}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;max-width:600px;margin:0 auto">
-      <div id="matchLeft"  style="display:flex;flex-direction:column;gap:.5rem">
-        ${leftCol.map(w  => `<div class="st-match-word"    id="mw-${w.id}"  data-id="${w.id}" onclick="stMatchClick('word','${w.id}')">${w.word}</div>`).join('')}
-      </div>
-      <div id="matchRight" style="display:flex;flex-direction:column;gap:.5rem">
-        ${rightCol.map(w => `<div class="st-match-meaning" id="mm-${w.id}" data-id="${w.id}" onclick="stMatchClick('meaning','${w.id}')">${w.meaning}</div>`).join('')}
-      </div>
-    </div>`;
-}
-function stMatchClick(type, id) {
-  const el = document.getElementById(type === 'word' ? `mw-${id}` : `mm-${id}`);
-  if (!el || el.classList.contains('matched')) return;
-  if (_matchSelected.type === type) {
-    // Bỏ chọn cái cũ, chọn cái mới
-    const oldEl = document.getElementById(_matchSelected.type === 'word' ? `mw-${_matchSelected.id}` : `mm-${_matchSelected.id}`);
-    if (oldEl) oldEl.classList.remove('selected');
-    _matchSelected = { type, id };
-    el.classList.add('selected');
-    return;
-  }
-  if (!_matchSelected.type) {
-    _matchSelected = { type, id };
-    el.classList.add('selected');
-    return;
-  }
-  // Có cả 2 — kiểm tra
-  const wordId    = type === 'word' ? id : _matchSelected.id;
-  const meaningId = type === 'meaning' ? id : _matchSelected.id;
-  const wEl = document.getElementById(`mw-${wordId}`);
-  const mEl = document.getElementById(`mm-${meaningId}`);
-  if (wordId === meaningId) {
-    // Đúng
-    wEl?.classList.replace('selected','matched');
-    mEl?.classList.replace('selected','matched');
-    _matchMatched.add(wordId);
-    const bar = document.getElementById('matchScoreBar');
-    if (bar) bar.textContent = `Đã ghép: ${_matchMatched.size} / ${_matchPairs.length}`;
-    if (_matchMatched.size === _matchPairs.length) {
-      setTimeout(() => {
-        document.getElementById('stVocabGameArea').insertAdjacentHTML('afterbegin',
-          `<div style="text-align:center;background:#d1fae5;border:2px solid #10b981;border-radius:14px;padding:1rem;margin-bottom:1rem;font-weight:800;color:#065f46;font-size:1rem">🏆 Hoàn thành! Bạn ghép đúng hết ${_matchPairs.length} cặp! <button onclick="stRenderMatch(document.getElementById('stVocabGameArea'))" style="margin-left:1rem;background:#10b981;color:#fff;border:none;border-radius:8px;padding:.35rem .9rem;cursor:pointer;font-weight:700">Chơi lại</button></div>`);
-      }, 300);
-    }
-  } else {
-    // Sai
-    wEl?.classList.add('wrong'); mEl?.classList.add('wrong');
-    setTimeout(() => { wEl?.classList.remove('wrong','selected'); mEl?.classList.remove('wrong','selected'); }, 600);
-  }
-  _matchSelected = { type: null, id: null };
-}
-
-// ── Trắc nghiệm Vocab ──
-let _vqWords = [], _vqIdx = 0, _vqScore = 0;
-function stRenderVocabQuiz(area) {
-  if (_stCurrentVocabWords.length < 4) {
-    area.innerHTML = '<p style="color:var(--muted);padding:2rem;text-align:center">Cần ít nhất 4 từ để chơi trắc nghiệm.</p>'; return;
-  }
-  _vqWords = [..._stCurrentVocabWords].sort(() => Math.random() - 0.5);
-  _vqIdx = 0; _vqScore = 0;
-  stRenderVocabQuizCard(area);
-}
-function stRenderVocabQuizCard(area) {
-  if (_vqIdx >= _vqWords.length) {
-    const pct = Math.round(_vqScore / _vqWords.length * 100);
-    area.innerHTML = `
-      <div style="text-align:center;padding:2rem;background:var(--card);border-radius:16px;border:1.5px solid var(--border)">
-        <div style="font-size:3rem;margin-bottom:.75rem">${pct === 100 ? '🏆' : pct >= 70 ? '🎉' : '📖'}</div>
-        <div style="font-size:1.3rem;font-weight:900;color:var(--text);margin-bottom:.5rem">Kết quả: ${_vqScore}/${_vqWords.length} (${pct}%)</div>
-        <div style="font-size:.9rem;color:var(--muted);margin-bottom:1.25rem">${pct === 100 ? 'Hoàn hảo!' : pct >= 70 ? 'Làm tốt lắm!' : 'Luyện thêm nhé!'}</div>
-        <button onclick="stRenderVocabQuiz(document.getElementById('stVocabGameArea'))"
-          style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:12px;padding:.65rem 1.75rem;font-size:.9rem;font-weight:700;cursor:pointer">🔄 Chơi lại</button>
-      </div>`;
-    return;
-  }
-  const w = _vqWords[_vqIdx];
-  // Tạo 4 đáp án: 1 đúng + 3 sai ngẫu nhiên
-  const wrong = _stCurrentVocabWords.filter(x => x.id !== w.id).sort(() => Math.random() - 0.5).slice(0, 3);
-  const opts  = [{ text: w.meaning, correct: true }, ...wrong.map(x => ({ text: x.meaning, correct: false }))].sort(() => Math.random() - 0.5);
-  const labels = ['A','B','C','D'];
-  area.innerHTML = `
-    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:1.5rem;max-width:520px;margin:0 auto">
-      <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:1rem">
-        <span>Câu ${_vqIdx + 1}/${_vqWords.length}</span><span>Điểm: ${_vqScore}</span>
-      </div>
-      ${w.image_url ? `<img src="${w.image_url}" style="width:100%;max-height:120px;object-fit:contain;border-radius:10px;margin-bottom:1rem" onerror="this.style.display='none'"/>` : ''}
-      <div style="font-size:1.2rem;font-weight:900;color:var(--primary);text-align:center;margin-bottom:.35rem">${w.word}</div>
-      ${w.phonetic ? `<div style="font-size:.85rem;color:var(--muted);text-align:center;font-style:italic;margin-bottom:1rem">${w.phonetic}</div>` : '<div style="margin-bottom:1rem"></div>'}
-      <div style="font-size:.88rem;color:var(--muted);text-align:center;margin-bottom:.85rem;font-weight:600">Từ này có nghĩa là gì?</div>
-      <div style="display:flex;flex-direction:column;gap:.55rem">
-        ${opts.map((o, i) => `
-          <button onclick="stCheckVocabQuiz(this,${o.correct})"
-            style="padding:.65rem 1rem;border:2px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);font-size:.88rem;font-weight:600;cursor:pointer;text-align:left;transition:all .18s"
-            onmouseover="if(!this.disabled)this.style.borderColor='var(--primary)'" onmouseout="if(!this.disabled)this.style.borderColor='var(--border)'">
-            <b>${labels[i]}.</b> ${o.text}
-          </button>`).join('')}
-      </div>
-    </div>`;
-}
-function stCheckVocabQuiz(btn, isCorrect) {
-  // Disable tất cả nút
-  btn.closest('div').querySelectorAll('button').forEach(b => b.disabled = true);
-  if (isCorrect) {
-    btn.style.background = '#d1fae5'; btn.style.borderColor = '#10b981'; btn.style.color = '#065f46';
-    _vqScore++;
-  } else {
-    btn.style.background = '#fee2e2'; btn.style.borderColor = '#ef4444'; btn.style.color = '#dc2626';
-    // Highlight đáp án đúng
-    btn.closest('div').querySelectorAll('button').forEach(b => {
-      if (b !== btn && b.textContent.trim()) {
-        // Kiểm tra xem có phải đáp án đúng không bằng cách gọi lại
-      }
-    });
-  }
-  setTimeout(() => { _vqIdx++; stRenderVocabQuizCard(document.getElementById('stVocabGameArea')); }, 1000);
-}
-
-// ══════════════════════════════════════════════════════════════════
-// NGỮ PHÁP CHO HỌC SINH — Lý thuyết + Quiz
-// ══════════════════════════════════════════════════════════════════
-let _stCurrentGrammarId = null;
-let _stGrammarQuestions = [];
-let _stGrammarAnswers   = {};
-
-async function renderStGrammarLessons() {
-  const list = document.getElementById('stGrammarList');
-  if (!list) return;
-  list.innerHTML = '<div style="color:var(--muted);padding:2rem;text-align:center;grid-column:1/-1">Đang tải...</div>';
-  const { data, error } = await db.from('grammar_lessons').select('*').order('sort_order').order('created_at');
-  if (error) { list.innerHTML = `<p style="color:var(--danger)">Lỗi: ${error.message}</p>`; return; }
-  // Lọc theo lớp/username của học sinh hiện tại
-  const rows = (data || []).filter(l => {
-    // Không giới hạn → hiện cho tất cả
-    if (!l.class_name && !l.allowed_usernames) return true;
-    // Giới hạn theo username
-    if (l.allowed_usernames) {
-      const allowed = l.allowed_usernames.split(',').map(u => u.trim().toLowerCase()).filter(Boolean);
-      if (allowed.includes((currentUser || '').toLowerCase())) return true;
-    }
-    // Giới hạn theo lớp
-    if (l.class_name && myClasses.length) {
-      const lCls = l.class_name.split(',').map(c => c.trim()).filter(Boolean);
-      if (lCls.some(c => myClasses.includes(c))) return true;
-    }
-    return false;
-  });
-  if (!rows.length) { list.innerHTML = `<div style="color:var(--muted);padding:2rem;text-align:center;grid-column:1/-1">Chưa có bài ngữ pháp nào cho bạn.</div>`; return; }
-  list.innerHTML = rows.map(l => `
-    <div style="background:var(--card);border:2px solid var(--border);border-radius:16px;padding:1.25rem;box-shadow:var(--shadow);cursor:pointer;transition:all .18s"
-      onmouseover="this.style.borderColor='#10b981';this.style.boxShadow='0 8px 24px rgba(16,185,129,.2)'"
-      onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='var(--shadow)'"
-      onclick="stOpenGrammarLesson(${l.id},'${(l.title||'').replace(/'/g,"\\'")}')">
-      <div style="font-size:1.05rem;font-weight:800;color:#059669;margin-bottom:.5rem">📐 ${l.title}</div>
-      ${l.class_name ? `<span style="background:#d1fae5;color:#065f46;font-size:.72rem;font-weight:700;padding:.18rem .55rem;border-radius:20px">${l.class_name}</span>` : ''}
-      <div style="margin-top:.85rem;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border-radius:10px;padding:.5rem;text-align:center;font-size:.85rem;font-weight:700">Học & làm quiz →</div>
-    </div>`).join('');
-}
-
-async function stOpenGrammarLesson(lessonId, title) {
-  _stCurrentGrammarId  = lessonId;
-  _stGrammarAnswers    = {};
-  document.getElementById('stGrammarLessonTitle').textContent = title;
-  document.getElementById('stGrammarList').style.display = 'none';
-  document.querySelector('#pageGrammar .page-header')?.style && (document.querySelector('#pageGrammar .page-header').style.display = 'none');
-  document.getElementById('stGrammarLessonPanel').style.display = 'block';
-  // Tải nội dung bài
-  const { data: lesson } = await db.from('grammar_lessons').select('content').eq('id', lessonId).single();
-  const contentEl = document.getElementById('stGrammarContent');
-  if (contentEl && lesson) contentEl.innerHTML = lesson.content.replace(/\n/g, '<br>');
-  // Tải câu hỏi
-  const { data: qs } = await db.from('grammar_questions').select('*').eq('lesson_id', lessonId).order('sort_order').order('created_at');
-  _stGrammarQuestions = qs || [];
-  const quizWrap = document.getElementById('stGrammarQuizWrap');
-  const startBtn = document.getElementById('stGrammarStartQuizBtn');
-  if (quizWrap) quizWrap.style.display = 'none';
-  if (startBtn) startBtn.style.display = _stGrammarQuestions.length ? 'block' : 'none';
-}
-
-function stCloseGrammarLesson() {
-  _stCurrentGrammarId = null;
-  document.getElementById('stGrammarLessonPanel').style.display = 'none';
-  document.getElementById('stGrammarList').style.display = 'grid';
-  document.querySelector('#pageGrammar .page-header')?.style && (document.querySelector('#pageGrammar .page-header').style.display = '');
-  renderStGrammarLessons();
-}
-
-function stStartGrammarQuiz() {
-  if (!_stGrammarQuestions.length) return;
-  _stGrammarAnswers = {};
-  document.getElementById('stGrammarQuizWrap').style.display   = 'block';
-  document.getElementById('stGrammarStartQuizBtn').style.display = 'none';
-  document.getElementById('stGrammarQuizResult').style.display  = 'none';
-  document.getElementById('stGrammarSubmitBtn').style.display   = 'block';
-  document.getElementById('stGrammarRetryBtn').style.display    = 'none';
-  const labels = ['A','B','C','D'];
-  document.getElementById('stGrammarQuizScore').textContent = `0/${_stGrammarQuestions.length} câu đã chọn`;
-  document.getElementById('stGrammarQuizList').innerHTML = _stGrammarQuestions.map((q, qi) => `
-    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:1rem 1.25rem">
-      <div style="font-weight:700;font-size:.9rem;color:var(--text);margin-bottom:.75rem">${qi + 1}. ${q.question}</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem">
-        ${labels.map((lbl, li) => {
-          const optKey = ['option_a','option_b','option_c','option_d'][li];
-          return `<label style="display:flex;align-items:center;gap:.65rem;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .18s;background:var(--bg)" id="gqOpt_${qi}_${lbl}">
-            <input type="radio" name="gq_${qi}" value="${lbl}" onchange="stSelectGrammarQ(${qi},'${lbl}')" style="flex-shrink:0;accent-color:var(--primary)"/>
-            <span><b>${lbl}.</b> ${q[optKey]}</span>
-          </label>`;
-        }).join('')}
-      </div>
-      <div id="gqFeedback_${qi}" style="font-size:.82rem;font-weight:700;margin-top:.5rem;min-height:20px"></div>
-    </div>`).join('');
-  // Scroll lên quiz
-  document.getElementById('stGrammarQuizWrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function stSelectGrammarQ(qi, val) {
-  _stGrammarAnswers[qi] = val;
-  const answered = Object.keys(_stGrammarAnswers).length;
-  document.getElementById('stGrammarQuizScore').textContent = `${answered}/${_stGrammarQuestions.length} câu đã chọn`;
-}
-
-function stSubmitGrammarQuiz() {
-  const labels = ['A','B','C','D'];
-  let correct = 0;
-  _stGrammarQuestions.forEach((q, qi) => {
-    const chosen = _stGrammarAnswers[qi];
-    const fb = document.getElementById(`gqFeedback_${qi}`);
-    // Style từng option
-    labels.forEach(lbl => {
-      const labelEl = document.getElementById(`gqOpt_${qi}_${lbl}`);
-      if (!labelEl) return;
-      labelEl.style.cursor = 'default';
-      labelEl.querySelector('input').disabled = true;
-      if (lbl === q.answer) {
-        labelEl.style.background   = '#d1fae5';
-        labelEl.style.borderColor  = '#10b981';
-        labelEl.style.color        = '#065f46';
-      } else if (lbl === chosen && lbl !== q.answer) {
-        labelEl.style.background   = '#fee2e2';
-        labelEl.style.borderColor  = '#ef4444';
-        labelEl.style.color        = '#dc2626';
-      }
-    });
-    if (chosen === q.answer) {
-      correct++;
-      if (fb) { fb.style.color = '#10b981'; fb.textContent = '✅ Chính xác!'; }
-    } else {
-      if (fb) {
-        fb.style.color  = '#ef4444';
-        fb.textContent  = `❌ Sai! Đáp án đúng: ${q.answer}.${q['option_'+q.answer.toLowerCase()]}`;
-      }
-    }
-    if (q.explanation && fb) {
-      fb.textContent += ` — 💡 ${q.explanation}`;
-    }
-  });
-  // Hiện kết quả
-  const pct     = Math.round(correct / _stGrammarQuestions.length * 100);
-  const resEl   = document.getElementById('stGrammarQuizResult');
-  const emoji   = pct === 100 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '📖' : '💪';
-  const msg     = pct === 100 ? 'Xuất sắc! Bạn hiểu hết bài rồi!' : pct >= 70 ? 'Làm tốt lắm!' : pct >= 50 ? 'Được rồi, cần ôn thêm!' : 'Cần đọc lại lý thuyết nhé!';
-  resEl.style.display = 'block';
-  resEl.innerHTML = `
-    <div style="font-size:2.5rem;margin-bottom:.5rem">${emoji}</div>
-    <div style="font-size:1.25rem;font-weight:900;color:#065f46;margin-bottom:.35rem">Điểm: ${correct}/${_stGrammarQuestions.length} (${pct}%)</div>
-    <div style="font-size:.9rem;color:#047857;font-weight:600">${msg}</div>`;
-  document.getElementById('stGrammarSubmitBtn').style.display = 'none';
-  document.getElementById('stGrammarRetryBtn').style.display  = 'inline-block';
-  resEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }

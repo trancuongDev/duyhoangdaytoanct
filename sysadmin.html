@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quản Trị Hệ Thống — Thiên Tuệ English</title>
+  <title>Quản Trị Hệ Thống - DHDT LMS</title>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <link rel="stylesheet" href="style.css"/>
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -19,7 +19,7 @@
     /* ── Layout ── */
     .sa-wrap { display:flex; min-height:100vh; }
     .sa-sidebar {
-      width:240px; background:linear-gradient(160deg,#1a0505,#96281b,#c0392b,#e67e22,#f39c12);
+      width:240px; background:linear-gradient(160deg,#0f0c29,#1e1b4b,#312e81);
       color:#fff; display:flex; flex-direction:column;
       position:sticky; top:0; height:100vh; overflow-y:auto; flex-shrink:0;
       transition: width .25s;
@@ -273,7 +273,7 @@
     <div class="sa-brand">
       <img src="icons/icon-192.png" alt="Logo"/>
       <div>
-        <div class="sa-brand-text">Thiên Tuệ English</div>
+        <div class="sa-brand-text">DHDT LMS</div>
         <div class="sa-brand-sub">⚙️ SYS ADMIN</div>
       </div>
     </div>
@@ -694,7 +694,7 @@
             </div>
             <div class="sa-fg">
               <label>Nội dung banner</label>
-              <textarea id="bannerMsg" rows="3" placeholder="Chào mừng học viên đến với Thiên Tuệ English!"></textarea>
+              <textarea id="bannerMsg" rows="3" placeholder="Chào mừng học sinh đến với DHDT LMS!"></textarea>
             </div>
             <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="saveBannerMsg()">💾 Lưu banner</button>
           </div>
@@ -882,18 +882,33 @@
             </select>
             <select id="alogActionFilter" style="padding:.45rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text)">
               <option value="">Tất cả hành động</option>
-              <option value="Tạo tài khoản">➕ Tạo học sinh</option>
-              <option value="Xóa tài khoản">🗑 Xóa học sinh</option>
-              <option value="Sửa tài khoản">✏️ Sửa học sinh</option>
-              <option value="[Bài học]">📚 Bài học</option>
-              <option value="[Nhóm bài]">📂 Nhóm bài học</option>
-              <option value="[Video]">🎬 Video</option>
-              <option value="[Tài liệu]">📄 Tài liệu</option>
-              <option value="[Lớp học]">🏫 Lớp học</option>
-              <option value="[Thông báo]">📢 Thông báo</option>
-              <option value="[Lịch học]">📅 Lịch học</option>
-              <option value="[File]">🗂️ File</option>
-              <option value="[Thư mục]">📁 Thư mục</option>
+              <optgroup label="── Học sinh ──">
+                <option value="Tạo tài khoản">➕ Tạo học sinh</option>
+                <option value="Xóa tài khoản">🗑 Xóa học sinh</option>
+                <option value="Sửa tài khoản">✏️ Sửa học sinh</option>
+                <option value="Khóa tài khoản">🔒 Khóa học sinh</option>
+                <option value="Mở khóa tài khoản">🔓 Mở khóa học sinh</option>
+                <option value="Thêm vào lớp">➕ Thêm vào lớp</option>
+                <option value="Xóa khỏi lớp">🗑 Xóa khỏi lớp</option>
+                <option value="hàng loạt">📋 Tạo hàng loạt</option>
+                <option value="Đồng bộ Gmail">🔄 Đồng bộ Gmail</option>
+              </optgroup>
+              <optgroup label="── Nội dung ──">
+                <option value="Bài học">📚 Bài học</option>
+                <option value="Nhóm bài">📂 Nhóm bài</option>
+                <option value="Video">🎬 Video</option>
+                <option value="Tài liệu">📄 Tài liệu</option>
+              </optgroup>
+              <optgroup label="── Quản lý ──">
+                <option value="Lớp học">🏫 Lớp học</option>
+                <option value="Thông báo">📢 Thông báo</option>
+                <option value="Lịch học">📅 Lịch học</option>
+                <option value="File">🗂️ File</option>
+                <option value="Thư mục">📁 Thư mục</option>
+              </optgroup>
+              <optgroup label="── Trợ lý ──">
+                <option value="tài khoản trợ lý">🤝 Quản lý trợ lý</option>
+              </optgroup>
             </select>
             <input id="alogSearch" placeholder="🔍 Tìm học sinh..." style="padding:.45rem .85rem;border:1.5px solid var(--border);border-radius:10px;font-size:.84rem;outline:none;background:var(--card);color:var(--text);width:180px"/>
             <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="renderAssistantLogs()">🔄 Làm mới</button>
@@ -953,11 +968,10 @@
 
         <div class="sa-card" style="margin-bottom:1.25rem;border-left:3px solid #f59e0b;background:linear-gradient(135deg,#fef3c7,#fffbeb)">
           <div style="display:flex;gap:.75rem;align-items:flex-start">
-            <span style="font-size:1.4rem">ℹ️</span>
-            <div style="font-size:.83rem;color:#1e40af;line-height:1.75">
-              <b style="color:#1e40af">Giáo viên lưu trong Supabase.</b><br/>
-              Sau khi tạo, GV đăng nhập tại trang login bằng username/mật khẩu được cấp.<br/>
-              GV có quyền: Bài học, Lịch học, File, Nhóm bài học (theo lớp được phân công).
+            <span style="font-size:1.4rem">🔑</span>
+            <div style="font-size:.83rem;color:#78350f;line-height:1.75">
+              <b style="color:#92400e">Lưu ý bảo mật:</b> Tài khoản giáo viên lưu trong <code>localStorage</code> trình duyệt này.<br/>
+              Mỗi thiết bị/trình duyệt cần thiết lập riêng. Mật khẩu được mã hóa SHA-256.
             </div>
           </div>
         </div>
@@ -967,10 +981,10 @@
           <div class="sa-table-wrap">
             <table class="sa-table">
               <thead>
-                <tr><th>#</th><th>Họ tên</th><th>Tên đăng nhập</th><th>Lớp quản lý</th><th>Trạng thái</th><th>Thao tác</th></tr>
+                <tr><th>#</th><th>Họ tên</th><th>Tên đăng nhập</th><th>Trạng thái</th><th>Thao tác</th></tr>
               </thead>
               <tbody id="teacherTableBody">
-                <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
+                <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1095,8 +1109,8 @@
 <script>
 // ══ Supabase ══
 const db = supabase.createClient(
-  'https://nzoequnbxtqaukyvsvmt.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56b2VxdW5ieHRxYXVreXZzdm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NDY2MDUsImV4cCI6MjEwMTMyMjYwNX0.PFnnvkZ10EtKEH5xXA5VtgnazSYhoyBp9MpBlJCtF7g'
+  'https://gojpmogjretoxplydjvg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvanBtb2dqcmV0b3hwbHlkanZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg4ODEsImV4cCI6MjA5MzA1NDg4MX0.iLCNd2VRMiZoFp6_KclZlFsOenUNoM041tl1fobHKDA'
 );
 
 // ══ Auth guard — chỉ teacher ══
@@ -1250,12 +1264,12 @@ async function hashPw(str) {
 // OVERVIEW
 // ══════════════════════════════════════════════════
 async function renderOverview() {
+  // Time
   document.getElementById('overviewTime').textContent =
     'Cập nhật lúc ' + new Date().toLocaleString('vi-VN');
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Tất cả 10 query chạy song song cùng lúc — không tuần tự
   const [
     { count: totalStudents },
     { count: onlineFromDB },
@@ -1266,9 +1280,9 @@ async function renderOverview() {
     { count: totalFiles },
     { count: totalClasses },
     { count: realAlerts },
-    { data: recentAlerts },
   ] = await Promise.all([
     db.from('students').select('*', { count:'exact', head:true }),
+    // Online: chỉ đếm is_online=true (học sinh đang active trong app)
     db.from('students').select('*', { count:'exact', head:true }).eq('is_online', true).eq('active', true),
     db.from('lessons').select('*', { count:'exact', head:true }),
     db.from('lesson_videos').select('*', { count:'exact', head:true }),
@@ -1276,12 +1290,10 @@ async function renderOverview() {
     db.from('homework_submissions').select('*', { count:'exact', head:true }).gte('submitted_at', today),
     db.from('file_items').select('*', { count:'exact', head:true }).is('deleted_at', null),
     db.from('classes').select('*', { count:'exact', head:true }),
+    // Cảnh báo thực sự: loại bỏ log activity (reason có prefix [xxx])
     db.from('alerts').select('*', { count:'exact', head:true })
       .gte('created_at', today)
       .not('reason', 'like', '[%]%'),
-    // Activity feed cùng batch
-    db.from('alerts').select('student_name,reason,created_at')
-      .order('created_at', { ascending:false }).limit(8),
   ]);
 
   document.getElementById('statStudents').textContent    = totalStudents ?? '—';
@@ -1293,13 +1305,16 @@ async function renderOverview() {
   document.getElementById('statFiles').textContent       = totalFiles ?? '—';
   document.getElementById('statClasses').textContent     = totalClasses ?? '—';
 
+  // Update global online count
   const onlineCount = onlineFromDB ?? 0;
   document.getElementById('saOnlineCount').textContent  = onlineCount;
   document.getElementById('onlineBadge').textContent    = onlineCount;
   document.getElementById('sesOnlineCount').textContent = onlineCount;
 
+  // Activity feed
+  const { data: recentAlerts } = await db.from('alerts').select('*').order('created_at', { ascending:false }).limit(8);
   const feed = document.getElementById('activityFeed');
-  if (!recentAlerts?.length) {
+  if (!recentAlerts || !recentAlerts.length) {
     feed.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:.85rem">Không có hoạt động gần đây</div>';
     return;
   }
@@ -1312,51 +1327,38 @@ async function renderOverview() {
 }
 
 // ══════════════════════════════════════════════════
-// STUDENTS — with pagination + cache
+// STUDENTS — with pagination
 // ══════════════════════════════════════════════════
 let _allStudents = [], _stuPage = 1, _stuPageSize = 20;
-let _stuCacheTime = 0;
-const _STU_CACHE_TTL = 20000; // 20s
 
 async function renderStudents() {
-  const now = Date.now();
-  // Chỉ fetch lại nếu cache cũ
-  if (!_allStudents.length || (now - _stuCacheTime) > _STU_CACHE_TTL) {
-    // Hiện skeleton ngay
-    document.getElementById('studentTableBody').innerHTML =
-      '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">⏳ Đang tải...</td></tr>';
+  // Lấy học sinh + tất cả lớp phụ từ student_classes
+  const [{ data: students }, { data: scRows }] = await Promise.all([
+    db.from('students').select('*').order('created_at', { ascending:false }),
+    db.from('student_classes').select('student_id,class_name'),
+  ]);
 
-    // 2 query song song
-    const [{ data: students }, { data: scRows }] = await Promise.all([
-      db.from('students').select('id,full_name,username,class_name,student_code,active,is_online,last_seen,expiry_date')
-        .order('created_at', { ascending:false }),
-      db.from('student_classes').select('student_id,class_name'),
-    ]);
+  // Gộp lớp chính + lớp phụ cho mỗi học sinh
+  const scMap = {}; // student_id → Set of class_name
+  (scRows||[]).forEach(r => {
+    if (!scMap[r.student_id]) scMap[r.student_id] = new Set();
+    scMap[r.student_id].add(r.class_name);
+  });
 
-    const scMap = {};
-    (scRows||[]).forEach(r => {
-      if (!scMap[r.student_id]) scMap[r.student_id] = new Set();
-      scMap[r.student_id].add(r.class_name);
-    });
+  _allStudents = (students||[]).map(s => {
+    const allClasses = new Set(
+      (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean)
+    );
+    (scMap[s.id] || new Set()).forEach(c => allClasses.add(c));
+    return { ...s, _allClasses: [...allClasses].join(',') };
+  });
 
-    _allStudents = (students||[]).map(s => {
-      const allClasses = new Set(
-        (s.class_name||'').split(',').map(c=>c.trim()).filter(Boolean)
-      );
-      (scMap[s.id] || new Set()).forEach(c => allClasses.add(c));
-      return { ...s, _allClasses: [...allClasses].join(',') };
-    });
-    _stuCacheTime = now;
-
-    // Populate class filter
-    const classes = [...new Set(_allStudents.flatMap(s =>
-      (s._allClasses||'').split(',').map(c=>c.trim()).filter(Boolean)
-    ))].sort();
-    const sel = document.getElementById('studentClassFilter');
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">Tất cả lớp</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
-    if (cur) sel.value = cur;
-  }
+  // Populate class filter — từ tất cả lớp (chính + phụ)
+  const classes = [...new Set(_allStudents.flatMap(s =>
+    (s._allClasses||'').split(',').map(c=>c.trim()).filter(Boolean)
+  ))].sort();
+  const sel = document.getElementById('studentClassFilter');
+  sel.innerHTML = '<option value="">Tất cả lớp</option>' + classes.map(c=>`<option value="${c}">${c}</option>`).join('');
 
   _stuPage = 1;
   renderStudentTable();
@@ -1419,7 +1421,12 @@ function renderStudentTable() {
   }).join('');
 }
 
-// Event listeners cho students — chỉ đặt 1 lần (không duplicate)
+document.getElementById('studentSearch').addEventListener('input', renderStudentTable);
+document.getElementById('studentClassFilter').addEventListener('change', renderStudentTable);
+document.getElementById('studentStatusFilter').addEventListener('change', renderStudentTable);
+document.getElementById('prevPageBtn').addEventListener('click', () => { _stuPage--; renderStudentTable(); });
+document.getElementById('nextPageBtn').addEventListener('click', () => { _stuPage++; renderStudentTable(); });
+
 async function toggleStudentLock(id, currentlyActive) {
   const newState = !currentlyActive;
   const action = newState ? 'Mở khóa' : 'Khóa';
@@ -1499,12 +1506,9 @@ async function kickAllStudents() {
 }
 
 // ══════════════════════════════════════════════════
-// CONTENT — tất cả query song song, không có query phụ tuần tự
+// CONTENT
 // ══════════════════════════════════════════════════
 async function renderContent() {
-  document.getElementById('hwRecentBody').innerHTML =
-    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">⏳ Đang tải...</td></tr>';
-
   const [
     { count: cLessons },
     { count: cGroups },
@@ -1515,8 +1519,6 @@ async function renderContent() {
     { count: cSubmit },
     { count: cTrash },
     { data: recentHw },
-    { data: allSubCounts },
-    { data: allQCounts },
   ] = await Promise.all([
     db.from('lessons').select('*', { count:'exact', head:true }),
     db.from('lesson_groups').select('*', { count:'exact', head:true }),
@@ -1528,9 +1530,6 @@ async function renderContent() {
     db.from('homework').select('*', { count:'exact', head:true }).not('deleted_at', 'is', null),
     db.from('homework').select('id,title,class_name,is_draft,is_locked,created_at')
       .is('deleted_at', null).order('created_at', { ascending:false }).limit(8),
-    // Lấy submission counts và question counts cùng batch đầu
-    db.from('homework_submissions').select('homework_id'),
-    db.from('homework_questions').select('homework_id'),
   ]);
 
   document.getElementById('cntLessons').textContent = cLessons ?? '—';
@@ -1542,11 +1541,19 @@ async function renderContent() {
   document.getElementById('cntSubmit').textContent  = cSubmit  ?? '—';
   document.getElementById('cntHwTrash').textContent = cTrash   ?? '—';
 
-  // Build maps từ data đã fetch — không cần query thêm
-  const hwIds = new Set((recentHw||[]).map(h => h.id));
-  const subCounts = {}, qCounts = {};
-  (allSubCounts||[]).forEach(s => { if (hwIds.has(s.homework_id)) subCounts[s.homework_id] = (subCounts[s.homework_id]||0)+1; });
-  (allQCounts||[]).forEach(q => { if (hwIds.has(q.homework_id)) qCounts[q.homework_id] = (qCounts[q.homework_id]||0)+1; });
+  // Load submission counts for recent homework
+  const hwIds = (recentHw||[]).map(h => h.id);
+  let subCounts = {};
+  if (hwIds.length) {
+    const { data: subs } = await db.from('homework_submissions').select('homework_id').in('homework_id', hwIds);
+    (subs||[]).forEach(s => { subCounts[s.homework_id] = (subCounts[s.homework_id]||0)+1; });
+  }
+
+  const qCounts = {};
+  if (hwIds.length) {
+    const { data: qs } = await db.from('homework_questions').select('homework_id').in('homework_id', hwIds);
+    (qs||[]).forEach(q => { qCounts[q.homework_id] = (qCounts[q.homework_id]||0)+1; });
+  }
 
   document.getElementById('hwRecentBody').innerHTML = (recentHw||[]).map(h => `
     <tr>
@@ -1721,7 +1728,7 @@ function renderLogsTable() {
 }
 
 document.getElementById('logDateFilter').addEventListener('change', renderLogsTable);
-document.getElementById('logSearch').addEventListener('input', _debounce ? _debounce(renderLogsTable,250) : renderLogsTable);
+document.getElementById('logSearch').addEventListener('input', renderLogsTable);
 
 document.getElementById('clearLogsBtn').addEventListener('click', () => {
   saConfirm('Xóa tất cả cảnh báo cũ hơn 30 ngày?', async () => {
@@ -1791,26 +1798,13 @@ async function cleanTrashFiles() {
 }
 
 // ══════════════════════════════════════════════════
-// ASSISTANTS — dùng alerts.reason để đếm, giới hạn query
+// ASSISTANTS — Tài khoản trợ lý
 // ══════════════════════════════════════════════════
 let _allAssistants = [];
 
 async function renderAssistants() {
-  const today = new Date().toISOString().split('T')[0];
-
-  // 3 query song song: danh sách trợ lý + log hôm nay + tổng log
-  const [
-    { data: assistants, error },
-    { count: todayActCount },
-    { count: totalActCount },
-  ] = await Promise.all([
-    db.from('assistants').select('id,full_name,username,created_at').order('created_at', { ascending: false }),
-    db.from('alerts').select('*', { count:'exact', head:true })
-      .gte('created_at', today)
-      .or('reason.ilike.%bởi Trợ lý%,reason.ilike.%bởi Admin%'),
-    db.from('alerts').select('*', { count:'exact', head:true })
-      .or('reason.ilike.%bởi Trợ lý%,reason.ilike.%bởi Admin%'),
-  ]);
+  // Load trợ lý từ Supabase (bảng assistants)
+  const { data: assistants, error } = await db.from('assistants').select('*').order('created_at', { ascending: false });
 
   if (error) {
     document.getElementById('assistantTableBody').innerHTML =
@@ -1819,10 +1813,24 @@ async function renderAssistants() {
   }
 
   _allAssistants = assistants || [];
+  const today = new Date().toISOString().split('T')[0];
+
+  // Đếm số thao tác của mỗi trợ lý trong alerts
+  const { data: allLogs } = await db.from('alerts').select('reason,created_at');
+  const todayLogs   = (allLogs||[]).filter(l => (l.created_at||'').startsWith(today));
+  const assistantNames = _allAssistants.map(a => a.full_name);
+
+  // Tính số thao tác: tìm "bởi Trợ lý [tên]" trong reason
+  function countActions(logs, name) {
+    return logs.filter(l => (l.reason||'').includes(`bởi Trợ lý ${name}`) || (l.reason||'').includes(`bởi Admin ${name}`)).length;
+  }
+
+  const totalActions = _allAssistants.reduce((s,a) => s + countActions(allLogs||[], a.full_name), 0);
+  const todayActions = _allAssistants.reduce((s,a) => s + countActions(todayLogs, a.full_name), 0);
 
   document.getElementById('statTotalAssistants').textContent = _allAssistants.length;
-  document.getElementById('statAssistantActions').textContent = todayActCount ?? '—';
-  document.getElementById('statAssistantTotal').textContent = totalActCount ?? '—';
+  document.getElementById('statAssistantActions').textContent = todayActions;
+  document.getElementById('statAssistantTotal').textContent = totalActions;
 
   if (!_allAssistants.length) {
     document.getElementById('assistantTableBody').innerHTML =
@@ -1830,20 +1838,9 @@ async function renderAssistants() {
     return;
   }
 
-  // Đếm per-assistant — dùng 1 query có filter, group ở client
-  const { data: perLogs } = await db.from('alerts')
-    .select('reason,created_at')
-    .or('reason.ilike.%bởi Trợ lý%,reason.ilike.%bởi Admin%')
-    .gte('created_at', new Date(Date.now() - 30*24*3600*1000).toISOString()); // 30 ngày gần nhất
-
-  function countForName(logs, name, todayStr) {
-    const all   = (logs||[]).filter(l => (l.reason||'').includes(name)).length;
-    const today = (logs||[]).filter(l => (l.reason||'').includes(name) && (l.created_at||'').startsWith(todayStr)).length;
-    return { all, today };
-  }
-
   document.getElementById('assistantTableBody').innerHTML = _allAssistants.map((a, i) => {
-    const { all: totalCnt, today: todayCnt } = countForName(perLogs, a.full_name, today);
+    const todayCnt = countActions(todayLogs, a.full_name);
+    const totalCnt = countActions(allLogs||[], a.full_name);
     return `<tr>
       <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
       <td>
@@ -1954,7 +1951,7 @@ function viewAssistantLog(name) {
 }
 
 // ══════════════════════════════════════════════════
-// ASSISTANT LOGS — 1 query duy nhất thay vì 2
+// ASSISTANT LOGS — Nhật ký biến động trợ lý
 // ══════════════════════════════════════════════════
 let _allAssistantLogs = [];
 
@@ -1963,14 +1960,31 @@ async function renderAssistantLogs() {
   const dateEl = document.getElementById('alogDateFilter');
   if (!dateEl.value) dateEl.value = today;
 
-  // 1 query duy nhất với OR filter — không cần 2 query riêng
-  const { data: logs } = await db.from('alerts')
-    .select('id,student_name,username,class_name,reason,created_at')
-    .or('reason.ilike.%bởi Trợ lý%,reason.ilike.%bởi Admin%')
-    .order('created_at', { ascending: false })
-    .limit(500);
+  // Lấy activity logs: có "bởi Trợ lý/Admin" trong reason (log từ logActivity + logAccountActivity)
+  // Dùng 2 query riêng rồi merge để tránh Supabase giới hạn OR phức tạp
+  const [{ data: logsAssistant }, { data: logsAdmin }, { data: logsCategory }] = await Promise.all([
+    db.from('alerts').select('*')
+      .ilike('reason', '%bởi Trợ lý%')
+      .order('created_at', { ascending: false })
+      .limit(1000),
+    db.from('alerts').select('*')
+      .ilike('reason', '%bởi Admin%')
+      .order('created_at', { ascending: false })
+      .limit(1000),
+    // Lấy thêm các log có class_name là danh mục hệ thống (phòng trường hợp reason không chứa "bởi")
+    db.from('alerts').select('*')
+      .in('class_name', ['Bài học','Nhóm bài','Video','Tài liệu','Lớp học','Thông báo','Lịch học','File','Thư mục','Trợ lý','Hệ thống'])
+      .order('created_at', { ascending: false })
+      .limit(500),
+  ]);
 
-  _allAssistantLogs = logs || [];
+  // Merge + dedup theo id + sort mới nhất trước
+  const seen = new Set();
+  const merged = [...(logsAssistant||[]), ...(logsAdmin||[]), ...(logsCategory||[])]
+    .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  _allAssistantLogs = merged;
 
   // Đếm stats theo danh mục
   const createCnt = _allAssistantLogs.filter(l => (l.reason||'').includes('Tạo tài khoản')).length;
@@ -2026,28 +2040,45 @@ function renderAlogTable() {
   let list = _allAssistantLogs.filter(l => {
     if (dateFilter && !(l.created_at||'').startsWith(dateFilter)) return false;
     if (assistant  && !(l.reason||'').includes(assistant)) return false;
-    if (action     && !(l.reason||'').includes(action)) return false;
+    if (action) {
+      // Match trong reason HOẶC class_name (logActivity lưu category vào class_name)
+      const inReason    = (l.reason||'').includes(action);
+      const inCategory  = (l.class_name||'') === action;
+      // Trường hợp đặc biệt: filter "[Bài học]" match "Bài học" trong class_name
+      const inBracket   = (l.reason||'').includes(`[${action}]`);
+      if (!inReason && !inCategory && !inBracket) return false;
+    }
     if (q && !(l.student_name||'').toLowerCase().includes(q) &&
-             !(l.username||'').toLowerCase().includes(q)) return false;
+             !(l.username||'').toLowerCase().includes(q) &&
+             !(l.reason||'').toLowerCase().includes(q)) return false;
     return true;
   });
 
   document.getElementById('alogMeta').textContent = `Hiển thị ${list.length} bản ghi`;
 
-  const actionBadge = (reason) => {
-    if ((reason||'').includes('Tạo tài khoản')) return '<span class="badge badge-green">➕ Tạo HS</span>';
-    if ((reason||'').includes('Sửa tài khoản')) return '<span class="badge badge-orange">✏️ Sửa HS</span>';
-    if ((reason||'').includes('Xóa tài khoản')) return '<span class="badge badge-red">🗑 Xóa HS</span>';
-    if ((reason||'').includes('[Bài học]'))   return '<span class="badge badge-blue">📚 Bài học</span>';
-    if ((reason||'').includes('[Nhóm bài]'))  return '<span class="badge badge-blue">📂 Nhóm bài</span>';
-    if ((reason||'').includes('[Video]'))     return '<span class="badge badge-purple">🎬 Video</span>';
-    if ((reason||'').includes('[Tài liệu]'))  return '<span class="badge badge-purple">📄 Tài liệu</span>';
-    if ((reason||'').includes('[Lớp học]'))   return '<span class="badge badge-green">🏫 Lớp học</span>';
-    if ((reason||'').includes('[Thông báo]')) return '<span class="badge badge-orange">📢 Thông báo</span>';
-    if ((reason||'').includes('[Lịch học]'))  return '<span class="badge badge-blue">📅 Lịch học</span>';
-    if ((reason||'').includes('[File]'))      return '<span class="badge badge-gray">🗂️ File</span>';
-    if ((reason||'').includes('[Thư mục]'))   return '<span class="badge badge-gray">📁 Thư mục</span>';
-    if ((reason||'').includes('tài khoản trợ lý')) return '<span class="badge badge-orange">🤝 Trợ lý</span>';
+  const actionBadge = (reason, cls) => {
+    if ((reason||'').includes('Tạo tài khoản'))     return '<span class="badge badge-green">➕ Tạo HS</span>';
+    if ((reason||'').includes('Sửa tài khoản'))     return '<span class="badge badge-orange">✏️ Sửa HS</span>';
+    if ((reason||'').includes('Xóa tài khoản'))     return '<span class="badge badge-red">🗑 Xóa HS</span>';
+    if ((reason||'').includes('Khóa tài khoản'))    return '<span class="badge badge-red">🔒 Khóa HS</span>';
+    if ((reason||'').includes('Mở khóa'))           return '<span class="badge badge-green">🔓 Mở khóa</span>';
+    if ((reason||'').includes('Thêm vào lớp'))      return '<span class="badge badge-green">🏫 Thêm lớp</span>';
+    if ((reason||'').includes('Xóa khỏi lớp'))      return '<span class="badge badge-orange">🏫 Xóa lớp</span>';
+    if ((reason||'').includes('hàng loạt'))         return '<span class="badge badge-blue">📋 Hàng loạt</span>';
+    if ((reason||'').includes('Đồng bộ Gmail'))     return '<span class="badge badge-blue">🔄 Đồng bộ</span>';
+    // Match theo class_name (logActivity) hoặc reason bracket
+    const cat = cls || '';
+    if (cat === 'Bài học'   || (reason||'').includes('[Bài học]'))   return '<span class="badge badge-blue">📚 Bài học</span>';
+    if (cat === 'Nhóm bài'  || (reason||'').includes('[Nhóm bài]'))  return '<span class="badge badge-blue">📂 Nhóm bài</span>';
+    if (cat === 'Video'     || (reason||'').includes('[Video]'))      return '<span class="badge badge-purple">🎬 Video</span>';
+    if (cat === 'Tài liệu'  || (reason||'').includes('[Tài liệu]'))  return '<span class="badge badge-purple">📄 Tài liệu</span>';
+    if (cat === 'Lớp học'   || (reason||'').includes('[Lớp học]'))   return '<span class="badge badge-green">🏫 Lớp học</span>';
+    if (cat === 'Thông báo' || (reason||'').includes('[Thông báo]')) return '<span class="badge badge-orange">📢 Thông báo</span>';
+    if (cat === 'Lịch học'  || (reason||'').includes('[Lịch học]'))  return '<span class="badge badge-blue">📅 Lịch học</span>';
+    if (cat === 'File'      || (reason||'').includes('[File]'))       return '<span class="badge badge-gray">🗂️ File</span>';
+    if (cat === 'Thư mục'   || (reason||'').includes('[Thư mục]'))   return '<span class="badge badge-gray">📁 Thư mục</span>';
+    if (cat === 'Trợ lý'    || (reason||'').includes('tài khoản trợ lý')) return '<span class="badge badge-orange">🤝 Trợ lý</span>';
+    if (cat === 'Hệ thống'  || (reason||'').includes('[Hệ thống]'))  return '<span class="badge badge-purple">⚙️ Hệ thống</span>';
     return '<span class="badge badge-gray">— Khác</span>';
   };
 
@@ -2071,7 +2102,7 @@ function renderAlogTable() {
             </div>
           </div>
         </td>
-        <td>${actionBadge(l.reason)}</td>
+        <td>${actionBadge(l.reason, l.class_name)}</td>
         <td>
           <div style="font-size:.84rem;font-weight:700">${l.student_name||'—'}</div>
           ${l.username && l.username !== '' ? `<div style="font-size:.72rem;color:var(--muted)">${l.username}</div>` : ''}
@@ -2274,7 +2305,9 @@ function initRealtime() {
           document.getElementById('alogTotalCount').textContent  = _allAssistantLogs.length;
           document.getElementById('alogCreateCount').textContent = _allAssistantLogs.filter(l=>(l.reason||'').includes('Tạo tài khoản')).length;
           document.getElementById('alogEditCount').textContent   = _allAssistantLogs.filter(l=>
-            ['[Bài học]','[Nhóm bài]','[Thông báo]','[Lịch học]','[Lớp học]','[File]','[Thư mục]','[Video]','[Tài liệu]','Sửa tài khoản'].some(k=>(l.reason||'').includes(k))
+            ['Bài học','Nhóm bài','Thông báo','Lịch học','Lớp học','File','Thư mục','Video','Tài liệu'].some(k=>
+              (l.class_name||'') === k || (l.reason||'').includes(`[${k}]`)
+            ) || (l.reason||'').includes('Sửa tài khoản')
           ).length;
           document.getElementById('alogDeleteCount').textContent = _allAssistantLogs.filter(l=>(l.reason||'').includes('Xóa')).length;
           renderAlogTable();
@@ -2384,129 +2417,133 @@ setInterval(async () => {
 }, 60000);
 
 // ══════════════════════════════════════════════════
-// TEACHERS — Tài khoản giáo viên (lưu Supabase)
+// TEACHERS — Tài khoản giáo viên (lưu localStorage)
 // ══════════════════════════════════════════════════
 
-async function renderTeachers() {
+function _getTeachers() {
+  try {
+    // Lấy tài khoản chính từ dh_teacher
+    const main = JSON.parse(localStorage.getItem('dh_teacher') || 'null');
+    // Lấy danh sách thêm từ dh_teachers (mảng)
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    const all = [];
+    if (main) all.push({ ...main, _isMain: true, _idx: 'main' });
+    extra.forEach((t, i) => all.push({ ...t, _isMain: false, _idx: i }));
+    return all;
+  } catch { return []; }
+}
+
+function _saveExtraTeachers(list) {
+  localStorage.setItem('dh_teachers', JSON.stringify(list));
+}
+
+function renderTeachers() {
+  const teachers = _getTeachers();
   const tbody = document.getElementById('teacherTableBody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Đang tải...</td></tr>';
-  const { data: teachers, error } = await db.from('teachers').select('*').order('created_at', { ascending: false });
-  if (error) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:1rem">Lỗi: ${error.message}</td></tr>`; return; }
-  if (!teachers?.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Chưa có tài khoản giáo viên nào</td></tr>'; return; }
+
+  if (!teachers.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Không có tài khoản nào</td></tr>';
+    return;
+  }
 
   tbody.innerHTML = teachers.map((t, i) => `
     <tr>
       <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
       <td>
         <div style="display:flex;align-items:center;gap:.6rem">
-          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#c0392b,#e67e22);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:800;flex-shrink:0">
+          <div style="width:32px;height:32px;border-radius:50%;
+            background:linear-gradient(135deg,#6366f1,#4f46e5);
+            display:flex;align-items:center;justify-content:center;
+            color:#fff;font-size:.85rem;font-weight:800;flex-shrink:0">
             ${(t.full_name||'?').trim().split(' ').pop().charAt(0).toUpperCase()}
           </div>
-          <b>${t.full_name||'—'}</b>
+          <div>
+            <b>${t.full_name||'—'}</b>
+            ${t._isMain ? '<span class="badge badge-blue" style="margin-left:.35rem;font-size:.65rem">Tài khoản chính</span>' : ''}
+          </div>
         </div>
       </td>
       <td style="font-size:.82rem;font-family:monospace;color:var(--muted)">${t.username||'—'}</td>
-      <td style="font-size:.82rem;color:var(--muted)">${t.class_name||'Tất cả lớp'}</td>
-      <td><span class="badge ${t.active?'badge-green':'badge-red'}">${t.active?'✅ Hoạt động':'🔒 Khóa'}</span></td>
+      <td><span class="badge badge-green">✅ Hoạt động</span></td>
       <td style="white-space:nowrap">
-        <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="openTeacherModal(${JSON.stringify(t).replace(/"/g,'&quot;')})">✏️</button>
-        <button class="sa-btn sa-btn-outline sa-btn-sm" onclick="toggleTeacherActive(${t.id},${t.active},'${(t.full_name||'').replace(/'/g,"\\'")}')">
-          ${t.active?'🔒 Khóa':'🔓 Mở'}
-        </button>
-        <button class="sa-btn sa-btn-danger sa-btn-sm" onclick="deleteTeacher(${t.id},'${(t.full_name||'').replace(/'/g,"\\'")}')">🗑</button>
+        <button class="sa-btn sa-btn-outline sa-btn-sm"
+          onclick="openTeacherModal(${JSON.stringify(t).replace(/"/g,'&quot;')},${i})">✏️</button>
+        ${!t._isMain ? `<button class="sa-btn sa-btn-danger sa-btn-sm"
+          onclick="deleteTeacher(${t._idx},'${(t.full_name||'').replace(/'/g,"\\'")}')">🗑</button>` : ''}
       </td>
     </tr>`).join('');
 }
 
-function openTeacherModal(teacher = null) {
+function openTeacherModal(teacher = null, displayIdx = null) {
   const isEdit = teacher !== null;
   document.getElementById('teacherModalTitle').textContent = isEdit ? '✏️ Sửa tài khoản giáo viên' : '➕ Thêm tài khoản giáo viên';
-  document.getElementById('teacherEditIndex').value = isEdit ? (teacher.id || '') : '';
+  document.getElementById('teacherEditIndex').value = isEdit ? (teacher._isMain ? 'main' : teacher._idx) : '';
   document.getElementById('teacherName').value     = isEdit ? (teacher.full_name || '') : '';
   document.getElementById('teacherUsername').value = isEdit ? (teacher.username || '') : '';
   document.getElementById('teacherPassword').value = '';
   document.getElementById('teacherErr').textContent = '';
   document.getElementById('teacherPwHint').style.display = isEdit ? 'inline' : 'none';
-  // Thêm field lớp nếu chưa có
-  let clsField = document.getElementById('teacherClassField');
-  if (!clsField) {
-    const pwGroup = document.getElementById('teacherPassword').closest('.sa-fg');
-    const div = document.createElement('div'); div.className='sa-fg'; div.id='teacherClassField';
-    div.innerHTML = `<label>Lớp quản lý (tùy chọn)</label><input type="text" id="teacherClass" placeholder="VD: EnglishA, EnglishB (phân cách bằng dấu phẩy)"/>`;
-    pwGroup.insertAdjacentElement('afterend', div);
-  }
-  document.getElementById('teacherClass').value = isEdit ? (teacher.class_name || '') : '';
   document.getElementById('teacherModal').classList.add('open');
 }
 
 async function saveTeacher() {
-  const editId   = document.getElementById('teacherEditIndex').value;
+  const editIdx  = document.getElementById('teacherEditIndex').value;
   const name     = document.getElementById('teacherName').value.trim();
   const username = document.getElementById('teacherUsername').value.trim();
   const pw       = document.getElementById('teacherPassword').value;
-  const cls      = document.getElementById('teacherClass')?.value.trim() || null;
   const errEl    = document.getElementById('teacherErr');
   errEl.textContent = '';
 
   if (!name)     { errEl.textContent = 'Vui lòng nhập họ tên.'; return; }
   if (!username) { errEl.textContent = 'Vui lòng nhập tên đăng nhập.'; return; }
-  if (!editId && !pw) { errEl.textContent = 'Vui lòng nhập mật khẩu.'; return; }
+  if (!editIdx && !pw) { errEl.textContent = 'Vui lòng nhập mật khẩu.'; return; }
   if (pw && pw.length < 6) { errEl.textContent = 'Mật khẩu cần ít nhất 6 ký tự.'; return; }
 
-  // Disable nút Lưu tránh bấm nhiều lần
-  const saveBtn = document.querySelector('#teacherModal .sa-btn-primary');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Đang lưu...'; }
-
-  try {
-    const by = sessionStorage.getItem('dh_name') || 'Admin';
-
-    if (editId) {
-      // Cập nhật
-      const updates = { full_name: name, username, class_name: cls || null };
-      if (pw) updates.password = pw;
-      const { error } = await db.from('teachers').update(updates).eq('id', parseInt(editId));
-      if (error) { errEl.textContent = error.message.includes('unique') ? 'Tên đăng nhập đã tồn tại.' : error.message; return; }
-      // Đóng modal ngay — không chờ log
-      document.getElementById('teacherModal').classList.remove('open');
-      showToast('Đã cập nhật tài khoản giáo viên');
-      // Ghi log fire-and-forget
-      db.from('alerts').insert({ student_name: name, username, class_name: 'Giáo viên', reason: `Sửa tài khoản giáo viên — bởi Admin ${by}` });
-    } else {
-      // Thêm mới
-      const { error } = await db.from('teachers').insert({ full_name: name, username, password: pw, class_name: cls || null, active: true });
-      if (error) { errEl.textContent = error.message.includes('unique') ? 'Tên đăng nhập đã tồn tại.' : error.message; return; }
-      // Đóng modal ngay — không chờ log
-      document.getElementById('teacherModal').classList.remove('open');
-      showToast('Đã thêm tài khoản giáo viên');
-      // Ghi log fire-and-forget
-      db.from('alerts').insert({ student_name: name, username, class_name: 'Giáo viên', reason: `Tạo tài khoản giáo viên — bởi Admin ${by}` });
+  if (editIdx === 'main') {
+    // Cập nhật tài khoản chính
+    const main = JSON.parse(localStorage.getItem('dh_teacher') || '{}');
+    main.full_name = name;
+    main.username  = username;
+    if (pw) main.passwordHash = await hashPw(pw);
+    main.hashed = true;
+    localStorage.setItem('dh_teacher', JSON.stringify(main));
+    showToast('Đã cập nhật tài khoản chính');
+  } else if (editIdx !== '') {
+    // Cập nhật tài khoản phụ
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    const idx = parseInt(editIdx);
+    if (extra[idx]) {
+      extra[idx].full_name = name;
+      extra[idx].username  = username;
+      if (pw) extra[idx].passwordHash = await hashPw(pw);
     }
-
-    renderTeachers();
-  } finally {
-    // Luôn khôi phục nút dù có lỗi hay không
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Lưu'; }
+    _saveExtraTeachers(extra);
+    showToast('Đã cập nhật tài khoản giáo viên');
+  } else {
+    // Thêm mới
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    // Kiểm tra trùng username
+    const allTeachers = _getTeachers();
+    if (allTeachers.some(t => t.username === username)) {
+      errEl.textContent = 'Tên đăng nhập đã tồn tại.'; return;
+    }
+    extra.push({ full_name: name, username, passwordHash: await hashPw(pw), hashed: true });
+    _saveExtraTeachers(extra);
+    showToast('Đã thêm tài khoản giáo viên');
   }
-}
 
-async function toggleTeacherActive(id, current, name) {
-  const { error } = await db.from('teachers').update({ active: !current }).eq('id', id);
-  if (error) { showToast('Lỗi: ' + error.message, false); return; }
-  showToast(current ? `Đã khóa GV ${name}` : `Đã mở khóa GV ${name}`);
-  // Ghi log fire-and-forget
-  const by = sessionStorage.getItem('dh_name') || 'Admin';
-  db.from('alerts').insert({ student_name: name, username: '', class_name: 'Giáo viên', reason: `${current ? 'Khóa' : 'Mở khóa'} tài khoản giáo viên — bởi Admin ${by}` });
+  document.getElementById('teacherModal').classList.remove('open');
+  logActivity('Hệ thống', editIdx ? 'Sửa tài khoản giáo viên' : 'Thêm tài khoản giáo viên', name);
   renderTeachers();
 }
 
-function deleteTeacher(id, name) {
+function deleteTeacher(idx, name) {
   saConfirm(`Xóa tài khoản giáo viên "${name}"?`, async () => {
-    const { error } = await db.from('teachers').delete().eq('id', id);
-    if (error) { showToast('Lỗi: ' + error.message, false); return; }
+    const extra = JSON.parse(localStorage.getItem('dh_teachers') || '[]');
+    extra.splice(idx, 1);
+    _saveExtraTeachers(extra);
     showToast('Đã xóa tài khoản giáo viên');
-    // Ghi log fire-and-forget
-    const by = sessionStorage.getItem('dh_name') || 'Admin';
-    db.from('alerts').insert({ student_name: name, username: '', class_name: 'Giáo viên', reason: `Xóa tài khoản giáo viên — bởi Admin ${by}` });
+    logActivity('Hệ thống', 'Xóa tài khoản giáo viên', name);
     renderTeachers();
   }, { icon:'🗑', title:'Xóa giáo viên', okText:'Xóa' });
 }
@@ -2636,23 +2673,23 @@ const GUIDE_DATA = [
   ]},
   // ── GIÁO VIÊN ──
   { cat:'teacher', icon:'👨‍🏫', title:'Thêm tài khoản giáo viên', steps:[
-    'Quản trị hệ thống → <b>Tài khoản giáo viên → Thêm giáo viên</b>',
+    'Quản trị → <b>Tài khoản giáo viên → Thêm giáo viên</b>',
     'Nhập họ tên, tên đăng nhập, mật khẩu (tối thiểu 6 ký tự)',
-    'Nhập lớp quản lý (tùy chọn) — GV chỉ thấy nội dung lớp được phân công',
-    'Tài khoản lưu trong <b>Supabase</b> — GV đăng nhập từ bất kỳ thiết bị nào',
-    '⚠️ Nhớ chạy SQL tạo bảng <code>teachers</code> nếu chưa có',
+    'Tài khoản lưu trong <code>localStorage</code> của trình duyệt này',
+    '⚠️ Mỗi thiết bị/trình duyệt cần thiết lập riêng',
+    'Đăng nhập tại <b>login.html</b> — có đầy đủ quyền Teacher',
   ]},
   { cat:'teacher', icon:'✏️', title:'Sửa / Đổi mật khẩu giáo viên', steps:[
-    'Quản trị hệ thống → <b>Tài khoản giáo viên</b> → bấm ✏️',
-    'Có thể sửa họ tên, tên đăng nhập, lớp quản lý',
+    'Quản trị → <b>Tài khoản giáo viên</b> → bấm ✏️',
+    'Có thể sửa họ tên, tên đăng nhập',
     'Để trống ô mật khẩu = giữ nguyên mật khẩu cũ',
-    'Nhập mật khẩu mới để đổi',
+    'Nhập mật khẩu mới để đổi — được hash SHA-256 tự động',
   ]},
-  { cat:'teacher', icon:'🔑', title:'GV đăng nhập như thế nào', steps:[
-    'GV vào trang login, nhập username và mật khẩu được Admin cấp',
-    'GV đăng nhập với role <b>teacher</b> → vào trang Admin đầy đủ quyền',
-    'Có thể phân lớp để giới hạn nội dung GV quản lý',
-    'Admin (tài khoản gốc) có quyền cao nhất — vào được Quản trị hệ thống',
+  { cat:'teacher', icon:'🔑', title:'Tài khoản giáo viên chính', steps:[
+    'Tài khoản chính được tạo sẵn từ đầu — không thể xóa',
+    'Có thể sửa tên và mật khẩu tài khoản chính',
+    'Tài khoản chính luôn có quyền cao nhất — vào được Quản trị hệ thống',
+    'Nếu quên mật khẩu: xóa <code>localStorage[\'dh_teacher\']</code> → mặc định sẽ reset',
   ]},
 ];
 
@@ -2753,30 +2790,12 @@ function _openGuide(tab) {
 // INIT
 // ══════════════════════════════════════════════════
 async function loadAllData() {
-  // Invalidate student cache để force reload
-  _stuCacheTime = 0;
   showToast('Đang làm mới...', true);
-  // Chỉ re-render trang đang active — không reload toàn bộ
   const active = document.querySelector('.sa-page.active');
   if (!active) return renderOverview();
-  // Lấy tên page từ id (pageXxx → xxx)
-  const pageId = active.id; // vd: "pageAssistantLogs"
-  const name = pageId.replace(/^page/, '')
-    .replace(/([A-Z])/g, m => '-' + m.toLowerCase())
-    .replace(/^-/, '')
-    .toLowerCase(); // "assistant-logs"
-  showPage(name);
+  const id = active.id.replace('page','').toLowerCase().replace(/([A-Z])/g, m => '-' + m.toLowerCase());
+  showPage(id);
 }
-
-// Debounce helper cho search inputs
-function _debounce(fn, ms) {
-  let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-}
-document.getElementById('studentSearch').addEventListener('input', _debounce(renderStudentTable, 250));
-document.getElementById('studentClassFilter').addEventListener('change', renderStudentTable);
-document.getElementById('studentStatusFilter').addEventListener('change', renderStudentTable);
-document.getElementById('prevPageBtn').addEventListener('click', () => { _stuPage--; renderStudentTable(); });
-document.getElementById('nextPageBtn').addEventListener('click', () => { _stuPage++; renderStudentTable(); });
 
 // Khởi động
 renderOverview();

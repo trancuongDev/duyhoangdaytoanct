@@ -18,16 +18,8 @@ router.post('/', authMiddleware, requireRole('student'), async (req, res) => {
   res.json({ success: true });
 });
 
-// DELETE /api/alerts/:id — xóa từng alert theo id
-router.delete('/:id', authMiddleware, requireRole('assistant'), async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id)) return res.status(400).json({ error: 'ID không hợp lệ' });
-  await db.query('DELETE FROM alerts WHERE id=?', [id]);
-  res.json({ success: true });
-});
-
-// DELETE /api/alerts — xóa tất cả (chỉ giáo viên)
-router.delete('/', authMiddleware, requireRole('teacher'), async (req, res) => {
+// DELETE /api/alerts — xóa tất cả
+router.delete('/', authMiddleware, requireRole('assistant'), async (req, res) => {
   await db.query('DELETE FROM alerts');
   res.json({ success: true });
 });

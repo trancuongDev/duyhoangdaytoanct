@@ -11,8 +11,8 @@ router.get('/', authMiddleware, requireRole('teacher','assistant'), async (req, 
   res.json(rows);
 });
 
-// POST /api/students — giáo viên + trợ lý
-router.post('/', authMiddleware, requireRole('teacher','assistant'), async (req, res) => {
+// POST /api/students — chỉ trợ lý
+router.post('/', authMiddleware, requireRole('assistant'), async (req, res) => {
   const { username, password, full_name, class_name } = req.body;
   if (!username || !password || !full_name)
     return res.status(400).json({ error: 'Thiếu thông tin' });
@@ -29,8 +29,8 @@ router.post('/', authMiddleware, requireRole('teacher','assistant'), async (req,
   }
 });
 
-// PUT /api/students/:id — giáo viên + trợ lý
-router.put('/:id', authMiddleware, requireRole('teacher','assistant'), async (req, res) => {
+// PUT /api/students/:id — chỉ trợ lý
+router.put('/:id', authMiddleware, requireRole('assistant'), async (req, res) => {
   const { full_name, username, password, class_name, active } = req.body;
   try {
     if (password) {
@@ -48,8 +48,8 @@ router.put('/:id', authMiddleware, requireRole('teacher','assistant'), async (re
   }
 });
 
-// DELETE /api/students/:id — chỉ giáo viên
-router.delete('/:id', authMiddleware, requireRole('teacher'), async (req, res) => {
+// DELETE /api/students/:id — chỉ trợ lý
+router.delete('/:id', authMiddleware, requireRole('assistant'), async (req, res) => {
   await db.query('DELETE FROM users WHERE id=? AND role="student"', [req.params.id]);
   res.json({ success: true });
 });
